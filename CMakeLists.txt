@@ -8,7 +8,7 @@ add_executable(RayClientRenderer)
 
 target_compile_options(RayClientRenderer PRIVATE -fno-exceptions -fno-rtti)
 
-#GLM
+# GLM
 set(GLM_TEST_ENABLE OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/glm)
 
@@ -24,6 +24,23 @@ target_sources(glm_mod
             BASE_DIRS "${CMAKE_SOURCE_DIR}/third_party/glm"
             FILES "${GLM_CPPM}"
 )
+
+# GLFW
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_DOCS     OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL        OFF CACHE BOOL "" FORCE)
+
+add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/glfw)
+
+# Vulkan
+add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/Vulkan-Headers)
+
+# volk
+set(VOLK_PULL_IN_VULKAN ON CACHE BOOL "" FORCE)
+set(VULKAN_HEADERS_INSTALL_DIR "${CMAKE_SOURCE_DIR}/third_party/Vulkan-Headers" CACHE PATH "" FORCE)
+
+add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/volk)
 
 # toml++
 target_include_directories(RayClientRenderer PRIVATE ${CMAKE_SOURCE_DIR}/third_party/tomlplusplus/include)
@@ -41,5 +58,7 @@ target_sources(RayClientRenderer
             FILES ${CORE_MODULES}
 )
 
+target_link_libraries(RayClientRenderer PRIVATE Vulkan::Headers volk::volk)
+target_link_libraries(RayClientRenderer PRIVATE glfw)
 target_link_libraries(RayClientRenderer PRIVATE glm_mod)
 target_link_libraries(RayClientRenderer PRIVATE stdc++exp)
