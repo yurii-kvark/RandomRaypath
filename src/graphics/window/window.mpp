@@ -1,0 +1,44 @@
+﻿module;
+#include <memory>
+export module ray.graphics.window;
+
+import glm;
+import ray.graphics.rhi;
+
+export namespace ray::graphics {
+
+enum class e_window_mode : std::int8_t {
+        none = 0,
+        windowed = none,
+        fullscreen = 1,
+        count
+};
+
+class window {
+public:
+        struct config {
+                bool graphics_window_enabled;
+                e_window_mode window_mode; // 0 - windowed, 1 - fullscreen
+                std::int32_t display_index; // -1 - primary, actual index else
+                glm::i32vec2 window_position;
+                glm::i32vec2 window_size;
+        };
+
+        window(const config& in_config);
+        ~window();
+
+        window(const window&) = delete;
+        window& operator=(const window&) = delete;
+        window(window&&) = default;
+        window& operator=(window&&) = default;
+
+        void blocking_loop();
+
+        std::weak_ptr<renderer> get_weak_render_instance();
+
+private:
+        config used_config;
+        std::unique_ptr<renderer> renderer_instance;
+        GLFWwindow* gwin;
+};
+};

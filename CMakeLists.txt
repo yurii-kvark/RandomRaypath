@@ -4,6 +4,8 @@ project(RandomRaypath LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(RAY_GRAPHICS_ENABLE "Build graphics (Vulkan + GLFW)" ON)
+
 add_executable(RayClientRenderer)
 
 target_compile_options(RayClientRenderer PRIVATE -fno-exceptions -fno-rtti)
@@ -44,7 +46,10 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/volk)
 
 # toml++
 target_include_directories(RayClientRenderer PRIVATE ${CMAKE_SOURCE_DIR}/third_party/tomlplusplus/include)
-target_compile_definitions(RayClientRenderer PRIVATE TOML_EXCEPTIONS=0)
+target_compile_definitions(RayClientRenderer
+        PRIVATE
+            TOML_EXCEPTIONS=0
+            RAY_GRAPHICS_ENABLE=$<BOOL:${RAY_GRAPHICS_ENABLE}>)
 
 file(GLOB_RECURSE CORE_IMPL CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.cpp)
 file(GLOB_RECURSE CORE_MODULES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.mpp)

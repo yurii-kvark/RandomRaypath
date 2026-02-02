@@ -16,11 +16,11 @@ const visual_style visual_style::default_style = {
 
 const client_renderer client_renderer::default_renderer = {
         .enable_computational_server = true,
-        .graphics_window_enabled = true,
-        .window_mode = e_window_mode::windowed,
-        .display_index = -1,
-        .window_position = glm::i32vec2(300, 200),
-        .window_size = glm::i32vec2(800, 500),
+        .window.graphics_window_enabled = true,
+        .window.window_mode = graphics::e_window_mode::windowed,
+        .window.display_index = -1,
+        .window.window_position = glm::i32vec2(300, 200),
+        .window.window_size = glm::i32vec2(800, 500),
         .style = visual_style::default_style
 };
 
@@ -49,16 +49,16 @@ std::expected<client_renderer, std::string> client_renderer::load(std::filesyste
         }
 
         if (const auto ptr_gw = toml_cnf_cr->get_as<bool>("graphics_window_enabled")) {
-                cnf_cr.graphics_window_enabled = ptr_gw->get();
+                cnf_cr.window.graphics_window_enabled = ptr_gw->get();
         }
 
         if (const auto ptr_wm_i = toml_cnf_cr->get_as<int64_t>("window_mode")) {
                 const int64_t in_mode = ptr_wm_i->get();
-                cnf_cr.window_mode = in_mode >= static_cast<int64_t>(e_window_mode::count) ? e_window_mode::none : static_cast<e_window_mode>(in_mode);
+                cnf_cr.window.window_mode = in_mode >= static_cast<int64_t>(e_window_mode::count) ? e_window_mode::none : static_cast<e_window_mode>(in_mode);
         }
 
         if (const auto ptr_di = toml_cnf_cr->get_as<int64_t>("display_index")) {
-                cnf_cr.display_index = static_cast<std::int32_t>(ptr_di->get());
+                cnf_cr.window.display_index = static_cast<std::int32_t>(ptr_di->get());
         }
 
         auto read_vec2i = [&](std::string_view key, glm::i32vec2& out) -> std::optional<std::string> {
@@ -88,10 +88,10 @@ std::expected<client_renderer, std::string> client_renderer::load(std::filesyste
                 return std::nullopt;
         };
 
-        if (auto err = read_vec2i("window_position", cnf_cr.window_position)) {
+        if (auto err = read_vec2i("window_position", cnf_cr.window.window_position)) {
                 return std::unexpected(*err);
         }
-        if (auto err = read_vec2i("window_size", cnf_cr.window_size)) {
+        if (auto err = read_vec2i("window_size", cnf_cr.window.window_size)) {
                 return std::unexpected(*err);
         }
 

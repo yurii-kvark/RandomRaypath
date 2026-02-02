@@ -7,15 +7,9 @@
 export module ray.config;
 
 import glm;
+import ray.graphics.window;
 
 export namespace ray::config {
-
-enum class e_window_mode : std::int8_t {
-        none = 0,
-        windowed = none,
-        fullscreen = 1,
-        count
-};
 
 struct visual_style {
         glm::dvec4 color_nothing;
@@ -28,13 +22,7 @@ struct visual_style {
 class client_renderer {
 public:
         bool enable_computational_server; // if true, it needs computational_server.toml
-
-        bool graphics_window_enabled;
-        e_window_mode window_mode; // 0 - windowed, 1 - fullscreen
-        std::int32_t display_index; // -1 - primary, actual index else
-        glm::i32vec2 window_position;
-        glm::i32vec2 window_size;
-
+        graphics::window::config window;
         visual_style style;
 
 public:
