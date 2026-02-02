@@ -1,11 +1,8 @@
 ﻿module;
+#include "src/graphics/graphic_libs.h"
 export module ray.graphics.rhi;
 
 export namespace ray::graphics {
-
-struct GLFWwindow;
-struct VkInstance;
-struct VkSurfaceKHR;
 
 class renderer {
 public:
@@ -18,7 +15,7 @@ public:
         renderer& operator=(renderer&&) = default;
 
 public:
-        VkInstance* instance_ptr = nullptr; // hide core libs
-        VkSurfaceKHR* surface_ptr = nullptr; // hide core libs
+        VkInstance instance = VK_NULL_HANDLE;
+        VkSurfaceKHR surface = VK_NULL_HANDLE;
 };
 };

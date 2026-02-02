@@ -1,6 +1,8 @@
 ﻿module;
 #include "src/graphics/graphic_libs.h"
+
 #include <print>
+#include <vector>
 module ray.graphics.rhi;
 
 using namespace ray;
@@ -8,9 +10,6 @@ using namespace ray::graphics;
 
 
 renderer::renderer(GLFWwindow* basis_win) {
-        instance_ptr = new VkInstance(VK_NULL_HANDLE);
-        surface_ptr = new VkSurfaceKHR(VK_NULL_HANDLE);
-
         if (basis_win == nullptr) {
                 std::println("vkCreateInstance failed. basis_win == nullptr.");
                 return;
@@ -33,14 +32,14 @@ renderer::renderer(GLFWwindow* basis_win) {
         ci.enabledExtensionCount = (uint32_t)extensions.size();
         ci.ppEnabledExtensionNames = extensions.data();
 
-        if (vkCreateInstance(&ci, nullptr, instance_ptr) != VK_SUCCESS) {
+        if (vkCreateInstance(&ci, nullptr, &instance) != VK_SUCCESS) {
                 std::println("vkCreateInstance failed");
                 return;
         }
 
-        volkLoadInstance(*instance_ptr);
+        volkLoadInstance(instance);
 
-        if (glfwCreateWindowSurface(*instance_ptr, basis_win, nullptr, &surface_ptr) != VK_SUCCESS) {
+        if (glfwCreateWindowSurface(instance, basis_win, nullptr, &surface) != VK_SUCCESS) {
                 std::println("glfwCreateWindowSurface failed");
                 return;
         }
@@ -48,13 +47,10 @@ renderer::renderer(GLFWwindow* basis_win) {
 
 
 renderer::~renderer() {
-        if (*instance_ptr != VK_NULL_HANDLE) {
-                if (*surface_ptr != VK_NULL_HANDLE) {
-                        vkDestroySurfaceKHR(*instance_ptr, *surface_ptr, nullptr);
+        if (instance != VK_NULL_HANDLE) {
+                if (surface != VK_NULL_HANDLE) {
+                        vkDestroySurfaceKHR(instance, surface, nullptr);
                 }
-                vkDestroyInstance(*instance_ptr, nullptr);
+                vkDestroyInstance(instance, nullptr);
         }
-
-        delete surface_ptr;
-        delete instance_ptr;
 }

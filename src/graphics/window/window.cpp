@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <memory>
-#include <vector>
 #include <print>
 module ray.graphics.window;
 

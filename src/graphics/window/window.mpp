@@ -1,4 +1,6 @@
 ﻿module;
+#include "src/graphics/graphic_libs.h"
+
 #include <memory>
 export module ray.graphics.window;
 
