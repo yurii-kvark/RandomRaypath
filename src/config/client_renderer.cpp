@@ -17,9 +17,9 @@ const visual_style visual_style::default_style = {
 
 const client_renderer client_renderer::default_renderer = {
         .enable_computational_server = true,
-        .window = { .graphics_window_enabled = true,
+        .window = {
+                .graphics_window_enabled = true,
                 .window_mode = graphics::e_window_mode::windowed,
-                .display_index = -1,
                 .window_position = glm::i32vec2(300, 200),
                 .window_size = glm::i32vec2(800, 500)
         },
@@ -57,10 +57,6 @@ std::expected<client_renderer, std::string> client_renderer::load(std::filesyste
         if (const auto ptr_wm_i = toml_cnf_cr->get_as<int64_t>("window_mode")) {
                 const int64_t in_mode = ptr_wm_i->get();
                 cnf_cr.window.window_mode = in_mode >= static_cast<int64_t>(e_window_mode::count) ? e_window_mode::none : static_cast<e_window_mode>(in_mode);
-        }
-
-        if (const auto ptr_di = toml_cnf_cr->get_as<int64_t>("display_index")) {
-                cnf_cr.window.display_index = static_cast<std::int32_t>(ptr_di->get());
         }
 
         auto read_vec2i = [&](std::string_view key, glm::i32vec2& out) -> std::optional<std::string> {
@@ -153,7 +149,6 @@ std::string client_renderer::to_string() const {
         "enable_computational_server = {}\n"
         "graphics_window_enabled = {}\n"
         "window_mode = {}\n"
-        "display_index = {}\n"
         "window_position = [{}, {}]\n"
         "window_size = [{}, {}]\n\n"
         "[client_renderer.visual_style]\n"
@@ -163,7 +158,6 @@ std::string client_renderer::to_string() const {
         enable_computational_server ? "true" : "false",
         window.graphics_window_enabled ? "true" : "false",
         static_cast<int>(window.window_mode),
-        window.display_index,
         window.window_position.x, window.window_position.y,
         window.window_size.x, window.window_size.y,
         color_to_toml_arr(style.color_nothing),

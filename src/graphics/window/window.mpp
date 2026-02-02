@@ -19,7 +19,6 @@ public:
         struct config {
                 bool graphics_window_enabled;
                 e_window_mode window_mode; // 0 - windowed, 1 - fullscreen
-                glm::i32 display_index; // -1 - primary, actual index else
                 glm::i32vec2 window_position;
                 glm::i32vec2 window_size;
         };

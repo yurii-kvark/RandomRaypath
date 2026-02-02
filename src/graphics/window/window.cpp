@@ -2,7 +2,6 @@
 #include "src/graphics/graphic_libs.h"
 
 #include <iostream>
-#include <memory>
 #include <print>
 module ray.graphics.window;
 
@@ -24,9 +23,11 @@ window::window(const config& in_config) {
         }
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_POSITION_X, used_config.window_position.x);
+        glfwWindowHint(GLFW_POSITION_Y, used_config.window_position.y);
 
-        // TODO: apply config
-        gwin = glfwCreateWindow(used_config.window_size.x, used_config.window_size.y, "Random Raypath", nullptr, nullptr);
+        GLFWmonitor* monitor_ptr = used_config.window_mode == e_window_mode::fullscreen ? glfwGetPrimaryMonitor() : nullptr;
+        gwin = glfwCreateWindow(used_config.window_size.x, used_config.window_size.y, "Random Raypath", monitor_ptr, nullptr);
 
         if (!gwin) {
                 std::printf("glfwCreateWindow failed.\n");

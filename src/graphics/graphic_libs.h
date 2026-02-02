@@ -4,7 +4,6 @@
 #define RAY_GRAPHICS_ENABLE 0
 #endif
 
-// TODO: implement disabled graphics
 #if RAY_GRAPHICS_ENABLE
 
 #define VK_NO_PROTOTYPES

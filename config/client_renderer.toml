@@ -3,9 +3,8 @@
 enable_computational_server = true # if true, it needs computational_server.toml
 graphics_window_enabled = true
 window_mode = 0 # 0 - windowed, 1 - fullscreen
-display_index = -1 # -1 - primary, actual index else
-window_position = [300, 200] #in pixels [pos_x, pos_y] size_x, size_y]
-window_size = [800, 500] # in pixels [pos_x, pos_y] size_x, size_y]
+window_position = [800, 400] #in pixels [pos_x, pos_y] size_x, size_y]
+window_size = [900, 500] # in pixels [pos_x, pos_y] size_x, size_y]
 
 # color - RGBA 0..1 float32
 [client_renderer.visual_style]
