@@ -7,6 +7,7 @@ module ray.config;
 
 using namespace ray;
 using namespace ray::config;
+using namespace ray::graphics;
 
 const visual_style visual_style::default_style = {
         .color_nothing = glm::dvec4(0.f, 0.f, 0.f, 1.f),
@@ -16,11 +17,12 @@ const visual_style visual_style::default_style = {
 
 const client_renderer client_renderer::default_renderer = {
         .enable_computational_server = true,
-        .window.graphics_window_enabled = true,
-        .window.window_mode = graphics::e_window_mode::windowed,
-        .window.display_index = -1,
-        .window.window_position = glm::i32vec2(300, 200),
-        .window.window_size = glm::i32vec2(800, 500),
+        .window = { .graphics_window_enabled = true,
+                .window_mode = graphics::e_window_mode::windowed,
+                .display_index = -1,
+                .window_position = glm::i32vec2(300, 200),
+                .window_size = glm::i32vec2(800, 500)
+        },
         .style = visual_style::default_style
 };
 
@@ -159,11 +161,11 @@ std::string client_renderer::to_string() const {
         "color_density_low = \"{}\"\n"
         "color_density_high = \"{}\"\n",
         enable_computational_server ? "true" : "false",
-        graphics_window_enabled ? "true" : "false",
-        static_cast<int>(window_mode),
-        display_index,
-        window_position.x, window_position.y,
-        window_size.x, window_size.y,
+        window.graphics_window_enabled ? "true" : "false",
+        static_cast<int>(window.window_mode),
+        window.display_index,
+        window.window_position.x, window.window_position.y,
+        window.window_size.x, window.window_size.y,
         color_to_toml_arr(style.color_nothing),
         color_to_toml_arr(style.color_density_low),
         color_to_toml_arr(style.color_density_high));

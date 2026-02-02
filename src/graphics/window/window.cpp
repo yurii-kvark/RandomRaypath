@@ -31,7 +31,7 @@ window::window(const config& in_config) {
                 return;
         }
 
-        renderer_instance = std::make_unique<renderer>(gwin);
+        renderer_instance = new renderer(gwin);
 
         while (!glfwWindowShouldClose(gwin)) {
                 glfwPollEvents();
@@ -50,13 +50,10 @@ void window::blocking_loop() {
 }
 
 
-std::weak_ptr<renderer> get_weak_render_instance() {
-        return renderer_instance;
-}
-
-
 window::~window() {
-        renderer_instance.reset();
+        if (!!renderer_instance) {
+                delete renderer_instance;
+        }
         glfwDestroyWindow(gwin);
         glfwTerminate();
 }

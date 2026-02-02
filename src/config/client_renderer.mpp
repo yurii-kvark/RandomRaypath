@@ -3,7 +3,6 @@
 #include <string>
 #include <expected>
 #include <format>
-#include <cstdint>
 export module ray.config;
 
 import glm;
