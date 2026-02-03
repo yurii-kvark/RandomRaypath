@@ -44,3 +44,5 @@
 # debug information files
 *.dwo
 /cmake-build-debug/
+
+*.spv

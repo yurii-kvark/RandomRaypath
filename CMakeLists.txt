@@ -2,6 +2,11 @@
 
 #set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
 
+set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -fno-omit-frame-pointer -fno-inline" CACHE STRING "" FORCE)
+set(CMAKE_C_FLAGS_DEBUG   "-O0 -g3 -fno-omit-frame-pointer -fno-inline" CACHE STRING "" FORCE)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+
 project(RandomRaypath LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -14,7 +19,17 @@ option(RAY_GRAPHICS_ENABLE "Build graphics (Vulkan + GLFW), enabling graphics na
 
 add_executable(RayClientRenderer)
 
-target_compile_options(RayClientRenderer PRIVATE -fno-exceptions -fno-rtti)
+if(RAY_GRAPHICS_ENABLE)
+    include("${CMAKE_SOURCE_DIR}/CompileRayShaders.cmake")
+    ray_enable_shader_compilation()
+
+    add_dependencies(RayClientRenderer ${RAY_SHADERS_TARGET})
+endif()
+
+target_compile_options(RayClientRenderer
+        PRIVATE
+        -fno-exceptions -fno-rtti
+)
 
 # GLM
 set(GLM_TEST_ENABLE OFF CACHE BOOL "" FORCE)
@@ -55,7 +70,9 @@ target_include_directories(RayClientRenderer PRIVATE ${CMAKE_SOURCE_DIR}/third_p
 target_compile_definitions(RayClientRenderer
         PRIVATE
             TOML_EXCEPTIONS=0
-            RAY_GRAPHICS_ENABLE=$<IF:$<BOOL:${RAY_GRAPHICS_ENABLE}>,1,0>)
+            RAY_GRAPHICS_ENABLE=$<IF:$<BOOL:${RAY_GRAPHICS_ENABLE}>,1,0>
+            GLM_FORCE_RADIANS
+            GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
 file(GLOB_RECURSE CORE_IMPL CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.cpp)
 file(GLOB_RECURSE CORE_MODULES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.mpp)
