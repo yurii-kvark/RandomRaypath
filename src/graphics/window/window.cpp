@@ -1,9 +1,7 @@
-﻿module;
-#include "src/graphics/graphic_libs.h"
+﻿#include "window.h"
 
 #include <iostream>
 #include <print>
-module ray.graphics.window;
 
 using namespace ray;
 using namespace ray::graphics;

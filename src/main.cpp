@@ -1,8 +1,9 @@
-﻿#include <filesystem>
+﻿#include "config/client_renderer.h"
+#include "graphics/window/window.h"
+
+#include <filesystem>
 #include <print>
 
-import ray.config;
-import ray.graphics.window;
 
 int main() {
         auto config_res = ray::config::client_renderer::load(std::filesystem::path {"../config/client_renderer.toml"});

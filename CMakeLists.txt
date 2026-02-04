@@ -2,10 +2,14 @@
 
 #set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
 
-set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -fno-omit-frame-pointer -fno-inline" CACHE STRING "" FORCE)
-set(CMAKE_C_FLAGS_DEBUG   "-O0 -g3 -fno-omit-frame-pointer -fno-inline" CACHE STRING "" FORCE)
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+option(DEBUG_NO_OPT "Enable debug build options." OFF)
+
+if(DEBUG_NO_OPT)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
+    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -fno-omit-frame-pointer -fno-inline" CACHE STRING "" FORCE)
+    set(CMAKE_C_FLAGS_DEBUG   "-O0 -g3 -fno-omit-frame-pointer -fno-inline" CACHE STRING "" FORCE)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+endif()
 
 project(RandomRaypath LANGUAGES CXX)
 
@@ -35,19 +39,6 @@ target_compile_options(RayClientRenderer
 set(GLM_TEST_ENABLE OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/glm)
 
-add_library(glm_mod STATIC)
-target_link_libraries(glm_mod PUBLIC glm::glm)
-target_compile_options(glm_mod PUBLIC -fno-exceptions -fno-rtti)
-
-set(GLM_CPPM "${CMAKE_SOURCE_DIR}/third_party/glm/glm.cppm")
-
-target_sources(glm_mod
-        PUBLIC
-            FILE_SET glm_modules TYPE CXX_MODULES
-            BASE_DIRS "${CMAKE_SOURCE_DIR}/third_party/glm"
-            FILES "${GLM_CPPM}"
-)
-
 # GLFW
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
@@ -65,8 +56,7 @@ set(VULKAN_HEADERS_INSTALL_DIR "${CMAKE_SOURCE_DIR}/third_party/Vulkan-Headers" 
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/volk)
 
-# toml++
-target_include_directories(RayClientRenderer PRIVATE ${CMAKE_SOURCE_DIR}/third_party/tomlplusplus/include)
+# ok
 target_compile_definitions(RayClientRenderer
         PRIVATE
             TOML_EXCEPTIONS=0
@@ -74,19 +64,20 @@ target_compile_definitions(RayClientRenderer
             GLM_FORCE_RADIANS
             GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
+target_include_directories(RayClientRenderer
+        PRIVATE
+            ${CMAKE_SOURCE_DIR}/third_party/tomlplusplus/include
+            ${CMAKE_SOURCE_DIR}/src)
+
 file(GLOB_RECURSE CORE_IMPL CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.cpp)
-file(GLOB_RECURSE CORE_MODULES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.mpp)
+# file(GLOB_RECURSE CORE_C CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.c)
 
 target_sources(RayClientRenderer
         PRIVATE
             ${CORE_IMPL}
-        PUBLIC
-            FILE_SET ray_modules TYPE CXX_MODULES
-            BASE_DIRS "${CMAKE_SOURCE_DIR}/src"
-            FILES ${CORE_MODULES}
 )
 
 target_link_libraries(RayClientRenderer PRIVATE Vulkan::Headers volk::volk)
 target_link_libraries(RayClientRenderer PRIVATE glfw)
-target_link_libraries(RayClientRenderer PRIVATE glm_mod)
+target_link_libraries(RayClientRenderer PRIVATE glm::glm)
 target_link_libraries(RayClientRenderer PRIVATE stdc++exp)

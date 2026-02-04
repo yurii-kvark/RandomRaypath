@@ -1,9 +1,9 @@
-﻿module;
+﻿#include "client_renderer.h"
+
 #include <filesystem>
 #include <string>
 #include <expected>
-#include "toml++/toml.hpp"
-module ray.config;
+#include <toml++/toml.hpp>
 
 using namespace ray;
 using namespace ray::config;

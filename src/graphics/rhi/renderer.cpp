@@ -1,15 +1,12 @@
-﻿module;
-#include "src/graphics/graphic_libs.h"
+﻿#include "renderer.h"
 
 #include <print>
 #include <vector>
-#include <array>
 #include <cstring>
 #include <fstream>
 #include <chrono>
 #include <set>
 
-module ray.graphics.rhi;
 
 using namespace ray;
 using namespace ray::graphics;
