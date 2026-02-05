@@ -17,22 +17,25 @@ struct glfw_window_deleter {
         }
 };
 
-
 struct glfw_runtime_init {
         glfw_runtime_init() {
                 static std::once_flag once;
                 static bool ok = false;
 
                 std::call_once(once, [] {
+                    glfwSetErrorCallback([](int code, const char* desc) {
+                        std::printf("GLFW error %d: %s\n", code, desc);
+                    });
+
                     ok = (glfwInit() == GLFW_TRUE);
                 });
 
                 if (!ok) {
                         std::printf("glfwInit failed.\n");
-                        return;
                 }
         }
 };
+
 
 window::window(const config& in_config)
         : used_config(in_config) {

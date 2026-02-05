@@ -16,14 +16,7 @@ int main() {
 
 #if RAY_GRAPHICS_ENABLE
         ray::graphics::async_graphical_loop async_loop(*config_res);
-       // ray::graphics::async_graphical_loop async_loop1(*config_res);
-       // ray::graphics::async_graphical_loop async_loop2(*config_res);
-      //  ray::graphics::async_graphical_loop async_loop3(*config_res);
-
-        async_loop.wait_blocking(); // after close first window, everything will close
-      //  async_loop1.signal_terminate();
-      //  async_loop2.signal_terminate();
-     //   async_loop3.signal_terminate();
+        async_loop.wait_blocking();
 #endif
 
         return 0;

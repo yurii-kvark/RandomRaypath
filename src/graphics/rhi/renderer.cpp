@@ -1,5 +1,8 @@
 ﻿#include "renderer.h"
 
+#include "g_app_driver.h"
+
+#include <atomic>
 #include <print>
 #include <vector>
 #include <cstring>
@@ -14,20 +17,7 @@ using namespace ray::graphics;
 
 #if RAY_GRAPHICS_ENABLE
 
-struct volk_runtime_init {
-        volk_runtime_init() {
-                static std::once_flag once;
-                static VkResult status = VK_NOT_READY;
-
-                std::call_once(once, [] {
-                    status = volkInitialize();
-                });
-
-                if (status != VK_SUCCESS) {
-                        std::println("renderer: no Vulkan runtime (missing vulkan-1.dll / libvulkan.so)");
-                }
-        }
-};
+// TODO: add vulkan debug module
 
 static uint64_t now_ticks_ns() {
         return (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -43,11 +33,17 @@ renderer::renderer(std::weak_ptr<GLFWwindow> basis_win)
                 return;
         }
 
-        volk_runtime_init {};
+        driver_lifetime = g_app_driver::thread_safe().init_driver_handler();
+
+        if (!driver_lifetime) {
+                std::println("error renderer: can't create driver.");
+                return;
+        }
 
         const bool success_creation = create();
         if (!success_creation) {
                 std::println("error renderer: can't properly init Vulkan runtime.");
+                return;
         }
 
         start_ticks = now_ticks_ns();
@@ -56,11 +52,20 @@ renderer::renderer(std::weak_ptr<GLFWwindow> basis_win)
 
 renderer::~renderer() {
         destroy();
+        driver_lifetime.reset();
 }
 
 
 bool renderer::draw_frame() {
-        if (!device || !swapchain || !pipeline) {
+        if (!swapchain || !pipeline) {
+                return false;
+        }
+
+        VkDevice device = g_app_driver::thread_safe().device;
+        VkQueue gfx_queue = g_app_driver::thread_safe().gfx_queue;
+        VkQueue present_queue = g_app_driver::thread_safe().present_queue;
+
+        if (device == VK_NULL_HANDLE || gfx_queue == VK_NULL_HANDLE || present_queue == VK_NULL_HANDLE) {
                 return false;
         }
 
@@ -197,15 +202,7 @@ bool renderer::draw_frame() {
 
 
 bool renderer::create() {
-        if (!create_instance()) {
-                return false;
-        }
-
         if (!create_surface()) {
-                return false;
-        }
-
-        if (!create_device()) {
                 return false;
         }
 
@@ -237,7 +234,7 @@ bool renderer::create() {
 }
 
 void renderer::destroy() {
-
+        VkDevice device = g_app_driver::thread_safe().device;
         if (device != VK_NULL_HANDLE) {
                 vkDeviceWaitIdle(device);
         }
@@ -248,49 +245,16 @@ void renderer::destroy() {
         destroy_pipeline();
         destroy_render_pass();
         destroy_swapchain();
-        destroy_device();
         destroy_surface();
-        destroy_instance();
 }
-
-
-bool renderer::create_instance() {
-        uint32_t ext_count = 0;
-        const char** exts = glfwGetRequiredInstanceExtensions(&ext_count);
-        std::vector<const char*> extensions(exts, exts + ext_count);
-
-        VkApplicationInfo app_info{ VK_STRUCTURE_TYPE_APPLICATION_INFO };
-        app_info.apiVersion = VK_API_VERSION_1_3;
-
-        VkInstanceCreateInfo ci{ VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
-        ci.pApplicationInfo = &app_info;
-        ci.enabledExtensionCount = (uint32_t)extensions.size();
-        ci.ppEnabledExtensionNames = extensions.data();
-
-        if (vkCreateInstance(&ci, nullptr, &instance) != VK_SUCCESS) {
-                std::println("renderer: vkCreateInstance failed");
-                return false;
-        }
-
-        volkLoadInstance(instance);
-
-        return true;
-}
-
-
-void renderer::destroy_instance() {
-        if (instance != VK_NULL_HANDLE) {
-                vkDestroyInstance(instance, nullptr);
-                instance = VK_NULL_HANDLE;
-        }
-}
-
 
 bool renderer::create_surface() {
         if (surface != VK_NULL_HANDLE) {
                 std::println("renderer: create_surface surface already exist.");
                 return false;
         }
+
+        VkInstance instance = g_app_driver::thread_safe().instance;
 
         if (instance == VK_NULL_HANDLE) {
                 std::println("renderer: create_surface instance is null.");
@@ -302,6 +266,10 @@ bool renderer::create_surface() {
                         std::println("renderer: glfwCreateWindowSurface failed");
                         return false;
                 }
+
+                if (driver_lifetime) {
+                        driver_lifetime->try_init_with_surface(surface);
+                }
         } else {
                 std::println("renderer: create_surface gl_window is null.");
         }
@@ -311,6 +279,7 @@ bool renderer::create_surface() {
 
 
 void renderer::destroy_surface(){
+        VkInstance instance = g_app_driver::thread_safe().instance;
         if (instance == VK_NULL_HANDLE) {
                 return;
         }
@@ -321,213 +290,18 @@ void renderer::destroy_surface(){
         }
 }
 
-namespace device_selection_helpers {
-bool has_extension(VkPhysicalDevice device, const char* extName) {
-        uint32_t ext_count = 0;
-        vkEnumerateDeviceExtensionProperties(device, nullptr, &ext_count, nullptr);
-        std::vector<VkExtensionProperties> exts(ext_count);
-        vkEnumerateDeviceExtensionProperties(device, nullptr, &ext_count, exts.data());
-        for (auto& e : exts) {
-                if (std::strcmp(e.extensionName, extName) == 0) {
-                        return true;
-                }
-        }
-        return false;
-}
-
-
-glm::u64 device_local_bytes(VkPhysicalDevice device) {
-        VkPhysicalDeviceMemoryProperties mp{};
-        vkGetPhysicalDeviceMemoryProperties(device, &mp);
-
-        glm::u64 sum = 0;
-        for (glm::u32 i = 0; i < mp.memoryHeapCount; ++i) {
-                if (mp.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) {
-                        sum += mp.memoryHeaps[i].size;
-                }
-        }
-        return sum;
-}
-
-std::string device_name(VkPhysicalDevice device) {
-        VkPhysicalDeviceProperties props{};
-        vkGetPhysicalDeviceProperties(device, &props);
-        return props.deviceName;
-}
-
-
-bool swapchain_ok(VkPhysicalDevice device, VkSurfaceKHR surface) {
-        glm::u32 format_count = 0;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, nullptr);
-        glm::u32 mode_count = 0;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &mode_count, nullptr);
-        return (format_count > 0) && (mode_count > 0);
-}
-
-
-bool device_type_ok(VkPhysicalDevice device, bool& out_is_discrete) {
-        VkPhysicalDeviceProperties props{};
-        vkGetPhysicalDeviceProperties(device, &props);
-
-        out_is_discrete = props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-        const bool is_integrated = props.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
-
-        return out_is_discrete || is_integrated;
-}
-
-
-bool find_queue_families(VkPhysicalDevice device, VkSurfaceKHR surface,
-                         glm::u32& out_gfx, glm::u32& out_present)
-{
-        glm::u32 q_count = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &q_count, nullptr);
-        std::vector<VkQueueFamilyProperties> q_props(q_count);
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &q_count, q_props.data());
-
-        out_gfx = UINT32_MAX;
-        out_present = UINT32_MAX;
-
-        for (glm::u32 i = 0; i < q_count; ++i) {
-                if (q_props[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-                        out_gfx = i;
-                }
-
-                VkBool32 present = VK_FALSE;
-                vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &present);
-                if (present) {
-                        out_present = i;
-                }
-
-                if (out_gfx != UINT32_MAX && out_present != UINT32_MAX) {
-                        break;
-                }
-        }
-
-        return out_gfx != UINT32_MAX && out_present != UINT32_MAX;
-}
-};
-
-
-bool renderer::create_device() {
-        uint32_t device_count = 0;
-        vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
-        if (device_count == 0) {
-                std::println("renderer: no physical devices found");
-                return false;
-        }
-
-        std::vector<VkPhysicalDevice> devices(device_count);
-        vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
-
-        glm::u32 best_i = UINT32_MAX;
-        glm::u32 best_gfx_f = UINT32_MAX;
-        glm::u32 best_present_f = UINT32_MAX;
-        glm::u64 best_v_ram = 0;
-        std::string best_device_name;
-
-        for (glm::u32 i = 0; i < device_count; ++i) {
-                auto& device_el = devices[i];
-
-                std::string name = device_selection_helpers::device_name(device_el);
-                std::println("renderer: detected GPU: {}", name);
-
-                if (!device_selection_helpers::has_extension(device_el, VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
-                        continue;
-                }
-
-                glm::u32 gfx = UINT32_MAX;
-                glm::u32 present = UINT32_MAX;
-                if (!device_selection_helpers::find_queue_families(device_el, surface, gfx, present)) {
-                        continue;
-                }
-
-                if (!device_selection_helpers::swapchain_ok(device_el, surface)) {
-                        continue;
-                }
-
-                bool is_discrete = false;
-                if (!device_selection_helpers::device_type_ok(device_el, is_discrete)) {
-                        continue;
-                }
-
-                glm::u64 memory_volume = device_selection_helpers::device_local_bytes(device_el);
-
-                // Huge bias to discrete
-                glm::u64 v_ram = memory_volume + (is_discrete ? (1ull << 42) : 0ull);
-
-                if (best_v_ram < v_ram) {
-                        best_v_ram = v_ram;
-                        best_gfx_f = gfx;
-                        best_present_f = present;
-                        best_i = i;
-                        best_device_name = name;
-                }
-        }
-
-        if (best_i != UINT32_MAX) {
-                physical = devices[best_i];
-                gfx_family = best_gfx_f;
-                present_family = best_present_f;
-        }
-
-        if (physical == VK_NULL_HANDLE) {
-                std::println("renderer: failed to find suitable GPU");
-                return false;
-        }
-
-        std::println("INFO renderer: Seleced GPU device [{}]", best_device_name);
-
-        std::set<glm::u32> require_family_indexes = {
-                gfx_family,
-                present_family
-        };
-
-        float prio = 1.0f;
-        std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
-        for (auto index_family : require_family_indexes) {
-                queue_create_infos.push_back ( {
-                        .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                        .queueFamilyIndex = index_family,
-                        .queueCount = 1,
-                        .pQueuePriorities = &prio
-                });
-        };
-
-        VkPhysicalDeviceVulkan13Features f13{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
-        f13.dynamicRendering = VK_TRUE;
-
-        const char* dev_exts[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-
-        VkDeviceCreateInfo device_create_info{ VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
-        device_create_info.pNext = &f13;
-        device_create_info.queueCreateInfoCount = (glm::u32)queue_create_infos.size();
-        device_create_info.pQueueCreateInfos = queue_create_infos.data();
-        device_create_info.enabledExtensionCount = 1;
-        device_create_info.ppEnabledExtensionNames = dev_exts;
-
-        if (vkCreateDevice(physical, &device_create_info, nullptr, &device) != VK_SUCCESS) {
-                std::println("renderer: vkCreateDevice failed");
-                return false;
-        }
-
-        volkLoadDevice(device);
-
-        vkGetDeviceQueue(device, gfx_family, 0, &gfx_queue);
-        vkGetDeviceQueue(device, present_family, 0, &present_queue);
-
-        return true;
-}
-
-
-void renderer::destroy_device(){
-        if (device != VK_NULL_HANDLE) {
-                vkDestroyDevice(device, nullptr);
-                device = VK_NULL_HANDLE;
-        }
-}
-
 
 bool renderer::create_swapchain() {
+        VkPhysicalDevice physical = g_app_driver::thread_safe().physical;
+        VkDevice device = g_app_driver::thread_safe().device;
+        glm::u32 gfx_family = g_app_driver::thread_safe().gfx_family;
+        glm::u32 present_family = g_app_driver::thread_safe().present_family;
+
+        if (physical == VK_NULL_HANDLE || device == VK_NULL_HANDLE
+                || gfx_family == UINT32_MAX || present_family == UINT32_MAX) {
+                return false;
+        }
+
         VkSurfaceCapabilitiesKHR caps{};
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical, surface, &caps);
 
@@ -669,6 +443,8 @@ bool renderer::create_swapchain() {
 
 
 void renderer::destroy_swapchain() {
+        VkDevice device = g_app_driver::thread_safe().device;
+
         if (device == VK_NULL_HANDLE) {
                 swapchain_image_views.resize(0);
                 swapchain_images.resize(0);
@@ -693,6 +469,12 @@ void renderer::destroy_swapchain() {
 
 
 bool renderer::create_render_pass() {
+        VkDevice device = g_app_driver::thread_safe().device;
+
+        if (device == VK_NULL_HANDLE) {
+                return false;
+        }
+
         VkAttachmentDescription color_attachment_desc {};
         color_attachment_desc.format = swapchain_format;
         color_attachment_desc.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -734,6 +516,8 @@ bool renderer::create_render_pass() {
 
 
 void renderer::destroy_render_pass() {
+        VkDevice device = g_app_driver::thread_safe().device;
+
         if (device != VK_NULL_HANDLE && render_pass != VK_NULL_HANDLE) {
                 vkDestroyRenderPass(device, render_pass, nullptr);
         }
@@ -757,6 +541,11 @@ VkShaderModule renderer::create_shader_module_from_file(const char* path) {
         smci.codeSize = code.size() * sizeof(uint32_t);
         smci.pCode = code.data();
 
+        VkDevice device = g_app_driver::thread_safe().device;
+        if (device == VK_NULL_HANDLE) {
+                return VK_NULL_HANDLE;
+        }
+
         VkShaderModule mod = VK_NULL_HANDLE;
         if (vkCreateShaderModule(device, &smci, nullptr, &mod) != VK_SUCCESS) {
                 std::println("renderer: vkCreateShaderModule failed: {}", path);
@@ -766,6 +555,11 @@ VkShaderModule renderer::create_shader_module_from_file(const char* path) {
 }
 
 bool renderer::create_pipeline() {
+        VkDevice device = g_app_driver::thread_safe().device;
+        if (device == VK_NULL_HANDLE) {
+                return false;
+        }
+
         VkShaderModule vert = create_shader_module_from_file("../shaders/quad.vert.spv");
         VkShaderModule frag = create_shader_module_from_file("../shaders/rainbow.frag.spv");
 
@@ -882,6 +676,7 @@ bool renderer::create_pipeline() {
 }
 
 void renderer::destroy_pipeline() {
+        VkDevice device = g_app_driver::thread_safe().device;
         if (device == VK_NULL_HANDLE) {
                 return;
         }
@@ -898,6 +693,11 @@ void renderer::destroy_pipeline() {
 }
 
 glm::u32 renderer::find_memory_type(glm::u32 typeBits, VkMemoryPropertyFlags props) {
+        VkPhysicalDevice physical = g_app_driver::thread_safe().physical;
+        if (physical == VK_NULL_HANDLE) {
+                return UINT32_MAX;
+        }
+
         VkPhysicalDeviceMemoryProperties mp{};
         vkGetPhysicalDeviceMemoryProperties(physical, &mp);
 
@@ -910,6 +710,11 @@ glm::u32 renderer::find_memory_type(glm::u32 typeBits, VkMemoryPropertyFlags pro
 }
 
 bool renderer::create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags props, VkBuffer& outBuf, VkDeviceMemory& outMem) {
+        VkDevice device = g_app_driver::thread_safe().device;
+        if (device == VK_NULL_HANDLE) {
+                return false;
+        }
+
         VkBufferCreateInfo bci{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
         bci.size = size;
         bci.usage = usage;
@@ -944,6 +749,11 @@ bool renderer::create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemo
 }
 
 bool renderer::create_buffers() {
+        VkDevice device = g_app_driver::thread_safe().device;
+        if (device == VK_NULL_HANDLE) {
+                return false;
+        }
+
         static const vertex verts[] = {
                 {{-0.8f, -0.6f}, {0.0f, 1.0f}},
                 {{ 0.8f, -0.6f}, {1.0f, 1.0f}},
@@ -971,6 +781,7 @@ bool renderer::create_buffers() {
 }
 
 void renderer::destroy_buffers() {
+        VkDevice device = g_app_driver::thread_safe().device;
         if (device == VK_NULL_HANDLE) {
                 return;
         }
@@ -995,6 +806,12 @@ void renderer::destroy_buffers() {
 }
 
 bool renderer::create_commands() {
+        VkDevice device = g_app_driver::thread_safe().device;
+        glm::u32 gfx_family = g_app_driver::thread_safe().gfx_family;
+        if (device == VK_NULL_HANDLE || gfx_family == UINT32_MAX) {
+                return false;
+        }
+
         VkCommandPoolCreateInfo command_pool_cinf{ VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
         command_pool_cinf.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         command_pool_cinf.queueFamilyIndex = gfx_family;
@@ -1018,6 +835,7 @@ bool renderer::create_commands() {
 }
 
 void renderer::destroy_commands() {
+        VkDevice device = g_app_driver::thread_safe().device;
         if (device == VK_NULL_HANDLE) {
                 return;
         }
@@ -1029,6 +847,11 @@ void renderer::destroy_commands() {
 }
 
 bool renderer::create_sync() {
+        VkDevice device = g_app_driver::thread_safe().device;
+        if (device == VK_NULL_HANDLE) {
+                return false;
+        }
+
         VkSemaphoreCreateInfo semaphore_cinf{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
         VkFenceCreateInfo fence_cinf{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
         fence_cinf.flags = VK_FENCE_CREATE_SIGNALED_BIT;
@@ -1043,6 +866,7 @@ bool renderer::create_sync() {
 }
 
 void renderer::destroy_sync() {
+        VkDevice device = g_app_driver::thread_safe().device;
         if (device == VK_NULL_HANDLE) {
                 return;
         }
@@ -1072,6 +896,11 @@ void renderer::recreate_swapchain() {
         }
 
         if (w == 0 || h == 0) {
+                return;
+        }
+
+        VkDevice device = g_app_driver::thread_safe().device;
+        if (device == VK_NULL_HANDLE) {
                 return;
         }
 

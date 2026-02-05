@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "g_app_driver.h"
 #include "../graphic_libs.h"
 #include "glm/glm.hpp"
 
@@ -8,6 +9,7 @@
 namespace ray::graphics {
 
 #if RAY_GRAPHICS_ENABLE
+
 
 class renderer {
 public:
@@ -30,14 +32,8 @@ private:
         bool create();
         void destroy();
 
-        bool create_instance();
-        void destroy_instance();
-
         bool create_surface();
         void destroy_surface();
-
-        bool create_device();
-        void destroy_device();
 
         bool create_swapchain();
         void destroy_swapchain();
@@ -68,17 +64,18 @@ private:
 private:
         std::weak_ptr<GLFWwindow> gl_window;
 
-        VkInstance instance = VK_NULL_HANDLE; // move to outer instance
+        std::shared_ptr<g_app_driver::driver_handler> driver_lifetime;
+        //VkInstance instance = VK_NULL_HANDLE; // move to outer instance
         VkSurfaceKHR surface = VK_NULL_HANDLE;
 
-        VkPhysicalDevice physical = VK_NULL_HANDLE; // move to outer instance
-        VkDevice device = VK_NULL_HANDLE; // move to outer instance
+        //VkPhysicalDevice physical = VK_NULL_HANDLE; // move to outer instance
+        //VkDevice device = VK_NULL_HANDLE; // move to outer instance
 
-        glm::u32 gfx_family = UINT32_MAX;
-        glm::u32 present_family = UINT32_MAX;
+        //glm::u32 gfx_family = UINT32_MAX;
+        //glm::u32 present_family = UINT32_MAX;
 
-        VkQueue gfx_queue = VK_NULL_HANDLE;
-        VkQueue present_queue = VK_NULL_HANDLE;
+        //VkQueue gfx_queue = VK_NULL_HANDLE;
+        //VkQueue present_queue = VK_NULL_HANDLE;
 
         VkSwapchainKHR swapchain = VK_NULL_HANDLE;
         VkFormat swapchain_format = VK_FORMAT_UNDEFINED;
