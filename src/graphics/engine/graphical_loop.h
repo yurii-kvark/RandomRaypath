@@ -1,14 +1,18 @@
 ﻿#pragma once
-#include <memory>
+#include "config/client_renderer.h"
+
 #include <thread>
 
 
 namespace ray::graphics {
-/*
+
+#if RAY_GRAPHICS_ENABLE
 class async_graphical_loop {
 public:
-        async_graphical_loop();
+        async_graphical_loop(config::client_renderer in_config);
         ~async_graphical_loop();
+
+        bool is_alive() const;
 
         void signal_terminate();
         void wait_blocking();
@@ -20,16 +24,8 @@ public:
         async_graphical_loop& operator=(async_graphical_loop&&) noexcept = default;
 
 private:
-        struct state {
-                void init();
-                void blocking_work();
-
-                std::shared_ptr<renderer> renderer_instance; // ownner
-                std::shared_ptr<window> window_instance; // ownner
-        };
-
-        std::shared_ptr<state> st;
-        std::thread worker_t;
-};*/
+        std::jthread worker_t;
+};
+#endif
 };
 

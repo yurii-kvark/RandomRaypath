@@ -1,6 +1,7 @@
 ﻿#include "window.h"
 
 #include <iostream>
+#include <mutex>
 #include <print>
 
 using namespace ray;
@@ -17,17 +18,30 @@ struct glfw_window_deleter {
 };
 
 
-window::window(const config& in_config) {
-        used_config = in_config;
+struct glfw_runtime_init {
+        glfw_runtime_init() {
+                static std::once_flag once;
+                static bool ok = false;
+
+                std::call_once(once, [] {
+                    ok = (glfwInit() == GLFW_TRUE);
+                });
+
+                if (!ok) {
+                        std::printf("glfwInit failed.\n");
+                        return;
+                }
+        }
+};
+
+window::window(const config& in_config)
+        : used_config(in_config) {
 
         if (!used_config.graphics_window_enabled) {
                 return;
         }
 
-        if (!glfwInit()) {
-                std::printf("glfwInit failed.\n");
-                return;
-        }
+        glfw_runtime_init {};
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_POSITION_X, used_config.window_position.x);
@@ -55,38 +69,44 @@ window::window(const config& in_config) {
         }
 
         gl_win = std::shared_ptr<GLFWwindow>( gl_win_ptr, glfw_window_deleter {} );
-        renderer_instance = std::make_unique<renderer>(gl_win);
 }
 
 
-void window::blocking_loop() {
+bool window::draw_window(bool& out_valid_view) {
+        out_valid_view = false;
+
         if (!gl_win) {
-                return;
+                return false;
         }
 
-        if (!renderer_instance) {
-                return;
+        if (glfwWindowShouldClose(gl_win.get())) {
+                return false;
         }
 
-        while (!glfwWindowShouldClose(gl_win.get())) {
-                int w = 0;
-                int h = 0;
-                glfwGetFramebufferSize(gl_win.get(), &w, &h);
+        {
+                int width, height = 0;
+                glfwGetFramebufferSize(gl_win.get(), &width, &height);
 
-                if (w == 0 || h == 0) {
+                if (width == 0 || height == 0) {
                         glfwWaitEvents();
-                        continue;
+                        return true;
                 }
-
-                glfwPollEvents();
-                renderer_instance->draw_frame();
         }
+
+        glfwPollEvents();
+
+        out_valid_view = true;
+
+        return true;
+}
+
+std::weak_ptr<GLFWwindow> window::get_gl_window() const {
+        return gl_win;
 }
 
 
 window::~window() {
-        renderer_instance.reset();
         gl_win.reset();
-        glfwTerminate();
+        // glfwTerminate(); OS will handle it on close
 }
 #endif

@@ -34,11 +34,16 @@ public:
         window(window&&) noexcept = default;
         window& operator=(window&&) noexcept = default;
 
-        void blocking_loop();
+        bool draw_window(bool& out_valid_view);
+
+        [[nodiscard]]
+        std::weak_ptr<GLFWwindow> get_gl_window() const;
+
+        [[nodiscard]]
+        GLFWwindow* get_gl_window_raw() const;
 
 private:
         config used_config;
-        std::shared_ptr<renderer> renderer_instance; // ownner
         std::shared_ptr<GLFWwindow> gl_win;
 #endif
 };

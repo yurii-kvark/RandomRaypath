@@ -5,6 +5,7 @@
 #include <cstring>
 #include <fstream>
 #include <chrono>
+#include <mutex>
 #include <set>
 
 
@@ -12,6 +13,21 @@ using namespace ray;
 using namespace ray::graphics;
 
 #if RAY_GRAPHICS_ENABLE
+
+struct volk_runtime_init {
+        volk_runtime_init() {
+                static std::once_flag once;
+                static VkResult status = VK_NOT_READY;
+
+                std::call_once(once, [] {
+                    status = volkInitialize();
+                });
+
+                if (status != VK_SUCCESS) {
+                        std::println("renderer: no Vulkan runtime (missing vulkan-1.dll / libvulkan.so)");
+                }
+        }
+};
 
 static uint64_t now_ticks_ns() {
         return (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -27,10 +43,7 @@ renderer::renderer(std::weak_ptr<GLFWwindow> basis_win)
                 return;
         }
 
-        if (volkInitialize() != VK_SUCCESS) {
-                std::println("renderer: no Vulkan runtime (missing vulkan-1.dll / libvulkan.so)");
-                return;
-        }
+        volk_runtime_init {};
 
         const bool success_creation = create();
         if (!success_creation) {
@@ -46,9 +59,9 @@ renderer::~renderer() {
 }
 
 
-void renderer::draw_frame() {
+bool renderer::draw_frame() {
         if (!device || !swapchain || !pipeline) {
-                return;
+                return false;
         }
 
         if (frame_submitted[frame_index]) {
@@ -63,7 +76,7 @@ void renderer::draw_frame() {
                 if (acquire == VK_ERROR_OUT_OF_DATE_KHR) {
                         recreate_swapchain();
                 }
-                return;
+                return false;
         }
 
         VkCommandBuffer command_buffer = cmd[frame_index];
@@ -178,6 +191,8 @@ void renderer::draw_frame() {
         vkQueuePresentKHR(present_queue, &present_info);
 
         frame_index = (frame_index + 1) % k_frames_in_flight;
+
+        return true;
 }
 
 

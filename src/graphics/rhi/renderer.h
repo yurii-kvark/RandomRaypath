@@ -19,7 +19,7 @@ public:
         renderer(renderer&&) noexcept = default;
         renderer& operator=(renderer&&) noexcept = default;
 
-        void draw_frame();
+        bool draw_frame();
 
 private:
         struct vertex {
