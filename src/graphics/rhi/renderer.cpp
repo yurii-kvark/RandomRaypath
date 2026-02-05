@@ -76,7 +76,7 @@ bool renderer::draw_frame() {
                 if (acquire == VK_ERROR_OUT_OF_DATE_KHR) {
                         recreate_swapchain();
                 }
-                return false;
+                return true;
         }
 
         VkCommandBuffer command_buffer = cmd[frame_index];
@@ -682,11 +682,7 @@ void renderer::destroy_swapchain() {
         }
         swapchain_image_views.resize(0);
 
-        for (auto& image : swapchain_images) {
-                if (image != VK_NULL_HANDLE) {
-                        vkDestroyImage(device, image, nullptr);
-                }
-        }
+        // Swapchain images are owned by the swapchain and must not be destroyed manually.
         swapchain_images.resize(0);
 
         if (swapchain != VK_NULL_HANDLE) {

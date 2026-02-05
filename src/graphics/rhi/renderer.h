@@ -68,11 +68,11 @@ private:
 private:
         std::weak_ptr<GLFWwindow> gl_window;
 
-        VkInstance instance = VK_NULL_HANDLE;
+        VkInstance instance = VK_NULL_HANDLE; // move to outer instance
         VkSurfaceKHR surface = VK_NULL_HANDLE;
 
-        VkPhysicalDevice physical = VK_NULL_HANDLE;
-        VkDevice device = VK_NULL_HANDLE;
+        VkPhysicalDevice physical = VK_NULL_HANDLE; // move to outer instance
+        VkDevice device = VK_NULL_HANDLE; // move to outer instance
 
         glm::u32 gfx_family = UINT32_MAX;
         glm::u32 present_family = UINT32_MAX;
