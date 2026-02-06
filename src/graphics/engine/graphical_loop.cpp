@@ -1,5 +1,6 @@
 ﻿#include "graphical_loop.h"
 
+#include "scene_logic.h"
 #include "graphics/window/window.h"
 #include "graphics/rhi/renderer.h"
 
@@ -14,10 +15,15 @@ struct render_thread {
 
         void operator()(std::stop_token stop_t) const {
                 window win(cfg.window);
-                renderer rend(win.get_gl_window()); // raw pointer, non-owning
+                renderer rend(win.get_gl_window());
+                scene_logic logic;
 
                 while (!stop_t.stop_requested()) {
                         if (!tick(win, rend)) {
+                                break;
+                        }
+
+                        if (!logic.tick(win, rend)) {
                                 break;
                         }
                 }

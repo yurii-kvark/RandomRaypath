@@ -11,6 +11,7 @@ namespace ray::graphics {
 #if RAY_GRAPHICS_ENABLE
 
 
+
 class renderer {
 public:
         renderer(std::weak_ptr<GLFWwindow> basis_win);
@@ -38,9 +39,6 @@ private:
         bool create_swapchain();
         void destroy_swapchain();
 
-        bool create_render_pass();
-        void destroy_render_pass();
-
         bool create_pipeline();
         void destroy_pipeline();
 
@@ -65,17 +63,7 @@ private:
         std::weak_ptr<GLFWwindow> gl_window;
 
         std::shared_ptr<g_app_driver::driver_handler> driver_lifetime;
-        //VkInstance instance = VK_NULL_HANDLE; // move to outer instance
         VkSurfaceKHR surface = VK_NULL_HANDLE;
-
-        //VkPhysicalDevice physical = VK_NULL_HANDLE; // move to outer instance
-        //VkDevice device = VK_NULL_HANDLE; // move to outer instance
-
-        //glm::u32 gfx_family = UINT32_MAX;
-        //glm::u32 present_family = UINT32_MAX;
-
-        //VkQueue gfx_queue = VK_NULL_HANDLE;
-        //VkQueue present_queue = VK_NULL_HANDLE;
 
         VkSwapchainKHR swapchain = VK_NULL_HANDLE;
         VkFormat swapchain_format = VK_FORMAT_UNDEFINED;
@@ -84,8 +72,6 @@ private:
         std::vector<VkImage> swapchain_images;
         glm::u32 swapchain_image_count = 0;
         std::vector<VkImageView> swapchain_image_views;
-
-        VkRenderPass render_pass = VK_NULL_HANDLE;
 
         VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
         VkPipeline pipeline = VK_NULL_HANDLE;

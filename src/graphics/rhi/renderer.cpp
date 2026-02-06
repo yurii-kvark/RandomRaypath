@@ -210,10 +210,6 @@ bool renderer::create() {
                 return false;
         }
 
-        if (!create_render_pass()) {
-                return false;
-        }
-
         if (!create_pipeline()) {
                 return false;
         }
@@ -243,7 +239,6 @@ void renderer::destroy() {
         destroy_commands();
         destroy_buffers();
         destroy_pipeline();
-        destroy_render_pass();
         destroy_swapchain();
         destroy_surface();
 }
@@ -468,62 +463,6 @@ void renderer::destroy_swapchain() {
 }
 
 
-bool renderer::create_render_pass() {
-        VkDevice device = g_app_driver::thread_safe().device;
-
-        if (device == VK_NULL_HANDLE) {
-                return false;
-        }
-
-        VkAttachmentDescription color_attachment_desc {};
-        color_attachment_desc.format = swapchain_format;
-        color_attachment_desc.samples = VK_SAMPLE_COUNT_1_BIT;
-        color_attachment_desc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        color_attachment_desc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        color_attachment_desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        color_attachment_desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        color_attachment_desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        color_attachment_desc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-        VkAttachmentReference color_attachment_ref{};
-        color_attachment_ref.attachment = 0;
-        color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        VkSubpassDescription subpass_desc{};
-        subpass_desc.colorAttachmentCount = 1;
-        subpass_desc.pColorAttachments = &color_attachment_ref;
-        subpass_desc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-
-        VkSubpassDependency subpass_dep{};
-        subpass_dep.srcSubpass = VK_SUBPASS_EXTERNAL;
-        subpass_dep.dstSubpass = 0;
-        subpass_dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        subpass_dep.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        subpass_dep.srcAccessMask = 0;
-        subpass_dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-        VkRenderPassCreateInfo render_pass_cinf{};
-        render_pass_cinf.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        render_pass_cinf.attachmentCount = 1;
-        render_pass_cinf.pAttachments = &color_attachment_desc;
-        render_pass_cinf.subpassCount = 1;
-        render_pass_cinf.pSubpasses = &subpass_desc;
-        render_pass_cinf.dependencyCount = 1;
-        render_pass_cinf.pDependencies = &subpass_dep;
-
-        return vkCreateRenderPass(device, &render_pass_cinf, nullptr, &render_pass) == VK_SUCCESS;
-}
-
-
-void renderer::destroy_render_pass() {
-        VkDevice device = g_app_driver::thread_safe().device;
-
-        if (device != VK_NULL_HANDLE && render_pass != VK_NULL_HANDLE) {
-                vkDestroyRenderPass(device, render_pass, nullptr);
-        }
-}
-
-
 VkShaderModule renderer::create_shader_module_from_file(const char* path) {
         std::ifstream file(path, std::ios::binary | std::ios::ate);
         if (!file) {
@@ -659,7 +598,8 @@ bool renderer::create_pipeline() {
         pipeline_create_info.pMultisampleState = &multisample_state_cinf;
         pipeline_create_info.pColorBlendState = &color_blend_state_cinf;
         pipeline_create_info.pDynamicState = &dynamic_state_cinf;
-        pipeline_create_info.renderPass = render_pass;
+        pipeline_create_info.renderPass = VK_NULL_HANDLE;
+        pipeline_create_info.subpass = 0;
         pipeline_create_info.layout = pipeline_layout;
 
         const auto result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipeline_create_info, nullptr, &pipeline);
@@ -910,13 +850,9 @@ void renderer::recreate_swapchain() {
         destroy_commands();
         destroy_buffers();
         destroy_pipeline();
-        destroy_render_pass();
         destroy_swapchain();
 
         if (!create_swapchain()) {
-                return;
-        }
-        if (!create_render_pass()) {
                 return;
         }
         if (!create_pipeline()) {
