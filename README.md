@@ -1,4 +1,4 @@
-Random Raypath
+Random Raypath Project
 
 Random Raypath is a high-performance C++23 project built around an optimized Vulkan renderer (Linux + Windows) 
 for interactive visualizing multi-ray paths through a heterogeneous-environment simulation. 
@@ -19,5 +19,7 @@ network distribution - 0%
 multithread computation - 0%.
 
 Simulation reference:
+
 https://www.youtube.com/watch?v=UNCNp1tBqKY
+
 https://www.youtube.com/watch?v=7Cc08CGDKNY
