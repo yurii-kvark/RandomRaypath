@@ -24,10 +24,24 @@ public:
         }
 
         template<class Pipeline>
-        pipeline_handle<Pipeline> create_pipeline() {
-                auto pipe = std::make_shared<Pipeline>(draw_object_index_pool, swapchain_format, resolution);
+        pipeline_handle<Pipeline> create_pipeline(glm::u32 render_priority = 0) {
+                pipeline_arguments args {
+                        .index_pool = draw_object_index_pool,
+                        .swapchain_format = swapchain_format,
+                        .resolution = resolution,
+                        .render_order = render_priority
+                };
+                auto pipe = std::make_shared<Pipeline>(args);
 
-                pipe_instances.emplace_back(std::move(pipe));
+                // binary search
+                auto found_pipe_it = std::lower_bound(
+                    pipe_instances.begin(), pipe_instances.end(), render_priority,
+                    [](const std::shared_ptr<i_pipeline>& pipe, glm::u32 value) {
+                        return pipe->get_render_order() < value;
+                    }
+                );
+
+                pipe_instances.emplace(found_pipe_it, std::move(pipe));
 
                 auto handle = pipeline_handle<Pipeline>();
                 handle.obj_ptr = pipe_instances.back();

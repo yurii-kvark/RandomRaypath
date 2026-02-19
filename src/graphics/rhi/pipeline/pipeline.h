@@ -77,6 +77,12 @@ concept ValidPipelineDataModel = requires {
         requires std::derived_from<typename PipeLine::draw_obj_model_t, i_pipeline_data_model::draw_obj>;
 };
 
+struct pipeline_arguments {
+        std::weak_ptr<index_pool> index_pool;
+        VkFormat swapchain_format;
+        glm::uvec2 resolution;
+        glm::u32 render_order = 0;
+};
 
 class i_pipeline {
 public:
@@ -85,8 +91,11 @@ public:
 
         i_pipeline() = delete;
 
-        i_pipeline(std::weak_ptr<index_pool> in_index_pool, VkFormat in_swapchain_format, glm::uvec2 in_resolution)
-                : obj_index_pool(std::move(in_index_pool)), swapchain_format(in_swapchain_format), resolution(in_resolution) {}
+        i_pipeline(pipeline_arguments in_args)
+                : obj_index_pool(std::move(in_args.index_pool))
+                , swapchain_format(in_args.swapchain_format)
+                , resolution(in_args.resolution)
+                , pipe_render_order(in_args.render_order) {}
         virtual ~i_pipeline() = default;
 
         virtual void draw_commands(VkCommandBuffer command_buffer, glm::u32 frame_index) = 0;
@@ -114,6 +123,9 @@ public:
                 return static_cast<PipeLine::draw_obj_model_t*>(get_draw_data(obj_id));
         }
 
+        glm::u32 get_render_order() {
+                return pipe_render_order;
+        }
 protected:
         virtual i_pipeline_data_model::pipeline* get_pipeline_data() = 0;
         virtual i_pipeline_data_model::draw_obj* get_draw_data(draw_obj_handle_id& obj_id) = 0;
@@ -123,6 +135,7 @@ protected:
         std::weak_ptr<index_pool> obj_index_pool;
         VkFormat swapchain_format = VK_FORMAT_UNDEFINED;
         glm::uvec2 resolution = glm::uvec2(1);
+        glm::u32 pipe_render_order = 0;
 };
 
 
