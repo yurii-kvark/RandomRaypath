@@ -32,8 +32,8 @@ public:
         std::vector<pipeline_handle<object_2d_pipeline<>>> world_pipelines;
 
         draw_obj_handle<rainbow_rect_pipeline> rainbow_1_screen;
-        draw_obj_handle<rainbow_rect_pipeline> rainbow_2_world;
-        draw_obj_handle<solid_rect_pipeline> rect_3_dyn_screen;
+        draw_obj_handle<rainbow_rect_pipeline> rainbow_2_screen;
+        draw_obj_handle<solid_rect_pipeline> rect_3_dyn_world;
         draw_obj_handle<solid_rect_pipeline> rect_4_dyn_world;
         draw_obj_handle<solid_rect_pipeline> rect_5_world;
 

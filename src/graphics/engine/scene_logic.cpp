@@ -57,8 +57,8 @@ scene_logic::scene_logic(window& win, renderer& rend) {
         world_pipelines.push_back(rect_pipeline);
 
         rainbow_1_screen = rend.pipe.create_draw_obj<rainbow_rect_pipeline>(rainbow_pipeline);
-        rainbow_2_world = rend.pipe.create_draw_obj<rainbow_rect_pipeline>(rainbow_pipeline);
-        rect_3_dyn_screen = rend.pipe.create_draw_obj<solid_rect_pipeline>(rect_pipeline);
+        rainbow_2_screen = rend.pipe.create_draw_obj<rainbow_rect_pipeline>(rainbow_pipeline);
+        rect_3_dyn_world = rend.pipe.create_draw_obj<solid_rect_pipeline>(rect_pipeline);
         rect_4_dyn_world = rend.pipe.create_draw_obj<solid_rect_pipeline>(rect_pipeline);
         rect_5_world = rend.pipe.create_draw_obj<solid_rect_pipeline>(rect_pipeline);
 
@@ -69,14 +69,14 @@ scene_logic::scene_logic(window& win, renderer& rend) {
                 rainbow_1_screen_data->color = ray_colors::cyan;
         }
 
-        if (auto rainbow_2_world_data = rend.pipe.access_draw_obj_data(rainbow_2_world)) {
+        if (auto rainbow_2_world_data = rend.pipe.access_draw_obj_data(rainbow_2_screen)) {
                 rainbow_2_world_data->space_basis = e_space_type::screen;
                 rainbow_2_world_data->z_order = 200;
                 rainbow_2_world_data->transform = glm::vec4(0, -10, 80, 80);
                 rainbow_2_world_data->color = ray_colors::navy;
         }
 
-        if (auto rect_3_dyn_screen_data = rend.pipe.access_draw_obj_data(rect_3_dyn_screen)) {
+        if (auto rect_3_dyn_screen_data = rend.pipe.access_draw_obj_data(rect_3_dyn_world)) {
                 rect_3_dyn_screen_data->space_basis = e_space_type::world;
                 rect_3_dyn_screen_data->z_order = 3;
                 transform_dyn_3 = glm::vec4(200, 100, 200, 100);
