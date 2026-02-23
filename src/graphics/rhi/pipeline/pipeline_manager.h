@@ -43,10 +43,10 @@ public:
                     }
                 );
 
-                pipe_instances.emplace(found_pipe_it, std::move(pipe));
+                auto inserted_pipe_it = pipe_instances.emplace(found_pipe_it, pipe);
 
                 auto handle = pipeline_handle<Pipeline>();
-                handle.obj_ptr = pipe_instances.back();
+                handle.obj_ptr = *inserted_pipe_it;
                 return handle;
         }
 

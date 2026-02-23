@@ -71,7 +71,7 @@ scene_logic::scene_logic(window& win, renderer& rend) {
         }
 
         if (auto rainbow_2_world_data = rend.pipe.access_draw_obj_data(rainbow_2_screen)) {
-                rainbow_2_world_data->space_basis = e_space_type::screen;
+                rainbow_2_world_data->space_basis = e_space_type::world;
                 rainbow_2_world_data->z_order = 200;
                 rainbow_2_world_data->transform = glm::vec4(0, -10, 80, 80);
                 rainbow_2_world_data->color = ray_colors::navy;
@@ -86,7 +86,7 @@ scene_logic::scene_logic(window& win, renderer& rend) {
         }
 
         if (auto rect_4_dyn_world_data = rend.pipe.access_draw_obj_data(rect_4_dyn_world)) {
-                rect_4_dyn_world_data->space_basis = e_space_type::world;
+                rect_4_dyn_world_data->space_basis = e_space_type::screen;
                 rect_4_dyn_world_data->z_order = 4;
                 transform_dyn_4 = glm::vec4(470, 120, 150, 150);
                 rect_4_dyn_world_data->transform = transform_dyn_4;
