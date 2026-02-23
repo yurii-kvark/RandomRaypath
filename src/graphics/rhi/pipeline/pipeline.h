@@ -98,6 +98,7 @@ public:
                 , pipe_render_order(in_args.render_order) {}
         virtual ~i_pipeline() = default;
 
+        virtual void construct_pipeline() = 0;
         virtual void draw_commands(VkCommandBuffer command_buffer, glm::u32 frame_index) = 0;
         virtual void update_swapchain(VkFormat swapchain_format, glm::uvec2 resolution) = 0;
 

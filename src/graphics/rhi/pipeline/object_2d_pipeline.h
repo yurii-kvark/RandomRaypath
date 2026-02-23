@@ -3,6 +3,7 @@
 #include "graphics/rhi/g_app_driver.h"
 
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <print>
 
@@ -38,6 +39,22 @@ struct object_2d_pipeline_data_model {
                         return glm::u32(z_order) | space_type_bit;
                 }
         };
+
+        // std140
+        struct alignas(16) pipe2d_frame_ubo {
+                glm::u32 time_ms = 0;
+                glm::u32 _pad0 = 0, _pad1 = 0, _pad2 = 0;
+                glm::vec4 camera_transform_ndc = glm::vec4(0,0,1,0);
+        };
+
+        // std430
+        struct alignas(16) pipe2d_draw_obj_ssbo {
+                glm::vec4 transform_ndc = {}; // x_ndc, y_ndc, w_ndc, h_ndc
+                glm::vec4 color = {};
+                glm::u32 render_order = 0;
+                glm::u32 space_basis = 0;
+                glm::u32 _pad0 = 0, _pad1 = 0;
+        };
 };
 
 // TODO: texture_pipeline, text_pipeline, raypath_pipeline
@@ -46,40 +63,31 @@ class object_2d_pipeline : public base_pipeline<PipelineDataModel> {
 public:
         static constexpr glm::u32 k_init_graphic_object_capacity = 64;
 
-        object_2d_pipeline(pipeline_arguments in_args);
+        using base_pipeline<PipelineDataModel>::base_pipeline;
         virtual ~object_2d_pipeline() override;
 
+        virtual void construct_pipeline() override;
         virtual void draw_commands(VkCommandBuffer in_command_buffer, glm::u32 frame_index) override;
         virtual void update_swapchain(VkFormat in_swapchain_format, glm::uvec2 resolution) override;
 
 protected:
-        struct alignas(16) pipe_frame_ubo {
-                glm::u32 time_ms = 0;
-                glm::u32 _pad0 = 0, _pad1 = 0, _pad2 = 0;
-                glm::vec4 camera_transform_ndc = glm::vec4(0,0,1,0);
-        };
-        static_assert(sizeof(pipe_frame_ubo) % 16 == 0);
+        using frame_ubo_t = PipelineDataModel::pipe2d_frame_ubo;
+        static_assert(sizeof(frame_ubo_t) % 16 == 0);
 
-        struct pipe_frame_ubo_gpu {
+        using draw_obj_ssbo_t = PipelineDataModel::pipe2d_draw_obj_ssbo;
+        static_assert(sizeof(draw_obj_ssbo_t) % 16 == 0);
+
+        struct frame_ubo_gpu {
                 VkBuffer buffer = VK_NULL_HANDLE;
                 VkDeviceMemory memory = VK_NULL_HANDLE;
-                void* mapped = nullptr; // pipe_frame_ubo
+                void* mapped = nullptr; // frame_ubo_t
                 bool in_flight_data_valid = false;
         };
-
-        struct alignas(16) draw_obj_ssbo_item {
-                glm::vec4 transform_ndc = {}; // x_ndc, y_ndc, w_ndc, h_ndc
-                glm::vec4 color = {};
-                glm::u32 render_order = 0;
-                glm::u32 space_basis = 0;
-                glm::u32 _pad0 = 0, _pad1 = 0;
-        };
-        static_assert(sizeof(draw_obj_ssbo_item) % 16 == 0);
 
         struct draw_obj_ssbo_gpu {
                 VkBuffer buffer = VK_NULL_HANDLE;
                 VkDeviceMemory memory = VK_NULL_HANDLE;
-                void* mapped = nullptr; // draw_obj_ssbo_item[]
+                void* mapped = nullptr; // draw_obj_ssbo_t[]
                 glm::u32 capacity = 0;  // must be in frames_in_flight sync
                 std::vector<glm::uint8> in_flight_data_valid {};
         };
@@ -95,6 +103,9 @@ protected:
         virtual draw_obj_handle_id add_new_draw_obj() override;
         virtual void remove_draw_obj(draw_obj_handle_id to_remove) override;
 
+        virtual std::filesystem::path get_vertex_shader_path() const;
+        virtual std::filesystem::path get_fragment_shader_path() const;
+
         void init_pipeline();
         void destroy_pipeline();
 
@@ -104,7 +115,7 @@ protected:
         glm::u32 find_memory_type(glm::u32 typeBits, VkMemoryPropertyFlags props);
         bool create_buffer(VkDeviceSize size, VkBufferUsageFlags usage,
                 VkMemoryPropertyFlags props, VkBuffer& outBuf, VkDeviceMemory& outMem, VkDevice device);
-        VkShaderModule create_shader_module_from_file(const char* path);
+        VkShaderModule create_shader_module_from_file(std::filesystem::path path);
 
         void create_buffers();
         void destroy_buffers();
@@ -134,23 +145,22 @@ protected:
         VkBuffer vk_idx_buf = VK_NULL_HANDLE;
         VkDeviceMemory vk_idx_mem = VK_NULL_HANDLE;
 
-        std::array<pipe_frame_ubo_gpu, g_app_driver::k_frames_in_flight> pipe_frame_ubos_data {};
+        std::array<frame_ubo_gpu, g_app_driver::k_frames_in_flight> pipe_frame_ubos_data {};
         std::array<draw_obj_ssbo_gpu, g_app_driver::k_frames_in_flight> draw_ssbos_data {};
 };
-
-
-template<class PipelineDataModel>
-object_2d_pipeline<PipelineDataModel>::object_2d_pipeline(pipeline_arguments in_args)
-        : base_pipeline<PipelineDataModel>(in_args) {
-        create_buffers();
-        init_pipeline();
-}
 
 
 template<class PipelineDataModel>
 object_2d_pipeline<PipelineDataModel>::~object_2d_pipeline() {
         destroy_pipeline();
         destroy_buffers();
+}
+
+
+template<class PipelineDataModel>
+void object_2d_pipeline<PipelineDataModel>::construct_pipeline() {
+        create_buffers();
+        init_pipeline();
 }
 
 
@@ -178,7 +188,7 @@ void object_2d_pipeline<PipelineDataModel>::draw_commands(VkCommandBuffer in_com
                 pipe_frame_ubos_data[frame_index].in_flight_data_valid = true;
                 this->pipe_data.need_update = false;
 
-                pipe_frame_ubo* ubo_low_obj = reinterpret_cast<pipe_frame_ubo*>(pipe_frame_ubos_data[frame_index].mapped);
+                frame_ubo_t* ubo_low_obj = reinterpret_cast<frame_ubo_t*>(pipe_frame_ubos_data[frame_index].mapped);
                 ubo_low_obj->time_ms = this->pipe_data.time_ms;
                 ubo_low_obj->camera_transform_ndc = this->pipe_data.camera_transform;
                 ubo_low_obj->camera_transform_ndc.x /= this->resolution.x;
@@ -191,7 +201,7 @@ void object_2d_pipeline<PipelineDataModel>::draw_commands(VkCommandBuffer in_com
                 render_order_dirty = false;
         }
 
-        draw_obj_ssbo_item* ssbo_low_obj_arr = reinterpret_cast<draw_obj_ssbo_item*>(draw_ssbos_data[frame_index].mapped);
+        draw_obj_ssbo_t* ssbo_low_obj_arr = reinterpret_cast<draw_obj_ssbo_t*>(draw_ssbos_data[frame_index].mapped);
         for (size_t i = 0; i < render_order.size(); ++i) {
                 auto& render_entry = render_order[i];
                 auto& draw_data = this->draw_obj_data[render_entry.index];
@@ -213,7 +223,7 @@ void object_2d_pipeline<PipelineDataModel>::draw_commands(VkCommandBuffer in_com
                 const bool dirty_order = draw_data.get_render_order() != render_entry.render_order;
                 render_order_dirty |= !dirty_update && dirty_order;
 
-                draw_obj_ssbo_item& ssbo_low_obj = ssbo_low_obj_arr[i];
+                draw_obj_ssbo_t& ssbo_low_obj = ssbo_low_obj_arr[i];
 
                 ssbo_low_obj.color = draw_data.color;
                 ssbo_low_obj.render_order = draw_data.get_render_order();
@@ -316,6 +326,15 @@ void object_2d_pipeline<PipelineDataModel>::remove_draw_obj(draw_obj_handle_id t
                         }
                 }
         }
+}template<class PipelineDataModel>
+std::filesystem::path object_2d_pipeline<PipelineDataModel>::get_vertex_shader_path() const {
+        return "camera.vert.spv";
+}
+
+
+template<class PipelineDataModel>
+std::filesystem::path object_2d_pipeline<PipelineDataModel>::get_fragment_shader_path() const {
+        return "mono_color.frag.spv";
 }
 
 
@@ -346,14 +365,19 @@ void object_2d_pipeline<PipelineDataModel>::init_pipeline() {
                 return;
         }
 
-        VkShaderModule vert = create_shader_module_from_file("../shaders/camera.vert.spv");
-        VkShaderModule frag = create_shader_module_from_file("../shaders/mono_color.frag.spv");
+        const std::filesystem::path pre_shade_path = "../shaders/";
+
+        const std::filesystem::path vertex_path = pre_shade_path / get_vertex_shader_path();
+        VkShaderModule vert = create_shader_module_from_file(vertex_path.c_str());
+
+        const std::filesystem::path shader_path = pre_shade_path / get_fragment_shader_path();
+        VkShaderModule frag = create_shader_module_from_file(shader_path.c_str());
 
         if (!vert || !frag) {
                 return;
         }
 
-        VkPipelineShaderStageCreateInfo pipeline_stages[2]{};
+        VkPipelineShaderStageCreateInfo pipeline_stages[2] {};
         pipeline_stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         pipeline_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
         pipeline_stages[0].module = vert;
@@ -541,7 +565,7 @@ void object_2d_pipeline<PipelineDataModel>::init_descriptor_sets(VkDevice device
                 VkDescriptorBufferInfo buf_info {};
                 buf_info.buffer = pipe_frame_ubos_data[i].buffer;
                 buf_info.offset = 0;
-                buf_info.range  = sizeof(pipe_frame_ubo);
+                buf_info.range  = sizeof(frame_ubo_t);
 
                 VkDescriptorBufferInfo ssbo_info {};
                 ssbo_info.buffer = draw_ssbos_data[i].buffer;
@@ -650,10 +674,11 @@ bool object_2d_pipeline<PipelineDataModel>::create_buffer(
 
 
 template<class PipelineDataModel>
-VkShaderModule object_2d_pipeline<PipelineDataModel>::create_shader_module_from_file(const char *path) {
+VkShaderModule object_2d_pipeline<PipelineDataModel>::create_shader_module_from_file(std::filesystem::path path) {
         std::ifstream file(path, std::ios::binary | std::ios::ate);
+
         if (!file) {
-                std::println("object_2d_pipeline: failed to open shader file: {}", path);
+                std::println("object_2d_pipeline: failed to open shader file: {}", path.string());
                 return VK_NULL_HANDLE;
         }
 
@@ -674,7 +699,7 @@ VkShaderModule object_2d_pipeline<PipelineDataModel>::create_shader_module_from_
 
         VkShaderModule mod = VK_NULL_HANDLE;
         if (vkCreateShaderModule(device, &smci, nullptr, &mod) != VK_SUCCESS) {
-                std::println("object_2d_pipeline: vkCreateShaderModule failed: {}", path);
+                std::println("object_2d_pipeline: vkCreateShaderModule failed: {}", path.string());
                 return VK_NULL_HANDLE;
         }
 
@@ -767,7 +792,7 @@ void object_2d_pipeline<PipelineDataModel>::destroy_vertex_buffer(VkDevice devic
 
 template<class PipelineDataModel>
 void object_2d_pipeline<PipelineDataModel>::create_pipe_ubo_buffer(VkDevice device) {
-        VkDeviceSize obj_size = sizeof(pipe_frame_ubo);
+        VkDeviceSize obj_size = sizeof(frame_ubo_t);
 
         for (size_t i = 0; i < pipe_frame_ubos_data.size(); i++)
         {
@@ -822,7 +847,7 @@ template<class PipelineDataModel>
 void object_2d_pipeline<PipelineDataModel>::create_draw_obj_ssbo_buffers(VkDevice device, glm::u32 init_capacity) {
         init_capacity = std::max<glm::u32>(init_capacity, 1u);
 
-        VkDeviceSize buf_size = (VkDeviceSize)init_capacity * (VkDeviceSize)sizeof(draw_obj_ssbo_item);
+        VkDeviceSize buf_size = (VkDeviceSize)init_capacity * (VkDeviceSize)sizeof(draw_obj_ssbo_t);
 
         for (glm::u32 i = 0; i < draw_ssbos_data.size(); ++i) {
                 const bool buff_ok = create_buffer(

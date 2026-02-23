@@ -1,20 +1,14 @@
 ﻿#version 450
-layout(location = 0) in vec2 vUV;
-layout(location = 0) out vec4 outColor;
+layout(location=0) in vec2 vUV;
+layout(location=1) in vec4 vColor;
+layout(location=0) out vec4 outColor;
 
-/*
-layout(push_constant) uniform PC {
-    float time;
-} pc;
-*/
-
-layout(set = 0, binding = 0) uniform pipe_frame_ubo
-{
+layout(set = 0, binding = 0) uniform pipe_frame_ubo {
     int time_ms;
     int _pad0;
     int _pad1;
     int _pad2;
-    vec4 camera_transform;
+    vec4 camera_transform_ndc; // x_px, y_px, scale, 1.0
 } pipe_frame;
 
 
@@ -30,5 +24,5 @@ void main() {
     float hue = fract(vUV.x + 0.15 * sin(time_ticker));
     float scan = 0.8 + 0.2 * sin(vUV.y * 400.0 + time_ticker * 80.0);
     vec3 rgb = hsv2rgb(vec3(hue, 1.0, 1.0)) * scan;
-    outColor = vec4(rgb, 1.0);
+    outColor = vColor * 0.5 + vec4(rgb, 1.0) * 0.5;
 }

@@ -31,7 +31,9 @@ public:
                         .resolution = resolution,
                         .render_order = render_priority
                 };
+
                 auto pipe = std::make_shared<Pipeline>(args);
+                pipe->construct_pipeline();
 
                 // binary search
                 auto found_pipe_it = std::lower_bound(

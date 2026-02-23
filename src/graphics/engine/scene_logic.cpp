@@ -37,6 +37,7 @@ public:
         static constexpr glm::vec4 olive {0.50f, 0.50f, 0.00f, alpha_value};
 };
 
+
 scene_logic::scene_logic(window& win, renderer& rend) {
         last_time_ns = now_ticks_ns();
         last_delta_time_ns = 0;
@@ -108,12 +109,12 @@ bool scene_logic::tick(window& win, renderer& rend) {
                 last_time_ns = curr_time_ns;
 
                 //std::this_thread::sleep_for(std::chrono::milliseconds(50));
-                //if ((last_time_ns % 1'000'000) == 0) {
-                //        std::chrono::duration<glm::u64, std::nano> ns_duration {last_delta_time_ns};
-                //        double sec_duration = std::chrono::duration_cast<std::chrono::duration<double>>(ns_duration).count();
-                //        double fps = 1.f / sec_duration;
-                //        std::println("delta ns: {}, fps: {}", last_delta_time_ns, fps);
-                //}
+                // if ((last_time_ns % 1'000'000) == 0) {
+                //         std::chrono::duration<glm::u64, std::nano> ns_duration {last_delta_time_ns};
+                //         double sec_duration = std::chrono::duration_cast<std::chrono::duration<double>>(ns_duration).count();
+                //         double fps = 1.f / sec_duration;
+                //         std::println("delta ns: {}, fps: {}", last_delta_time_ns, fps);
+                // }
         }
 
         tick_camera_movement(win, rend);
@@ -130,12 +131,12 @@ bool scene_logic::tick(window& win, renderer& rend) {
                 world_data->camera_transform = camera_transform;
         }
 
-        // if (auto rect_3_dyn_screen_data = rend.pipe.access_draw_obj_data(rect_3_dyn_screen)) {
-        //         rect_3_dyn_screen_data->transform = transform_dyn_3;
-        // } else {
-        //         return false;
-        // }
-        //
+        if (auto rect_3_dyn_world_data = rend.pipe.access_draw_obj_data(rect_3_dyn_world)) {
+                rect_3_dyn_world_data->transform = transform_dyn_3 * std::sin((float)last_time_ns / 1'000'000'000 );
+        } else {
+                return false;
+        }
+
         // if (auto rect_4_dyn_world_data = rend.pipe.access_draw_obj_data(rect_4_dyn_world)) {
         //         rect_4_dyn_world_data->transform = transform_dyn_4;
         // } else {

@@ -14,6 +14,9 @@ struct solid_rect_pipeline_data_model {
         struct draw_obj : object_2d_pipeline_data_model::draw_obj {
                // glm::vec4 color {};
         };
+
+        using pipe2d_frame_ubo = object_2d_pipeline_data_model::pipe2d_frame_ubo;
+        using pipe2d_draw_obj_ssbo = object_2d_pipeline_data_model::pipe2d_draw_obj_ssbo;
 };
 
 class solid_rect_pipeline final : public object_2d_pipeline<solid_rect_pipeline_data_model> {
