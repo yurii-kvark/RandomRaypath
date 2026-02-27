@@ -571,13 +571,18 @@ std::vector<VkDescriptorPoolSize> text_msdf_pipeline::generate_pool_sizes(glm::u
 }
 
 
-std::vector<VkWriteDescriptorSet> text_msdf_pipeline::generate_descriptor_sets(const VkDescriptorSet& in_descriptor_set, glm::u32 frame_index) {
-        std::vector<VkWriteDescriptorSet> descriptors = object_2d_pipeline::generate_descriptor_sets(in_descriptor_set, frame_index);
+std::vector<VkWriteDescriptorSet> text_msdf_pipeline::generate_descriptor_sets(
+        const VkDescriptorSet& in_descriptor_set, glm::u32 frame_index,
+        std::list<VkDescriptorBufferInfo>& buf_info_lifetime, std::list<VkDescriptorImageInfo>& img_info_lifetime) {
 
-        VkDescriptorImageInfo image_info {};
-        image_info.sampler = atlas_sampler;
-        image_info.imageView = atlas_view;
-        image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        std::vector<VkWriteDescriptorSet> descriptors = object_2d_pipeline::generate_descriptor_sets(in_descriptor_set, frame_index, buf_info_lifetime, img_info_lifetime);
+
+        img_info_lifetime.push_back( VkDescriptorImageInfo {
+                .sampler = atlas_sampler,
+                .imageView = atlas_view,
+                .imageLayout = VK_IMAGE_LAYOUT_GENERAL
+        });
+        const auto it_image_info = std::prev(img_info_lifetime.end());
 
         descriptors.push_back( VkWriteDescriptorSet {
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -586,7 +591,7 @@ std::vector<VkWriteDescriptorSet> text_msdf_pipeline::generate_descriptor_sets(c
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
                 .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pImageInfo = &image_info
+                .pImageInfo = &*it_image_info
         });
 
         return descriptors;

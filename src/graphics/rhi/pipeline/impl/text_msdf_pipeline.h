@@ -63,7 +63,9 @@ protected:
 
         virtual std::vector<VkDescriptorSetLayoutBinding> generate_layout_bindings() override;
         virtual std::vector<VkDescriptorPoolSize> generate_pool_sizes(glm::u32 frame_amount) override;
-        virtual std::vector<VkWriteDescriptorSet> generate_descriptor_sets(const VkDescriptorSet& in_descriptor_set, glm::u32 frame_index) override;
+        virtual std::vector<VkWriteDescriptorSet> generate_descriptor_sets(
+                const VkDescriptorSet& in_descriptor_set, glm::u32 frame_index,
+                std::list<VkDescriptorBufferInfo>& buf_info_lifetime, std::list<VkDescriptorImageInfo>& img_info_lifetime) override;
 
         // TODO: move to shared static memory
         VkImage atlas_image = VK_NULL_HANDLE;

@@ -5,6 +5,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <list>
 #include <print>
 
 namespace ray::graphics {
@@ -112,7 +113,9 @@ protected:
 
         virtual std::vector<VkDescriptorSetLayoutBinding> generate_layout_bindings();
         virtual std::vector<VkDescriptorPoolSize> generate_pool_sizes(glm::u32 frame_amount);
-        virtual std::vector<VkWriteDescriptorSet> generate_descriptor_sets(const VkDescriptorSet& in_descriptor_set, glm::u32 frame_index);
+        virtual std::vector<VkWriteDescriptorSet> generate_descriptor_sets(
+                const VkDescriptorSet& in_descriptor_set, glm::u32 frame_index,
+                std::list<VkDescriptorBufferInfo>& buf_info_lifetime, std::list<VkDescriptorImageInfo>& img_info_lifetime);
 
         void init_pipeline();
         void destroy_pipeline();
@@ -378,7 +381,7 @@ void object_2d_pipeline<PipelineDataModel>::init_pipeline() {
                 return;
         }
 
-        const std::filesystem::path pre_shade_path = "../shaders/";
+        const std::filesystem::path pre_shade_path = "../shaders/bins/";
 
         const std::filesystem::path vertex_path = pre_shade_path / get_vertex_shader_path();
         VkShaderModule vert = create_shader_module_from_file(vertex_path.c_str());
@@ -556,9 +559,10 @@ void object_2d_pipeline<PipelineDataModel>::init_descriptor_sets(VkDevice device
                 return;
         }
 
-        for (glm::u32 i = 0; i < vk_descriptor_sets.size(); i++)
-        {
-                std::vector<VkWriteDescriptorSet> writes_sets = generate_descriptor_sets(vk_descriptor_sets[i], i);
+        for (glm::u32 i = 0; i < vk_descriptor_sets.size(); i++) {
+                std::list<VkDescriptorBufferInfo> buf_info_lifetime;
+                std::list<VkDescriptorImageInfo> img_info_lifetime;
+                const std::vector<VkWriteDescriptorSet> writes_sets = generate_descriptor_sets(vk_descriptor_sets[i], i, buf_info_lifetime, img_info_lifetime);
                 vkUpdateDescriptorSets(device, writes_sets.size(), writes_sets.data(), 0, nullptr);
         }
 }
@@ -593,16 +597,21 @@ std::vector<VkDescriptorPoolSize> object_2d_pipeline<PipelineDataModel>::generat
 
 
 template<class PipelineDataModel>
-std::vector<VkWriteDescriptorSet> object_2d_pipeline<PipelineDataModel>::generate_descriptor_sets(const VkDescriptorSet& in_descriptor_set, glm::u32 frame_index) {
-        VkDescriptorBufferInfo buf_info {};
-        buf_info.buffer = pipe_frame_ubos_data[frame_index].buffer;
-        buf_info.offset = 0;
-        buf_info.range  = sizeof(frame_ubo_t);
+std::vector<VkWriteDescriptorSet> object_2d_pipeline<PipelineDataModel>::generate_descriptor_sets(
+        const VkDescriptorSet& in_descriptor_set, glm::u32 frame_index, std::list<VkDescriptorBufferInfo>& buf_info_lifetime, std::list<VkDescriptorImageInfo>& img_info_lifetime) {
+        buf_info_lifetime.push_back( VkDescriptorBufferInfo {
+                .buffer = pipe_frame_ubos_data[frame_index].buffer,
+                .offset = 0,
+                .range = sizeof(frame_ubo_t)
+        });
+        const auto it_frame_ubo = std::prev(buf_info_lifetime.end());
 
-        VkDescriptorBufferInfo ssbo_info {};
-        ssbo_info.buffer = draw_ssbos_data[frame_index].buffer;
-        ssbo_info.offset = 0;
-        ssbo_info.range  = VK_WHOLE_SIZE;
+        buf_info_lifetime.push_back( VkDescriptorBufferInfo {
+                .buffer = draw_ssbos_data[frame_index].buffer,
+                .offset = 0,
+                .range  = VK_WHOLE_SIZE
+        });
+        const auto it_draw_ssbos = std::prev(buf_info_lifetime.end());
 
         return { VkWriteDescriptorSet {
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -611,7 +620,7 @@ std::vector<VkWriteDescriptorSet> object_2d_pipeline<PipelineDataModel>::generat
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
                 .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo = &buf_info
+                .pBufferInfo = &*it_frame_ubo
         }, VkWriteDescriptorSet {
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                 .dstSet = in_descriptor_set,
@@ -619,10 +628,9 @@ std::vector<VkWriteDescriptorSet> object_2d_pipeline<PipelineDataModel>::generat
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
                 .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                .pBufferInfo = &ssbo_info
+                .pBufferInfo = &*it_draw_ssbos
         }};
 }
-
 
 
 template<class PipelineDataModel>

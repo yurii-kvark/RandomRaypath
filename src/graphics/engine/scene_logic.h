@@ -28,8 +28,7 @@ public:
         glm::vec4 transform_dyn_3 = {};
         glm::vec4 transform_dyn_4 = {};
 
-        std::vector<pipeline_handle<base_pipeline<>>> all_pipelines;
-        std::vector<pipeline_handle<object_2d_pipeline<>>> world_pipelines;
+        std::vector<pipeline_handle<object_2d_pipeline<>>> all_pipelines;
 
         draw_obj_handle<rainbow_rect_pipeline> rainbow_1_screen;
         draw_obj_handle<rainbow_rect_pipeline> rainbow_2_screen;
