@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "pipeline.h"
 #include "graphics/rhi/g_app_driver.h"
+#include "utils/ray_log.h"
 
 #include <cstring>
 #include <filesystem>
@@ -361,7 +362,7 @@ void object_2d_pipeline<PipelineDataModel>::init_pipeline() {
         }
 
         if (vk_pipeline_layout != VK_NULL_HANDLE || vk_pipeline != VK_NULL_HANDLE) {
-                std::println("object_2d_pipeline: can't init. vk_pipeline_layout or vk_pipeline init already.");
+                ray_log(e_log_type::fatal, "object_2d_pipeline: can't init. vk_pipeline_layout or vk_pipeline init already.");
                 return;
         }
 
@@ -377,7 +378,7 @@ void object_2d_pipeline<PipelineDataModel>::init_pipeline() {
         pipeline_layout_cinf.pSetLayouts = &vk_descriptor_set_layout;
 
         if (vkCreatePipelineLayout(device, &pipeline_layout_cinf, nullptr, &vk_pipeline_layout) != VK_SUCCESS) {
-                std::println("object_2d_pipeline: vkCreatePipelineLayout failed");
+                ray_log(e_log_type::fatal, "object_2d_pipeline: vkCreatePipelineLayout failed");
                 return;
         }
 
@@ -491,7 +492,7 @@ void object_2d_pipeline<PipelineDataModel>::init_pipeline() {
         vkDestroyShaderModule(device, frag, nullptr);
 
         if (result != VK_SUCCESS) {
-                std::println("object_2d_pipeline: vkCreateGraphicsPipelines failed.");
+                ray_log(e_log_type::fatal, "object_2d_pipeline: vkCreateGraphicsPipelines failed.");
                 return;
         }
 }
@@ -528,7 +529,7 @@ void object_2d_pipeline<PipelineDataModel>::init_descriptor_sets(VkDevice device
 
         VkResult desc_layout_ok = vkCreateDescriptorSetLayout(device, &layout_info, nullptr, &vk_descriptor_set_layout);
         if (desc_layout_ok != VK_SUCCESS) {
-                std::println("object_2d_pipeline: vkCreateDescriptorSetLayout failed.");
+                ray_log(e_log_type::fatal, "object_2d_pipeline: vkCreateDescriptorSetLayout failed.");
                 return;
         }
 
@@ -543,7 +544,7 @@ void object_2d_pipeline<PipelineDataModel>::init_descriptor_sets(VkDevice device
 
         VkResult desc_pool_ok = vkCreateDescriptorPool(device, &pool_info, nullptr, &vk_descriptor_pool);
         if (desc_pool_ok != VK_SUCCESS) {
-                std::println("object_2d_pipeline: vkCreateDescriptorPool failed.");
+                ray_log(e_log_type::fatal, "object_2d_pipeline: vkCreateDescriptorPool failed.");
                 return;
         }
 
@@ -555,7 +556,7 @@ void object_2d_pipeline<PipelineDataModel>::init_descriptor_sets(VkDevice device
 
         VkResult desc_alloc_ok = vkAllocateDescriptorSets(device, &alloc_info, vk_descriptor_sets.data());
         if (desc_alloc_ok != VK_SUCCESS) {
-                std::println("object_2d_pipeline: vkAllocateDescriptorSets failed.");
+                ray_log(e_log_type::fatal, "object_2d_pipeline: vkAllocateDescriptorSets failed.");
                 return;
         }
 
@@ -683,7 +684,7 @@ bool object_2d_pipeline<PipelineDataModel>::create_buffer(
         bci.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
         if (vkCreateBuffer(device, &bci, nullptr, &outBuf) != VK_SUCCESS) {
-                std::println("object_2d_pipeline: vkCreateBuffer failed");
+                ray_log(e_log_type::fatal, "object_2d_pipeline: vkCreateBuffer failed");
                 return false;
         }
 
@@ -692,7 +693,7 @@ bool object_2d_pipeline<PipelineDataModel>::create_buffer(
 
         uint32_t memType = find_memory_type(mr.memoryTypeBits, props);
         if (memType == UINT32_MAX) {
-                std::println("object_2d_pipeline: find_memory_type failed");
+                ray_log(e_log_type::fatal, "object_2d_pipeline: find_memory_type failed");
                 return false;
         }
 
@@ -701,7 +702,7 @@ bool object_2d_pipeline<PipelineDataModel>::create_buffer(
         mai.memoryTypeIndex = memType;
 
         if (vkAllocateMemory(device, &mai, nullptr, &outMem) != VK_SUCCESS) {
-                std::println("object_2d_pipeline: vkAllocateMemory failed");
+                ray_log(e_log_type::fatal, "object_2d_pipeline: vkAllocateMemory failed");
                 return false;
         }
 
@@ -716,7 +717,7 @@ VkShaderModule object_2d_pipeline<PipelineDataModel>::create_shader_module_from_
         std::ifstream file(path, std::ios::binary | std::ios::ate);
 
         if (!file) {
-                std::println("object_2d_pipeline: failed to open shader file: {}", path.string());
+                ray_log(e_log_type::fatal, "object_2d_pipeline: failed to open shader file: {}", path.string());
                 return VK_NULL_HANDLE;
         }
 
@@ -737,7 +738,7 @@ VkShaderModule object_2d_pipeline<PipelineDataModel>::create_shader_module_from_
 
         VkShaderModule mod = VK_NULL_HANDLE;
         if (vkCreateShaderModule(device, &smci, nullptr, &mod) != VK_SUCCESS) {
-                std::println("object_2d_pipeline: vkCreateShaderModule failed: {}", path.string());
+                ray_log(e_log_type::fatal, "object_2d_pipeline: vkCreateShaderModule failed: {}", path.string());
                 return VK_NULL_HANDLE;
         }
 
@@ -804,7 +805,7 @@ void object_2d_pipeline<PipelineDataModel>::create_vertex_buffer(VkDevice device
                 vk_idx_buf, vk_idx_mem, device);
 
         if (!vert_success || !idx_success) {
-                std::println("object_2d_pipeline: create_buffers failed. vert_success {}, idx_success {}", vert_success, idx_success);
+                ray_log(e_log_type::fatal, "object_2d_pipeline: create_buffers failed. vert_success {}, idx_success {}", vert_success, idx_success);
                 return;
         }
 
@@ -856,14 +857,14 @@ void object_2d_pipeline<PipelineDataModel>::create_pipe_ubo_buffer(VkDevice devi
                 );
 
                 if (!buff_ok) {
-                        std::printf("object_2d_pipeline::create_pipe_ubo_buffer failed to create buffer.");
+                        ray_log(e_log_type::warning, "object_2d_pipeline::create_pipe_ubo_buffer failed to create buffer.");
                         break;
                 }
 
                 VkResult memory_ok = vkMapMemory(device, pipe_frame_ubos_data[i].memory, 0, obj_size, 0, &pipe_frame_ubos_data[i].mapped);
 
                 if (memory_ok != VK_SUCCESS) {
-                        std::printf("object_2d_pipeline::create_pipe_ubo_buffer failed to map memory.");
+                        ray_log(e_log_type::warning, "object_2d_pipeline::create_pipe_ubo_buffer failed to map memory.");
                         break;
                 }
         }
@@ -910,13 +911,13 @@ void object_2d_pipeline<PipelineDataModel>::create_draw_obj_ssbo_buffers(VkDevic
                 );
 
                 if (!buff_ok) {
-                        std::printf("object_2d_pipeline::create_draw_obj_ssbo_buffers failed to create buffer.\n");
+                        ray_log(e_log_type::warning, "object_2d_pipeline::create_draw_obj_ssbo_buffers failed to create buffer.\n");
                         break;
                 }
 
                 VkResult memory_ok = vkMapMemory(device, draw_ssbos_data[i].memory, 0, buf_size, 0, &draw_ssbos_data[i].mapped);
                 if (memory_ok != VK_SUCCESS) {
-                        std::printf("object_2d_pipeline::create_draw_obj_ssbo_buffers failed to map memory.\n");
+                        ray_log(e_log_type::warning, "object_2d_pipeline::create_draw_obj_ssbo_buffers failed to map memory.\n");
                         break;
                 }
 

@@ -24,14 +24,14 @@ struct glfw_runtime_init {
 
                 std::call_once(once, [] {
                     glfwSetErrorCallback([](int code, const char* desc) {
-                        std::printf("GLFW error %d: %s\n", code, desc);
+                        ray_log(e_log_type::fatal, "GLFW error %d: %s\n", code, desc);
                     });
 
                     ok = (glfwInit() == GLFW_TRUE);
                 });
 
                 if (!ok) {
-                        std::printf("glfwInit failed.\n");
+                        ray_log(e_log_type::fatal, "glfwInit failed.\n");
                 }
         }
 
@@ -71,7 +71,7 @@ window::window(const config& in_config)
         GLFWwindow* gl_win_ptr = glfwCreateWindow(used_config.window_size.x, used_config.window_size.y, "Random Raypath", monitor_ptr, nullptr);
 
         if (!gl_win_ptr) {
-                std::printf("glfwCreateWindow failed.\n");
+                ray_log(e_log_type::fatal, "glfwCreateWindow failed.\n");
                 return;
         }
 

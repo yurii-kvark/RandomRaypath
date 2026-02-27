@@ -4,13 +4,14 @@
 
 #include <filesystem>
 #include <print>
+#include "utils/ray_log.h"
 
 
 int main() {
         auto config_res = ray::config::client_renderer::load(std::filesystem::path {"../config/client_renderer.toml"});
 
         if (!config_res) {
-                std::println("Failed to load config file {}", config_res.error());
+                ray::ray_log(ray::e_log_type::fatal, "Failed to load config file {}", config_res.error());
                 return 1;
         }
 

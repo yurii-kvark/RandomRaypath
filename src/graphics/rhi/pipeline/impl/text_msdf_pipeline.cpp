@@ -1,5 +1,5 @@
 ﻿#include "text_msdf_pipeline.h"
-
+#include "utils/ray_log.h"
 
 #include <algorithm>
 #include <cstring>
@@ -8,6 +8,7 @@
 #if RAY_GRAPHICS_ENABLE
 
 using namespace ray::graphics;
+using namespace ray;
 
 
 namespace {
@@ -299,14 +300,14 @@ static std::uint32_t read_u32_be(std::istream& stream) {
 static rgba_image load_rgba_file(const std::string& file_path) {
         std::ifstream file(file_path, std::ios::binary);
         if (!file) {
-                std::print("Failed to open .rgba file: {}", file_path);
+                ray_log(e_log_type::warning, "Failed to open .rgba file: {}", file_path);
                 return rgba_image();
         }
 
         char descriptor[4] {};
         file.read(descriptor, 4);
         if (!(descriptor[0]=='R' && descriptor[1]=='G' && descriptor[2]=='B' && descriptor[3]=='A')) {
-                std::print("Not an RGBA file (bad start descriptor) RGBA != {}", descriptor);
+                ray_log(e_log_type::warning, "Not an RGBA file (bad start descriptor) RGBA != {}", descriptor);
                 return rgba_image();
         }
 
@@ -320,13 +321,13 @@ static rgba_image load_rgba_file(const std::string& file_path) {
         file.read(reinterpret_cast<char*>(out.pixels_rgba.data()), std::streamsize(byte_count));
 
         if (!file) {
-                std::print("RGBA file truncated");
+                ray_log(e_log_type::warning, "RGBA file truncated");
                 return rgba_image();
         }
 
         const std::uint32_t expected_size = out.width * out.height * 4u;
         if (out.pixels_rgba.size() != expected_size) {
-                std::print("RGBA file sizes not matching: {} != {} (out.width {} * out.height {} * 4u)", out.pixels_rgba.size(), expected_size, out.width, out.height);
+                ray_log(e_log_type::warning, "RGBA file sizes not matching: {} != {} (out.width {} * out.height {} * 4u)", out.pixels_rgba.size(), expected_size, out.width, out.height);
                 return rgba_image();
         }
 
@@ -363,7 +364,7 @@ static std::uint32_t parse_u32(std::string_view sv) {
         char* end = nullptr;
         unsigned long v = std::strtoul(tmp.c_str(), &end, 10);
         if (end == tmp.c_str()) {
-                std::print("Bad integer in CSV");
+                ray_log(e_log_type::warning, "Bad integer in CSV");
                 return 0;
         }
         return static_cast<std::uint32_t>(v);
@@ -374,7 +375,7 @@ static double parse_f64(std::string_view sv) {
         char* end = nullptr;
         double v = std::strtod(tmp.c_str(), &end);
         if (end == tmp.c_str()) {
-                std::print("Bad float in CSV");
+                ray_log(e_log_type::warning, "Bad float in CSV");
                 return 0;
         }
         return v;
@@ -383,7 +384,7 @@ static double parse_f64(std::string_view sv) {
 std::unordered_map<unsigned char, glyph_mapping_entry> load_glyph_mapping_csv_file(const std::string& csv_path) {
         std::ifstream file(csv_path, std::ios::binary);
         if (!file) {
-                std::print("Failed to open glyph CSV: {}", csv_path);
+                ray_log(e_log_type::warning, "Failed to open glyph CSV: {}", csv_path);
                 return {};
         }
 
@@ -410,7 +411,7 @@ std::unordered_map<unsigned char, glyph_mapping_entry> load_glyph_mapping_csv_fi
 
                 const std::uint32_t codepoint = parse_u32(cols[0]);
                 if (codepoint > 255) {
-                        std::print("unsupported glyph mapping > 255: {}", cols[0]);
+                        ray_log(e_log_type::warning, "unsupported glyph mapping > 255: {}", cols[0]);
                         continue;
                 }
 
@@ -436,19 +437,17 @@ std::unordered_map<unsigned char, glyph_mapping_entry> load_glyph_mapping_csv_fi
 
 void text_msdf_pipeline::create_atlas_texture(VkDevice device) {
 
-        rgba_image loaded_image_data = load_rgba_file("../resource/font/gsanscode_w500_mtsdf.rgba");
+        rgba_image loaded_image_data = load_rgba_file("../resources/font/gsanscode_w500_mtsdf.rgba");
 
         if (loaded_image_data.pixels_rgba.empty()) {
-                std::println("RGBA font file failed to load.");
-                std::fflush(stdout);
-                std::abort();
+                ray_log(e_log_type::fatal, "RGBA font file failed to load.");
                 return;
         }
 
         glyph_mapping = load_glyph_mapping_csv_file("../resource/font/gsanscode_w500.csv");
 
         if (glyph_mapping.empty()) {
-                std::print("glyph_mapping font file failed to load");
+                ray_log(e_log_type::fatal, "glyph_mapping font file failed to load");
                 return;
         }
 
@@ -468,7 +467,7 @@ void text_msdf_pipeline::create_atlas_texture(VkDevice device) {
 
         const VkResult create_image_res = vkCreateImage(device, &image_info, nullptr, &atlas_image);
         if (create_image_res != VK_SUCCESS) {
-                std::print("text_msdf_pipeline::create_atlas_texture failed vkCreateImage = {}", (glm::u32)create_image_res);
+                ray_log(e_log_type::fatal, "text_msdf_pipeline::create_atlas_texture failed vkCreateImage = {}", (glm::u32)create_image_res);
                 return;
         }
 
@@ -482,13 +481,13 @@ void text_msdf_pipeline::create_atlas_texture(VkDevice device) {
 
         const VkResult allocate_image_res = vkAllocateMemory(device, &alloc_info, nullptr, &atlas_memory);
         if (allocate_image_res != VK_SUCCESS) {
-                std::print("text_msdf_pipeline::create_atlas_texture failed vkAllocateMemory = {}", (glm::u32)allocate_image_res);
+                ray_log(e_log_type::fatal, "text_msdf_pipeline::create_atlas_texture failed vkAllocateMemory = {}", (glm::u32)allocate_image_res);
                 return;
         }
 
         const VkResult bind_image_res = vkBindImageMemory(device, atlas_image, atlas_memory, 0);
         if (bind_image_res != VK_SUCCESS) {
-                std::print("text_msdf_pipeline::create_atlas_texture failed vkBindImageMemory = {}", (glm::u32)bind_image_res);
+                ray_log(e_log_type::fatal, "text_msdf_pipeline::create_atlas_texture failed vkBindImageMemory = {}", (glm::u32)bind_image_res);
                 return;
         }
 
@@ -510,7 +509,7 @@ void text_msdf_pipeline::create_atlas_texture(VkDevice device) {
 
         const VkResult image_view_res = vkCreateImageView(device, &view_info, nullptr, &atlas_view);
         if (image_view_res != VK_SUCCESS) {
-                std::print("text_msdf_pipeline::create_atlas_texture failed vkCreateImageView = {}", (glm::u32)image_view_res);
+                ray_log(e_log_type::fatal, "text_msdf_pipeline::create_atlas_texture failed vkCreateImageView = {}", (glm::u32)image_view_res);
                 return;
         }
 
@@ -525,7 +524,7 @@ void text_msdf_pipeline::create_atlas_texture(VkDevice device) {
 
         const VkResult sampler_res = vkCreateSampler(device, &sampler_info, nullptr, &atlas_sampler);
         if (sampler_res != VK_SUCCESS) {
-                std::print("text_msdf_pipeline::create_atlas_texture failed vkCreateSampler = {}", (glm::u32)sampler_res);
+                ray_log(e_log_type::fatal, "text_msdf_pipeline::create_atlas_texture failed vkCreateSampler = {}", (glm::u32)sampler_res);
                 return;
         }
 }
