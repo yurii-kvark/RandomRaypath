@@ -70,6 +70,8 @@ public:
         virtual void draw_commands(VkCommandBuffer in_command_buffer, glm::u32 frame_index) override;
         virtual void update_swapchain(VkFormat in_swapchain_format, glm::uvec2 resolution) override;
 
+        virtual void update_render_obj(glm::u32 frame_index, bool dirty_update);
+
 protected:
         using frame_ubo_t = PipelineDataModel::pipe2d_frame_ubo;
         static_assert(sizeof(frame_ubo_t) % 16 == 0);
@@ -201,6 +203,44 @@ void object_2d_pipeline<PipelineDataModel>::draw_commands(VkCommandBuffer in_com
                 render_order_dirty = false;
         }
 
+        update_render_obj(frame_index, dirty_update);
+
+        vkCmdBindDescriptorSets(
+                in_command_buffer,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                vk_pipeline_layout,
+                0,
+                1,
+                &vk_descriptor_sets[frame_index],
+                0,
+                nullptr
+        );
+
+        if (!render_order.empty()) {
+                vkCmdDrawIndexed(in_command_buffer, 6, render_order.size(), 0, 0, 0);
+        }
+}
+
+
+template<class PipelineDataModel>
+void object_2d_pipeline<PipelineDataModel>::update_swapchain(VkFormat in_swapchain_format, glm::uvec2 in_resolution) {
+        destroy_pipeline();
+        this->swapchain_format = in_swapchain_format;
+        this->resolution = in_resolution;
+        init_pipeline();
+
+        for (glm::u32 i = 0; i < pipe_frame_ubos_data.size(); ++i) {
+                pipe_frame_ubos_data[i].in_flight_data_valid = false;
+        }
+
+        for (glm::u32 i = 0; i < draw_ssbos_data.size(); ++i) {
+                std::fill(draw_ssbos_data[i].in_flight_data_valid.begin(), draw_ssbos_data[i].in_flight_data_valid.end(), 0);
+        }
+}
+
+
+template<class PipelineDataModel>
+void object_2d_pipeline<PipelineDataModel>::update_render_obj(glm::u32 frame_index, bool dirty_update) {
         draw_obj_ssbo_t* ssbo_low_obj_arr = reinterpret_cast<draw_obj_ssbo_t*>(draw_ssbos_data[frame_index].mapped);
         for (size_t i = 0; i < render_order.size(); ++i) {
                 auto& render_entry = render_order[i];
@@ -234,38 +274,6 @@ void object_2d_pipeline<PipelineDataModel>::draw_commands(VkCommandBuffer in_com
                 ssbo_low_obj.transform_ndc.y /= this->resolution.y;
                 ssbo_low_obj.transform_ndc.z /= this->resolution.x;
                 ssbo_low_obj.transform_ndc.w /= this->resolution.y;
-        }
-
-        vkCmdBindDescriptorSets(
-                in_command_buffer,
-                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                vk_pipeline_layout,
-                0,
-                1,
-                &vk_descriptor_sets[frame_index],
-                0,
-                nullptr
-        );
-
-        if (!render_order.empty()) {
-                vkCmdDrawIndexed(in_command_buffer, 6, render_order.size(), 0, 0, 0);
-        }
-}
-
-
-template<class PipelineDataModel>
-void object_2d_pipeline<PipelineDataModel>::update_swapchain(VkFormat in_swapchain_format, glm::uvec2 in_resolution) {
-        destroy_pipeline();
-        this->swapchain_format = in_swapchain_format;
-        this->resolution = in_resolution;
-        init_pipeline();
-
-        for (glm::u32 i = 0; i < pipe_frame_ubos_data.size(); ++i) {
-                pipe_frame_ubos_data[i].in_flight_data_valid = false;
-        }
-
-        for (glm::u32 i = 0; i < draw_ssbos_data.size(); ++i) {
-                std::fill(draw_ssbos_data[i].in_flight_data_valid.begin(), draw_ssbos_data[i].in_flight_data_valid.end(), 0);
         }
 }
 

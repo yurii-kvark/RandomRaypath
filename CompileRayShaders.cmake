@@ -49,14 +49,20 @@ function(ray_enable_shader_compilation)
     endif()
 
     set(RAY_SPIRV_OUTPUTS "")
+    set(SHADER_OUT_DIR "${SHADER_DIR}/bins")
+
     foreach(SHADER IN LISTS RAY_SHADER_SOURCES)
-        set(SPIRV "${SHADER}.spv")
+        file(RELATIVE_PATH REL "${SHADER_DIR}" "${SHADER}")
+        set(SPIRV "${SHADER_OUT_DIR}/${REL}.spv")
+
+        get_filename_component(SPIRV_DIR "${SPIRV}" DIRECTORY)
+        file(MAKE_DIRECTORY "${SPIRV_DIR}")
 
         add_custom_command(
                 OUTPUT "${SPIRV}"
                 COMMAND "${GLSLANG_VALIDATOR}" -V "${SHADER}" -o "${SPIRV}"
                 DEPENDS "${SHADER}"
-                COMMENT "glslangValidator: ${SHADER} -> ${SPIRV}"
+                COMMENT "glslangValidator: ${REL} -> ${SPIRV}"
                 VERBATIM
         )
 

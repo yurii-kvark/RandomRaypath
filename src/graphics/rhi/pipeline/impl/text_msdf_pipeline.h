@@ -28,22 +28,25 @@ struct text_msdf_pipeline_data_model {
                 glm::vec4 transform_ndc = {}; // x_ndc, y_ndc, w_ndc, h_ndc
                 glm::vec4 uv_rect; // u0,v0,u1,v1 in atlas UV
                 glm::vec4 color = {};
-                glm::u32 render_order = 0;
-                glm::u32 space_basis = 0;
+                glm::u32 space_basis = 0.f;
+                glm::f32 weight = 0.f;
+                glm::f32 outline_size = 0.f;
+                glm::i32 _pad0 = 0;
 
-                glm::u32 _pad0 = 0, _pad1 = 0;
-
-                glm::vec4 outline_rgba;
-                glm::vec4 background_rgba;
-                glm::vec4 msdf_params; // x: pxRange, y: outlinePx, z: flags, w: unused
+                glm::vec4 outline_color;
+                glm::vec4 background_color;
         };
 };
 
 class text_msdf_pipeline final : public object_2d_pipeline<text_msdf_pipeline_data_model> {
 public:
         using object_2d_pipeline::object_2d_pipeline;
+public:
+        virtual void update_render_obj(glm::u32 frame_index, bool dirty_update) override;
 
-
+protected:
+        virtual std::filesystem::path get_vertex_shader_path() const override;
+        virtual std::filesystem::path get_fragment_shader_path() const override;
 };
 
 #endif
