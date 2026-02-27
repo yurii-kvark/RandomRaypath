@@ -436,14 +436,16 @@ std::unordered_map<unsigned char, glyph_mapping_entry> load_glyph_mapping_csv_fi
 
 void text_msdf_pipeline::create_atlas_texture(VkDevice device) {
 
-        rgba_image loaded_image_data = load_rgba_file("../resources/font/gsanscode_w500_mtsdf.rgba");
+        rgba_image loaded_image_data = load_rgba_file("../resource/font/gsanscode_w500_mtsdf.rgba");
 
         if (loaded_image_data.pixels_rgba.empty()) {
-                std::print("RGBA font file failed to load");
+                std::println("RGBA font file failed to load.");
+                std::fflush(stdout);
+                std::abort();
                 return;
         }
 
-        glyph_mapping = load_glyph_mapping_csv_file("../resources/font/gsanscode_w500.csv");
+        glyph_mapping = load_glyph_mapping_csv_file("../resource/font/gsanscode_w500.csv");
 
         if (glyph_mapping.empty()) {
                 std::print("glyph_mapping font file failed to load");
@@ -552,7 +554,7 @@ void text_msdf_pipeline::destroy_atlas_texture(VkDevice device) {
 std::vector<VkDescriptorSetLayoutBinding> text_msdf_pipeline::generate_layout_bindings() {
         std::vector<VkDescriptorSetLayoutBinding> layout_bindings = object_2d_pipeline::generate_layout_bindings();
         layout_bindings.push_back ( {
-                .binding = 2,
+                .binding = (uint32_t)layout_bindings.size(),
                 .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
@@ -565,7 +567,7 @@ std::vector<VkDescriptorPoolSize> text_msdf_pipeline::generate_pool_sizes(glm::u
         std::vector<VkDescriptorPoolSize> pool_sizes = object_2d_pipeline::generate_pool_sizes(frame_amount);
         pool_sizes.push_back ( {
                 .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .descriptorCount = g_app_driver::k_frames_in_flight
+                .descriptorCount = frame_amount
                 });
         return pool_sizes;
 }
@@ -587,10 +589,10 @@ std::vector<VkWriteDescriptorSet> text_msdf_pipeline::generate_descriptor_sets(
         descriptors.push_back( VkWriteDescriptorSet {
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                 .dstSet = in_descriptor_set,
-                .dstBinding = 0,
+                .dstBinding = (uint32_t)descriptors.size(), // 2
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .pImageInfo = &*it_image_info
         });
 
