@@ -51,9 +51,8 @@ struct object_2d_pipeline_data_model {
         struct alignas(16) pipe2d_draw_obj_ssbo {
                 glm::vec4 transform_ndc = {}; // x_ndc, y_ndc, w_ndc, h_ndc
                 glm::vec4 color = {};
-                glm::u32 render_order = 0;
                 glm::u32 space_basis = 0;
-                glm::u32 _pad0 = 0, _pad1 = 0;
+                glm::u32 _pad0 = 0, _pad1 = 0, _pad2 = 0;
         };
 };
 
@@ -107,6 +106,13 @@ protected:
 
         virtual std::filesystem::path get_vertex_shader_path() const;
         virtual std::filesystem::path get_fragment_shader_path() const;
+
+        virtual void create_graphical_buffers(VkDevice device);
+        virtual void destroy_graphical_buffers(VkDevice device);
+
+        virtual std::vector<VkDescriptorSetLayoutBinding> generate_layout_bindings();
+        virtual std::vector<VkDescriptorPoolSize> generate_pool_sizes(glm::u32 frame_amount);
+        virtual std::vector<VkWriteDescriptorSet> generate_descriptor_sets(const VkDescriptorSet& in_descriptor_set, glm::u32 frame_index);
 
         void init_pipeline();
         void destroy_pipeline();
@@ -266,7 +272,6 @@ void object_2d_pipeline<PipelineDataModel>::update_render_obj(glm::u32 frame_ind
                 draw_obj_ssbo_t& ssbo_low_obj = ssbo_low_obj_arr[i];
 
                 ssbo_low_obj.color = draw_data.color;
-                ssbo_low_obj.render_order = draw_data.get_render_order();
                 ssbo_low_obj.space_basis = (glm::u32)draw_data.space_basis;
 
                 ssbo_low_obj.transform_ndc = draw_data.transform;
@@ -512,23 +517,11 @@ void object_2d_pipeline<PipelineDataModel>::destroy_pipeline() {
 
 template<class PipelineDataModel>
 void object_2d_pipeline<PipelineDataModel>::init_descriptor_sets(VkDevice device) {
-        VkDescriptorSetLayoutBinding layout_bindings[2] {};
-
-        // pipe UBO
-        layout_bindings[0].binding = 0;
-        layout_bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        layout_bindings[0].descriptorCount = 1;
-        layout_bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-
-        // draw objects SSBO
-        layout_bindings[1].binding = 1;
-        layout_bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        layout_bindings[1].descriptorCount = 1;
-        layout_bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        std::vector<VkDescriptorSetLayoutBinding> layout_bindings = generate_layout_bindings();
 
         VkDescriptorSetLayoutCreateInfo layout_info {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-        layout_info.bindingCount = 2;
-        layout_info.pBindings = layout_bindings;
+        layout_info.bindingCount = layout_bindings.size();
+        layout_info.pBindings = layout_bindings.data();
 
         VkResult desc_layout_ok = vkCreateDescriptorSetLayout(device, &layout_info, nullptr, &vk_descriptor_set_layout);
         if (desc_layout_ok != VK_SUCCESS) {
@@ -536,19 +529,14 @@ void object_2d_pipeline<PipelineDataModel>::init_descriptor_sets(VkDevice device
                 return;
         }
 
-        //
-
-        VkDescriptorPoolSize pool_sizes[2] {};
-        pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        pool_sizes[0].descriptorCount = g_app_driver::k_frames_in_flight;
-        pool_sizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        pool_sizes[1].descriptorCount = g_app_driver::k_frames_in_flight;
+        glm::u32 frame_amount = g_app_driver::k_frames_in_flight;
+        std::vector<VkDescriptorPoolSize> pool_sizes = generate_pool_sizes(frame_amount);
 
         VkDescriptorPoolCreateInfo pool_info{ VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
         pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
         pool_info.maxSets = g_app_driver::k_frames_in_flight;
-        pool_info.poolSizeCount = 2;
-        pool_info.pPoolSizes = pool_sizes;
+        pool_info.poolSizeCount = pool_sizes.size();
+        pool_info.pPoolSizes = pool_sizes.data();
 
         VkResult desc_pool_ok = vkCreateDescriptorPool(device, &pool_info, nullptr, &vk_descriptor_pool);
         if (desc_pool_ok != VK_SUCCESS) {
@@ -568,39 +556,73 @@ void object_2d_pipeline<PipelineDataModel>::init_descriptor_sets(VkDevice device
                 return;
         }
 
-        for (size_t i = 0; i < vk_descriptor_sets.size(); i++)
+        for (glm::u32 i = 0; i < vk_descriptor_sets.size(); i++)
         {
-                VkDescriptorBufferInfo buf_info {};
-                buf_info.buffer = pipe_frame_ubos_data[i].buffer;
-                buf_info.offset = 0;
-                buf_info.range  = sizeof(frame_ubo_t);
-
-                VkDescriptorBufferInfo ssbo_info {};
-                ssbo_info.buffer = draw_ssbos_data[i].buffer;
-                ssbo_info.offset = 0;
-                ssbo_info.range  = VK_WHOLE_SIZE;
-
-                VkWriteDescriptorSet writes[2] {};
-
-                writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                writes[0].dstSet = vk_descriptor_sets[i];
-                writes[0].dstBinding = 0;
-                writes[0].dstArrayElement = 0;
-                writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                writes[0].descriptorCount = 1;
-                writes[0].pBufferInfo = &buf_info;
-
-                writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                writes[1].dstSet = vk_descriptor_sets[i];
-                writes[1].dstBinding = 1;
-                writes[1].dstArrayElement = 0;
-                writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                writes[1].descriptorCount = 1;
-                writes[1].pBufferInfo = &ssbo_info;
-
-                vkUpdateDescriptorSets(device, 2, writes, 0, nullptr);
+                std::vector<VkWriteDescriptorSet> writes_sets = generate_descriptor_sets(vk_descriptor_sets[i], i);
+                vkUpdateDescriptorSets(device, writes_sets.size(), writes_sets.data(), 0, nullptr);
         }
 }
+
+
+template<class PipelineDataModel>
+std::vector<VkDescriptorSetLayoutBinding> object_2d_pipeline<PipelineDataModel>::generate_layout_bindings() {
+        return { VkDescriptorSetLayoutBinding {
+                .binding = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+        }, VkDescriptorSetLayoutBinding {
+                .binding = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+        }};
+}
+
+
+template<class PipelineDataModel>
+std::vector<VkDescriptorPoolSize> object_2d_pipeline<PipelineDataModel>::generate_pool_sizes(glm::u32 frame_amount) {
+        return { VkDescriptorPoolSize {
+                .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .descriptorCount = frame_amount
+        }, VkDescriptorPoolSize {
+                .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .descriptorCount = frame_amount
+        }};
+}
+
+
+template<class PipelineDataModel>
+std::vector<VkWriteDescriptorSet> object_2d_pipeline<PipelineDataModel>::generate_descriptor_sets(const VkDescriptorSet& in_descriptor_set, glm::u32 frame_index) {
+        VkDescriptorBufferInfo buf_info {};
+        buf_info.buffer = pipe_frame_ubos_data[frame_index].buffer;
+        buf_info.offset = 0;
+        buf_info.range  = sizeof(frame_ubo_t);
+
+        VkDescriptorBufferInfo ssbo_info {};
+        ssbo_info.buffer = draw_ssbos_data[frame_index].buffer;
+        ssbo_info.offset = 0;
+        ssbo_info.range  = VK_WHOLE_SIZE;
+
+        return { VkWriteDescriptorSet {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = in_descriptor_set,
+                .dstBinding = 0,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pBufferInfo = &buf_info
+        }, VkWriteDescriptorSet {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = in_descriptor_set,
+                .dstBinding = 1,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .pBufferInfo = &ssbo_info
+        }};
+}
+
 
 
 template<class PipelineDataModel>
@@ -722,6 +744,12 @@ void object_2d_pipeline<PipelineDataModel>::create_buffers() {
                 return;
         }
 
+        create_graphical_buffers(device);
+}
+
+
+template<class PipelineDataModel>
+void object_2d_pipeline<PipelineDataModel>::create_graphical_buffers(VkDevice device) {
         create_vertex_buffer(device);
         create_pipe_ubo_buffer(device);
         create_draw_obj_ssbo_buffers(device, k_init_graphic_object_capacity);
@@ -735,6 +763,12 @@ void object_2d_pipeline<PipelineDataModel>::destroy_buffers() {
                 return;
         }
 
+        destroy_graphical_buffers(device);
+}
+
+
+template<class PipelineDataModel>
+void object_2d_pipeline<PipelineDataModel>::destroy_graphical_buffers(VkDevice device) {
         destroy_draw_obj_ssbo_buffers(device);
         destroy_pipe_ubo_buffer(device);
         destroy_vertex_buffer(device);

@@ -38,6 +38,16 @@ struct text_msdf_pipeline_data_model {
         };
 };
 
+
+struct glyph_mapping_entry {
+        unsigned char mapped_character = 0;
+        double advance_em = 0;
+        double x_begin_em = 0;
+        double x_end_em = 0;
+        double y_begin_em = 0;
+        double y_end_em = 0;
+};
+
 class text_msdf_pipeline final : public object_2d_pipeline<text_msdf_pipeline_data_model> {
 public:
         using object_2d_pipeline::object_2d_pipeline;
@@ -47,6 +57,28 @@ public:
 protected:
         virtual std::filesystem::path get_vertex_shader_path() const override;
         virtual std::filesystem::path get_fragment_shader_path() const override;
+
+        virtual void create_graphical_buffers(VkDevice device) override;
+        virtual void destroy_graphical_buffers(VkDevice device) override;
+
+        virtual std::vector<VkDescriptorSetLayoutBinding> generate_layout_bindings() override;
+        virtual std::vector<VkDescriptorPoolSize> generate_pool_sizes(glm::u32 frame_amount) override;
+        virtual std::vector<VkWriteDescriptorSet> generate_descriptor_sets(const VkDescriptorSet& in_descriptor_set, glm::u32 frame_index) override;
+
+        // TODO: move to shared static memory
+        VkImage atlas_image = VK_NULL_HANDLE;
+        VkDeviceMemory atlas_memory = VK_NULL_HANDLE;
+        VkImageView atlas_view = VK_NULL_HANDLE;
+        VkSampler atlas_sampler = VK_NULL_HANDLE;
+
+        std::unordered_map<unsigned char, glyph_mapping_entry> glyph_mapping;
+
+private:
+        void create_atlas_texture(VkDevice device);
+        void destroy_atlas_texture(VkDevice device);
+
+        void rebuild_instances();
+        void decode_utf8_codepoints(draw_obj_model_t& draw_data);
 };
 
 #endif
