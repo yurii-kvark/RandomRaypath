@@ -3,6 +3,7 @@
 #include "graphics/rhi/pipeline/pipeline.h"
 #include "graphics/rhi/pipeline/impl/rainbow_rect_pipeline.h"
 #include "graphics/rhi/pipeline/impl/solid_rect_pipeline.h"
+#include "graphics/rhi/pipeline/impl/text_msdf_pipeline.h"
 
 #include <vector>
 
@@ -35,6 +36,9 @@ public:
         draw_obj_handle<solid_rect_pipeline> rect_3_dyn_world;
         draw_obj_handle<solid_rect_pipeline> rect_4_dyn_world;
         draw_obj_handle<solid_rect_pipeline> rect_5_world;
+
+        draw_obj_handle<text_msdf_pipeline> text_1_handle;
+        draw_obj_handle<text_msdf_pipeline> text_2_handle;
 
         glm::u64 last_time_ns = 0;
         glm::u64 last_delta_time_ns = 0;

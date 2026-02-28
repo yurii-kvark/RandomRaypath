@@ -10,20 +10,28 @@
 using namespace ray::graphics;
 using namespace ray;
 
+void text_msdf_pipeline::update_render_obj(typename text_msdf_pipeline_data_model::draw_obj& inout_draw_data, typename text_msdf_pipeline_data_model::pipe2d_draw_obj_ssbo& inout_ssbo_obj) {
 
-namespace {
-constexpr glm::u32 k_flag_is_glyph = 1u << 0;
-constexpr glm::u32 k_flag_has_background = 1u << 1;
-constexpr glm::f32 k_base_font_height_px = 32.f;
-constexpr glm::f32 k_cell_w_px = 20.f;
-constexpr glm::f32 k_cell_h_px = 32.f;
-constexpr glm::f32 k_whitespace_advance_px = 18.f;
-constexpr glm::f32 k_line_height_mul = 1.25f;
-constexpr glm::f32 k_px_range = 4.f;
-};
+        if (inout_draw_data.glyph_need_update) {
+                inout_ssbo_obj.uv_rect = glm::vec4(0.1, 0.4, 0.3, 0.6); // u0,v0,u1,v1 glyph in atlas UV
 
+                inout_draw_data.glyph_need_update = false;
+        }
 
-void text_msdf_pipeline::update_render_obj(glm::u32 frame_index, bool dirty_update) {
+        inout_ssbo_obj.weight = inout_draw_data.text_weight;
+        inout_ssbo_obj.outline_size = inout_draw_data.text_outline_size;
+
+        inout_ssbo_obj.outline_color = inout_draw_data.text_outline_color;
+        inout_ssbo_obj.background_color = inout_draw_data.background_color;
+
+        inout_ssbo_obj.color = inout_draw_data.color;
+        inout_ssbo_obj.space_basis = (glm::u32)inout_draw_data.space_basis;
+
+        inout_ssbo_obj.transform_ndc = inout_draw_data.transform;
+        inout_ssbo_obj.transform_ndc.x /= this->resolution.x;
+        inout_ssbo_obj.transform_ndc.y /= this->resolution.y;
+        inout_ssbo_obj.transform_ndc.z /= this->resolution.x;
+        inout_ssbo_obj.transform_ndc.w /= this->resolution.y;
 }
 
 
@@ -48,237 +56,6 @@ void text_msdf_pipeline::destroy_graphical_buffers(VkDevice device) {
         object_2d_pipeline::destroy_graphical_buffers(device);
 }
 
-/*
-void text_msdf_pipeline::draw_commands(VkCommandBuffer in_command_buffer, glm::u32 frame_index) {
-        assert(frame_index < g_app_driver::k_frames_in_flight);
-
-        vkCmdBindPipeline(in_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline);
-
-        VkDeviceSize off = 0;
-        vkCmdBindVertexBuffers(in_command_buffer, 0, 1, &vk_vertex_buf, &off);
-        vkCmdBindIndexBuffer(in_command_buffer, vk_idx_buf, 0, VK_INDEX_TYPE_UINT16);
-
-        const bool in_flight_pipe_valid = pipe_frame_ubos_data[frame_index].in_flight_data_valid;
-        if (this->pipe_data.need_update || !in_flight_pipe_valid) {
-                if (this->pipe_data.need_update) {
-                        for (size_t frame_flight = 0; frame_flight < pipe_frame_ubos_data.size(); ++frame_flight) {
-                                pipe_frame_ubos_data[frame_flight].in_flight_data_valid = false;
-                        }
-                }
-
-                pipe_frame_ubos_data[frame_index].in_flight_data_valid = true;
-                this->pipe_data.need_update = false;
-
-                frame_ubo_t* ubo_low_obj = reinterpret_cast<frame_ubo_t*>(pipe_frame_ubos_data[frame_index].mapped);
-                ubo_low_obj->time_ms = this->pipe_data.time_ms;
-                ubo_low_obj->camera_transform_ndc = this->pipe_data.camera_transform;
-                ubo_low_obj->camera_transform_ndc.x /= this->resolution.x;
-                ubo_low_obj->camera_transform_ndc.y /= this->resolution.y;
-        }
-
-        bool any_dirty = packed_instances_dirty;
-        for (auto& draw_data : this->draw_obj_data) {
-                any_dirty |= draw_data.need_update;
-        }
-
-        if (any_dirty) {
-                rebuild_instances();
-                packed_instances_dirty = false;
-                for (auto& draw_data : this->draw_obj_data) {
-                        draw_data.need_update = false;
-                }
-
-                const glm::u32 required_size = std::max<size_t>(packed_instances.size(), 1);
-                if (draw_ssbos_data[0].capacity < required_size) {
-                        resize_capacity_draw_obj_ssbo_buffers(g_app_driver::thread_safe().device, std::max(draw_ssbos_data[0].capacity * 2, required_size));
-                }
-                if (required_size < draw_ssbos_data[0].capacity / 2 && draw_ssbos_data[0].capacity > k_init_graphic_object_capacity) {
-                        resize_capacity_draw_obj_ssbo_buffers(g_app_driver::thread_safe().device, std::max(draw_ssbos_data[0].capacity / 2, k_init_graphic_object_capacity));
-                }
-
-                for (size_t frame_flight = 0; frame_flight < draw_ssbos_data.size(); ++frame_flight) {
-                        std::fill(draw_ssbos_data[frame_flight].in_flight_data_valid.begin(), draw_ssbos_data[frame_flight].in_flight_data_valid.end(), 0);
-                }
-        }
-
-        if (!packed_instances.empty()) {
-                auto* ssbo = reinterpret_cast<draw_obj_ssbo_t*>(draw_ssbos_data[frame_index].mapped);
-                std::memcpy(ssbo, packed_instances.data(), packed_instances.size() * sizeof(draw_obj_ssbo_t));
-        }
-
-        vkCmdBindDescriptorSets(in_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline_layout, 0, 1, &vk_descriptor_sets[frame_index], 0, nullptr);
-
-        if (!packed_instances.empty()) {
-                vkCmdDrawIndexed(in_command_buffer, 6, packed_instances.size(), 0, 0, 0);
-        }
-}
-
-
-
-void text_msdf_pipeline::decode_utf8_codepoints(draw_obj_model_t& draw_data) {
-        draw_data.cached_codepoints.clear();
-        const std::u8string_view text(draw_data.text_content);
-
-        for (size_t i = 0; i < text.size();) {
-                const std::uint8_t c0 = static_cast<std::uint8_t>(text[i]);
-                glm::u32 cp = 0;
-                size_t adv = 1;
-                if ((c0 & 0x80u) == 0u) {
-                        cp = c0;
-                } else if ((c0 & 0xE0u) == 0xC0u && (i + 1) < text.size()) {
-                        cp = ((c0 & 0x1Fu) << 6) | (static_cast<std::uint8_t>(text[i + 1]) & 0x3Fu);
-                        adv = 2;
-                } else if ((c0 & 0xF0u) == 0xE0u && (i + 2) < text.size()) {
-                        cp = ((c0 & 0x0Fu) << 12)
-                             | ((static_cast<std::uint8_t>(text[i + 1]) & 0x3Fu) << 6)
-                             | (static_cast<std::uint8_t>(text[i + 2]) & 0x3Fu);
-                        adv = 3;
-                } else if ((c0 & 0xF8u) == 0xF0u && (i + 3) < text.size()) {
-                        cp = ((c0 & 0x07u) << 18)
-                             | ((static_cast<std::uint8_t>(text[i + 1]) & 0x3Fu) << 12)
-                             | ((static_cast<std::uint8_t>(text[i + 2]) & 0x3Fu) << 6)
-                             | (static_cast<std::uint8_t>(text[i + 3]) & 0x3Fu);
-                        adv = 4;
-                }
-                draw_data.cached_codepoints.push_back(cp);
-                i += adv;
-        }
-}
-
-void text_msdf_pipeline::rebuild_instances() {
-        std::vector<order_entry> order {};
-        order.reserve(this->draw_obj_data.size());
-
-        for (glm::u32 i = 0; i < this->draw_obj_data.size(); ++i) {
-                const auto& draw_data = this->draw_obj_data[i];
-                const glm::u32 space_type_bit = (draw_data.space_basis == e_space_type::screen)
-                        ? glm::u32(1) << (sizeof(glm::u32) * CHAR_BIT - 1)
-                        : 0u;
-                order.push_back({ i, draw_data.z_order | space_type_bit, i });
-        }
-
-        std::stable_sort(order.begin(), order.end(), [](const order_entry& a, const order_entry& b) {
-                if (a.render_order == b.render_order) {
-                        return a.seq < b.seq;
-                }
-                return a.render_order < b.render_order;
-        });
-
-        packed_instances.clear();
-
-        for (const auto& entry : order) {
-                auto& draw_data = this->draw_obj_data[entry.draw_index];
-                decode_utf8_codepoints(draw_data);
-                draw_data.cached_line_breaks.clear();
-                draw_data.instance_offset = packed_instances.size();
-                draw_data.instance_count = 0;
-
-                const glm::f32 px_to_ndc_x = 1.f / this->resolution.x;
-                const glm::f32 px_to_ndc_y = 1.f / this->resolution.y;
-                const glm::f32 scale = std::max(draw_data.height_px, 1.f) / k_base_font_height_px;
-                const glm::f32 line_h = k_cell_h_px * k_line_height_mul * scale;
-                const glm::f32 tab_w = k_whitespace_advance_px * scale * std::max(draw_data.tab_size_spaces, 1u);
-
-                glm::f32 min_x = 0.f;
-                glm::f32 min_y = 0.f;
-                glm::f32 max_x = 0.f;
-                glm::f32 max_y = 0.f;
-                bool has_box = false;
-
-                glm::f32 pen_x = 0.f;
-                glm::f32 pen_y = 0.f;
-                glm::u32 last_whitespace_index = UINT32_MAX;
-
-                for (glm::u32 cp_i = 0; cp_i < draw_data.cached_codepoints.size(); ++cp_i) {
-                        const glm::u32 cp = draw_data.cached_codepoints[cp_i];
-                        if (cp == '\n') {
-                                draw_data.cached_line_breaks.push_back(cp_i);
-                                pen_x = 0.f;
-                                pen_y += line_h;
-                                last_whitespace_index = UINT32_MAX;
-                                continue;
-                        }
-
-                        if (cp == '\t') {
-                                const glm::f32 next_tab = std::floor((pen_x + tab_w) / tab_w) * tab_w;
-                                pen_x = std::max(next_tab, pen_x + tab_w);
-                                last_whitespace_index = cp_i;
-                                continue;
-                        }
-
-                        if (cp == ' ') {
-                                pen_x += k_whitespace_advance_px * scale;
-                                last_whitespace_index = cp_i;
-                                continue;
-                        }
-
-                        if (draw_data.wrap_enabled && draw_data.wrap_width_px > 0.f && pen_x > draw_data.wrap_width_px) {
-                                draw_data.cached_line_breaks.push_back(last_whitespace_index == UINT32_MAX ? cp_i : last_whitespace_index);
-                                pen_x = 0.f;
-                                pen_y += line_h;
-                        }
-
-                        draw_obj_ssbo_t inst {};
-                        inst.fill_rgba = draw_data.fill_color;
-                        inst.outline_rgba = draw_data.outline_color;
-                        inst.background_rgba = draw_data.background_color;
-                        inst.uv_rect = glm::vec4(0.f, 0.f, 1.f, 1.f);
-
-                        inst.msdf_params.x = k_px_range;
-                        inst.msdf_params.y = draw_data.outline_thickness_px;
-                        inst.msdf_params.z = static_cast<glm::f32>(k_flag_is_glyph);
-
-                        glm::vec4 tr_px = draw_data.transform;
-                        tr_px.x += pen_x;
-                        tr_px.y += pen_y;
-                        tr_px.z = k_cell_w_px * scale;
-                        tr_px.w = k_cell_h_px * scale;
-
-                        inst.transform_ndc = tr_px;
-                        inst.transform_ndc.x *= px_to_ndc_x;
-                        inst.transform_ndc.y *= px_to_ndc_y;
-                        inst.transform_ndc.z *= px_to_ndc_x;
-                        inst.transform_ndc.w *= px_to_ndc_y;
-
-                        packed_instances.push_back(inst);
-                        draw_data.instance_count += 1;
-
-                        min_x = has_box ? std::min(min_x, tr_px.x) : tr_px.x;
-                        min_y = has_box ? std::min(min_y, tr_px.y) : tr_px.y;
-                        max_x = has_box ? std::max(max_x, tr_px.x + tr_px.z) : (tr_px.x + tr_px.z);
-                        max_y = has_box ? std::max(max_y, tr_px.y + tr_px.w) : (tr_px.y + tr_px.w);
-                        has_box = true;
-
-                        pen_x += tr_px.z;
-                }
-
-                if (draw_data.background_color.a > 0.f && has_box) {
-                        draw_obj_ssbo_t bg_inst {};
-                        bg_inst.fill_rgba = draw_data.fill_color;
-                        bg_inst.outline_rgba = draw_data.outline_color;
-                        bg_inst.background_rgba = draw_data.background_color;
-                        bg_inst.uv_rect = glm::vec4(0.f, 0.f, 1.f, 1.f);
-                        bg_inst.msdf_params = glm::vec4(k_px_range, 0.f, static_cast<glm::f32>(k_flag_has_background), 0.f);
-
-                        bg_inst.transform_ndc = glm::vec4(min_x, min_y, max_x - min_x, max_y - min_y);
-                        bg_inst.transform_ndc.x *= px_to_ndc_x;
-                        bg_inst.transform_ndc.y *= px_to_ndc_y;
-                        bg_inst.transform_ndc.z *= px_to_ndc_x;
-                        bg_inst.transform_ndc.w *= px_to_ndc_y;
-
-                        const auto insert_it = packed_instances.begin() + draw_data.instance_offset;
-                        packed_instances.insert(insert_it, bg_inst);
-                        draw_data.instance_count += 1;
-
-                        for (auto& other_draw : this->draw_obj_data) {
-                                if (other_draw.instance_offset > draw_data.instance_offset) {
-                                        other_draw.instance_offset += 1;
-                                }
-                        }
-                }
-        }
-}
-*/
 
 #include <vector>
 #include <fstream>
@@ -437,7 +214,7 @@ std::unordered_map<unsigned char, glyph_mapping_entry> load_glyph_mapping_csv_fi
 
 void text_msdf_pipeline::create_atlas_texture(VkDevice device) {
 
-        rgba_image loaded_image_data = load_rgba_file("../resources/font/gsanscode_w500_mtsdf.rgba");
+        rgba_image loaded_image_data = load_rgba_file("../resource/font/gsanscode_w500_mtsdf.rgba");
 
         if (loaded_image_data.pixels_rgba.empty()) {
                 ray_log(e_log_type::fatal, "RGBA font file failed to load.");

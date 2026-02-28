@@ -6,22 +6,17 @@ namespace ray::graphics {
 
 #if RAY_GRAPHICS_ENABLE
 
-
 struct text_msdf_pipeline_data_model {
         struct pipeline : object_2d_pipeline_data_model::pipeline {
         };
 
         struct draw_obj : object_2d_pipeline_data_model::draw_obj {
-                glm::f32 text_size = 1.f; // in px height
+                bool glyph_need_update = true;
+                unsigned char content_glyph = 0;
                 glm::f32 text_weight = 1.f;
                 glm::f32 text_outline_size = 1.f; // in px
                 glm::vec4 text_outline_color {};
                 glm::vec4 background_color {};
-
-                glm::u32 content_capacity = 64; // this is the allocated text limit on GPU
-
-                bool content_need_update = true;
-                std::u8string text_content; // TODO: optimize usage of memory
         };
 
         using pipe2d_frame_ubo = object_2d_pipeline_data_model::pipe2d_frame_ubo;
@@ -38,11 +33,6 @@ struct text_msdf_pipeline_data_model {
                 glm::vec4 outline_color;
                 glm::vec4 background_color;
         };
-
-        // struct logical_text_obj_ssbo {
-        //         std::string_view content;
-        //         glm::u32 alloted_capacity = 64;
-        // };
 };
 
 struct glyph_mapping_entry {
@@ -58,7 +48,7 @@ class text_msdf_pipeline final : public object_2d_pipeline<text_msdf_pipeline_da
 public:
         using object_2d_pipeline::object_2d_pipeline;
 public:
-        virtual void update_render_obj(glm::u32 frame_index, bool dirty_update) override;
+        virtual void update_render_obj(typename text_msdf_pipeline_data_model::draw_obj& inout_draw_data, typename text_msdf_pipeline_data_model::pipe2d_draw_obj_ssbo& inout_ssbo_obj) override;
 
 protected:
         virtual std::filesystem::path get_vertex_shader_path() const override;

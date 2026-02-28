@@ -71,7 +71,7 @@ public:
         virtual void draw_commands(VkCommandBuffer in_command_buffer, glm::u32 frame_index) override;
         virtual void update_swapchain(VkFormat in_swapchain_format, glm::uvec2 resolution) override;
 
-        virtual void update_render_obj(glm::u32 frame_index, bool dirty_update);
+        virtual void update_render_obj(typename PipelineDataModel::draw_obj& inout_draw_data, typename PipelineDataModel::pipe2d_draw_obj_ssbo& inout_ssbo_obj);
 
 protected:
         using frame_ubo_t = PipelineDataModel::pipe2d_frame_ubo;
@@ -101,8 +101,6 @@ protected:
         };
 
 protected:
-        void rebuild_order();
-
         virtual draw_obj_handle_id add_new_draw_obj() override;
         virtual void remove_draw_obj(draw_obj_handle_id to_remove) override;
 
@@ -117,6 +115,10 @@ protected:
         virtual std::vector<VkWriteDescriptorSet> generate_descriptor_sets(
                 const VkDescriptorSet& in_descriptor_set, glm::u32 frame_index,
                 std::list<VkDescriptorBufferInfo>& buf_info_lifetime, std::list<VkDescriptorImageInfo>& img_info_lifetime);
+
+
+        void update_object_memory(glm::u32 frame_index, bool dirty_update);
+        void rebuild_order();
 
         void init_pipeline();
         void destroy_pipeline();
@@ -213,7 +215,7 @@ void object_2d_pipeline<PipelineDataModel>::draw_commands(VkCommandBuffer in_com
                 render_order_dirty = false;
         }
 
-        update_render_obj(frame_index, dirty_update);
+        update_object_memory(frame_index, dirty_update);
 
         vkCmdBindDescriptorSets(
                 in_command_buffer,
@@ -250,7 +252,7 @@ void object_2d_pipeline<PipelineDataModel>::update_swapchain(VkFormat in_swapcha
 
 
 template<class PipelineDataModel>
-void object_2d_pipeline<PipelineDataModel>::update_render_obj(glm::u32 frame_index, bool dirty_update) {
+void object_2d_pipeline<PipelineDataModel>::update_object_memory(glm::u32 frame_index, bool dirty_update) {
         draw_obj_ssbo_t* ssbo_low_obj_arr = reinterpret_cast<draw_obj_ssbo_t*>(draw_ssbos_data[frame_index].mapped);
         for (size_t i = 0; i < render_order.size(); ++i) {
                 auto& render_entry = render_order[i];
@@ -273,17 +275,23 @@ void object_2d_pipeline<PipelineDataModel>::update_render_obj(glm::u32 frame_ind
                 const bool dirty_order = draw_data.get_render_order() != render_entry.render_order;
                 render_order_dirty |= !dirty_update && dirty_order;
 
-                draw_obj_ssbo_t& ssbo_low_obj = ssbo_low_obj_arr[i];
+                draw_obj_ssbo_t& out_ssbo_low_obj = ssbo_low_obj_arr[i];
 
-                ssbo_low_obj.color = draw_data.color;
-                ssbo_low_obj.space_basis = (glm::u32)draw_data.space_basis;
-
-                ssbo_low_obj.transform_ndc = draw_data.transform;
-                ssbo_low_obj.transform_ndc.x /= this->resolution.x;
-                ssbo_low_obj.transform_ndc.y /= this->resolution.y;
-                ssbo_low_obj.transform_ndc.z /= this->resolution.x;
-                ssbo_low_obj.transform_ndc.w /= this->resolution.y;
+                update_render_obj(draw_data, out_ssbo_low_obj);
         }
+}
+
+
+template<class PipelineDataModel>
+void object_2d_pipeline<PipelineDataModel>::update_render_obj(typename PipelineDataModel::draw_obj& inout_draw_data, typename PipelineDataModel::pipe2d_draw_obj_ssbo& inout_ssbo_obj) {
+        inout_ssbo_obj.color = inout_draw_data.color;
+        inout_ssbo_obj.space_basis = (glm::u32)inout_draw_data.space_basis;
+
+        inout_ssbo_obj.transform_ndc = inout_draw_data.transform;
+        inout_ssbo_obj.transform_ndc.x /= this->resolution.x;
+        inout_ssbo_obj.transform_ndc.y /= this->resolution.y;
+        inout_ssbo_obj.transform_ndc.z /= this->resolution.x;
+        inout_ssbo_obj.transform_ndc.w /= this->resolution.y;
 }
 
 

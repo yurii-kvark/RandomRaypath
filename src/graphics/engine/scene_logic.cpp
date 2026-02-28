@@ -62,6 +62,33 @@ scene_logic::scene_logic(window& win, renderer& rend) {
         rect_4_dyn_world = rend.pipe.create_draw_obj<solid_rect_pipeline>(rect_pipeline);
         rect_5_world = rend.pipe.create_draw_obj<solid_rect_pipeline>(rect_pipeline);
 
+        text_1_handle = rend.pipe.create_draw_obj<text_msdf_pipeline>(text_pipeline);
+        text_2_handle = rend.pipe.create_draw_obj<text_msdf_pipeline>(text_pipeline);
+
+        if (auto text_1_handle_data = rend.pipe.access_draw_obj_data(text_1_handle)) {
+                text_1_handle_data->content_glyph = 'h';
+                text_1_handle_data->text_weight = 10.f;
+                text_1_handle_data->text_outline_size = 3.f; // in px
+                text_1_handle_data->text_outline_color = ray_colors::red;
+                text_1_handle_data->background_color = ray_colors::blue;
+                text_1_handle_data->space_basis = e_space_type::world;
+                text_1_handle_data->z_order = 10;
+                text_1_handle_data->transform = glm::vec4(-100, -250, 100, 150); // x_pos, y_pos, x_size, y_size
+                text_1_handle_data->color = ray_colors::cyan;
+        }
+
+        if (auto text_2_handle_data = rend.pipe.access_draw_obj_data(text_2_handle)) {
+                text_2_handle_data->content_glyph = 'B';
+                text_2_handle_data->text_weight = 600.f;
+                text_2_handle_data->text_outline_size = 1.f; // in px
+                text_2_handle_data->text_outline_color = ray_colors::cyan;
+                text_2_handle_data->background_color = ray_colors::red;
+                text_2_handle_data->space_basis = e_space_type::screen;
+                text_2_handle_data->z_order = 11;
+                text_2_handle_data->transform = glm::vec4(-100, -200, 150, 150); // x_pos, y_pos, x_size, y_size
+                text_2_handle_data->color = ray_colors::white;
+        }
+
         if (auto rainbow_1_screen_data = rend.pipe.access_draw_obj_data(rainbow_1_screen)) {
                 rainbow_1_screen_data->space_basis = e_space_type::screen;
                 rainbow_1_screen_data->z_order = 100;
