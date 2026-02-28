@@ -1,4 +1,4 @@
-﻿#include "text_msdf_pipeline.h"
+﻿#include "glyph_msdf_pipeline.h"
 #include "utils/ray_log.h"
 
 #include <algorithm>
@@ -10,9 +10,9 @@
 using namespace ray::graphics;
 using namespace ray;
 
-void text_msdf_pipeline::update_render_obj(typename text_msdf_pipeline_data_model::draw_obj& inout_draw_data, typename text_msdf_pipeline_data_model::pipe2d_draw_obj_ssbo& inout_ssbo_obj) {
+void glyph_msdf_pipeline::update_render_obj(typename glyph_msdf_pipeline_data_model::draw_obj& inout_draw_data, typename glyph_msdf_pipeline_data_model::pipe2d_draw_obj_ssbo& inout_ssbo_obj) {
 
-        if (inout_draw_data.glyph_need_update) {
+        {//if (inout_draw_data.glyph_need_update) {
                 inout_ssbo_obj.uv_rect = glm::vec4(0.1, 0.4, 0.3, 0.6); // u0,v0,u1,v1 glyph in atlas UV
 
                 inout_draw_data.glyph_need_update = false;
@@ -35,23 +35,23 @@ void text_msdf_pipeline::update_render_obj(typename text_msdf_pipeline_data_mode
 }
 
 
-std::filesystem::path text_msdf_pipeline::get_vertex_shader_path() const {
-        return "text_msdf.vert.spv";
+std::filesystem::path glyph_msdf_pipeline::get_vertex_shader_path() const {
+        return "glyph_msdf.vert.spv";
 }
 
 
-std::filesystem::path ray::graphics::text_msdf_pipeline::get_fragment_shader_path() const {
-        return "text_msdf.frag.spv";
+std::filesystem::path ray::graphics::glyph_msdf_pipeline::get_fragment_shader_path() const {
+        return "glyph_msdf.frag.spv";
 }
 
 
-void text_msdf_pipeline::create_graphical_buffers(VkDevice device) {
+void glyph_msdf_pipeline::create_graphical_buffers(VkDevice device) {
         object_2d_pipeline::create_graphical_buffers(device);
         create_atlas_texture(device);
 }
 
 
-void text_msdf_pipeline::destroy_graphical_buffers(VkDevice device) {
+void glyph_msdf_pipeline::destroy_graphical_buffers(VkDevice device) {
         destroy_atlas_texture(device);
         object_2d_pipeline::destroy_graphical_buffers(device);
 }
@@ -212,7 +212,7 @@ std::unordered_map<unsigned char, glyph_mapping_entry> load_glyph_mapping_csv_fi
         return result;
 }
 
-void text_msdf_pipeline::create_atlas_texture(VkDevice device) {
+void glyph_msdf_pipeline::create_atlas_texture(VkDevice device) {
 
         rgba_image loaded_image_data = load_rgba_file("../resource/font/gsanscode_w500_mtsdf.rgba");
 
@@ -307,7 +307,7 @@ void text_msdf_pipeline::create_atlas_texture(VkDevice device) {
 }
 
 
-void text_msdf_pipeline::destroy_atlas_texture(VkDevice device) {
+void glyph_msdf_pipeline::destroy_atlas_texture(VkDevice device) {
         if (atlas_sampler != VK_NULL_HANDLE) {
                 vkDestroySampler(device, atlas_sampler, nullptr);
                 atlas_sampler = VK_NULL_HANDLE;
@@ -327,7 +327,7 @@ void text_msdf_pipeline::destroy_atlas_texture(VkDevice device) {
 }
 
 
-std::vector<VkDescriptorSetLayoutBinding> text_msdf_pipeline::generate_layout_bindings() {
+std::vector<VkDescriptorSetLayoutBinding> glyph_msdf_pipeline::generate_layout_bindings() {
         std::vector<VkDescriptorSetLayoutBinding> layout_bindings = object_2d_pipeline::generate_layout_bindings();
         layout_bindings.push_back ( {
                 .binding = (uint32_t)layout_bindings.size(),
@@ -339,7 +339,7 @@ std::vector<VkDescriptorSetLayoutBinding> text_msdf_pipeline::generate_layout_bi
 }
 
 
-std::vector<VkDescriptorPoolSize> text_msdf_pipeline::generate_pool_sizes(glm::u32 frame_amount) {
+std::vector<VkDescriptorPoolSize> glyph_msdf_pipeline::generate_pool_sizes(glm::u32 frame_amount) {
         std::vector<VkDescriptorPoolSize> pool_sizes = object_2d_pipeline::generate_pool_sizes(frame_amount);
         pool_sizes.push_back ( {
                 .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -349,7 +349,7 @@ std::vector<VkDescriptorPoolSize> text_msdf_pipeline::generate_pool_sizes(glm::u
 }
 
 
-std::vector<VkWriteDescriptorSet> text_msdf_pipeline::generate_descriptor_sets(
+std::vector<VkWriteDescriptorSet> glyph_msdf_pipeline::generate_descriptor_sets(
         const VkDescriptorSet& in_descriptor_set, glm::u32 frame_index,
         std::list<VkDescriptorBufferInfo>& buf_info_lifetime, std::list<VkDescriptorImageInfo>& img_info_lifetime) {
 

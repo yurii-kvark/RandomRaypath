@@ -6,7 +6,7 @@ namespace ray::graphics {
 
 #if RAY_GRAPHICS_ENABLE
 
-struct text_msdf_pipeline_data_model {
+struct glyph_msdf_pipeline_data_model {
         struct pipeline : object_2d_pipeline_data_model::pipeline {
         };
 
@@ -44,11 +44,11 @@ struct glyph_mapping_entry {
         double y_end_em = 0;
 };
 
-class text_msdf_pipeline final : public object_2d_pipeline<text_msdf_pipeline_data_model> {
+class glyph_msdf_pipeline final : public object_2d_pipeline<glyph_msdf_pipeline_data_model> {
 public:
         using object_2d_pipeline::object_2d_pipeline;
 public:
-        virtual void update_render_obj(typename text_msdf_pipeline_data_model::draw_obj& inout_draw_data, typename text_msdf_pipeline_data_model::pipe2d_draw_obj_ssbo& inout_ssbo_obj) override;
+        virtual void update_render_obj(typename glyph_msdf_pipeline_data_model::draw_obj& inout_draw_data, typename glyph_msdf_pipeline_data_model::pipe2d_draw_obj_ssbo& inout_ssbo_obj) override;
 
 protected:
         virtual std::filesystem::path get_vertex_shader_path() const override;

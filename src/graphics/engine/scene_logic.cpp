@@ -1,7 +1,7 @@
 ﻿#include "scene_logic.h"
 #include "graphics/window/window.h"
 #include "graphics/rhi/renderer.h"
-#include "graphics/rhi/pipeline/impl/text_msdf_pipeline.h"
+#include "graphics/rhi/pipeline/impl/glyph_msdf_pipeline.h"
 #include "utils/ray_time.h"
 
 #include <thread>
@@ -46,7 +46,7 @@ scene_logic::scene_logic(window& win, renderer& rend) {
         pipeline_handle<rainbow_rect_pipeline> rainbow_pipeline = rend.pipe.create_pipeline<rainbow_rect_pipeline>(2);
         pipeline_handle<solid_rect_pipeline> rect_pipeline = rend.pipe.create_pipeline<solid_rect_pipeline>(1);
 
-        pipeline_handle<text_msdf_pipeline> text_pipeline = rend.pipe.create_pipeline<text_msdf_pipeline>(3);
+        pipeline_handle<glyph_msdf_pipeline> text_pipeline = rend.pipe.create_pipeline<glyph_msdf_pipeline>(3);
 
         if (!rainbow_pipeline.is_valid() || !rect_pipeline.is_valid() || !text_pipeline.is_valid()) {
                 return;
@@ -62,8 +62,8 @@ scene_logic::scene_logic(window& win, renderer& rend) {
         rect_4_dyn_world = rend.pipe.create_draw_obj<solid_rect_pipeline>(rect_pipeline);
         rect_5_world = rend.pipe.create_draw_obj<solid_rect_pipeline>(rect_pipeline);
 
-        text_1_handle = rend.pipe.create_draw_obj<text_msdf_pipeline>(text_pipeline);
-        text_2_handle = rend.pipe.create_draw_obj<text_msdf_pipeline>(text_pipeline);
+        text_1_handle = rend.pipe.create_draw_obj<glyph_msdf_pipeline>(text_pipeline);
+        text_2_handle = rend.pipe.create_draw_obj<glyph_msdf_pipeline>(text_pipeline);
 
         if (auto text_1_handle_data = rend.pipe.access_draw_obj_data(text_1_handle)) {
                 text_1_handle_data->content_glyph = 'h';
