@@ -18,15 +18,17 @@ struct text_msdf_pipeline_data_model {
                 glm::vec4 text_outline_color {};
                 glm::vec4 background_color {};
 
+                glm::u32 content_capacity = 64; // this is the allocated text limit on GPU
+
                 bool content_need_update = true;
-                std::u8string text_content;
+                std::u8string text_content; // TODO: optimize usage of memory
         };
 
         using pipe2d_frame_ubo = object_2d_pipeline_data_model::pipe2d_frame_ubo;
 
         struct alignas(16) pipe2d_draw_obj_ssbo {
                 glm::vec4 transform_ndc = {}; // x_ndc, y_ndc, w_ndc, h_ndc
-                glm::vec4 uv_rect; // u0,v0,u1,v1 in atlas UV
+                glm::vec4 uv_rect; // u0,v0,u1,v1 glyph in atlas UV
                 glm::vec4 color = {};
                 glm::u32 space_basis = 0.f;
                 glm::f32 weight = 0.f;
@@ -36,8 +38,12 @@ struct text_msdf_pipeline_data_model {
                 glm::vec4 outline_color;
                 glm::vec4 background_color;
         };
-};
 
+        // struct logical_text_obj_ssbo {
+        //         std::string_view content;
+        //         glm::u32 alloted_capacity = 64;
+        // };
+};
 
 struct glyph_mapping_entry {
         unsigned char mapped_character = 0;
