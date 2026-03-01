@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "../object_2d_pipeline.h"
+#include "utils/ray_font.h"
 
 
 namespace ray::graphics {
@@ -33,20 +34,6 @@ struct glyph_pipeline_data_model {
         };
 };
 
-struct glyph_mapping_entry {
-        unsigned char mapped_character = 0;
-        double advance_em = 0;
-
-        double plane_left_em = 0;
-        double plane_bottom_em = 0;
-        double plane_right_em = 0;
-        double plane_top_em = 0;
-
-        double atlas_left_px = 0;
-        double atlas_bottom_px = 0;
-        double atlas_right_px = 0;
-        double atlas_top_px = 0;
-};
 
 struct glyph_uv_mapping {
         unsigned char mapped_character = 0;
@@ -57,6 +44,7 @@ class glyph_pipeline final : public object_2d_pipeline<glyph_pipeline_data_model
 public:
         using object_2d_pipeline::object_2d_pipeline;
 public:
+        void provide_construction_data_loader(std::weak_ptr<glyph_font_data_loader> data_loader);
         virtual void update_render_obj(const typename glyph_pipeline_data_model::draw_obj& inout_draw_data, typename glyph_pipeline_data_model::pipe2d_draw_obj_ssbo& inout_ssbo_obj) override;
 
 protected:
@@ -79,6 +67,7 @@ protected:
         VkImageView atlas_view = VK_NULL_HANDLE;
         VkSampler atlas_sampler = VK_NULL_HANDLE;
 
+        std::weak_ptr<glyph_font_data_loader> construction_data_loader;
         std::unordered_map<unsigned char, glyph_uv_mapping> glyph_mapping;
 
 private:

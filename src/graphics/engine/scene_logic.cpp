@@ -70,16 +70,18 @@ scene_logic::scene_logic(window& win, renderer& rend) {
 
         text_line_manager.init(rend.pipe, 10);
 
-        new_line_1 = text_line_manager.create_text_line(logical_text_line_args {
-                        .init_content_text = "hello world",
-                        .init_capacity = 48,
+        all_pipelines.push_back(text_line_manager.get_pipeline());
+
+        new_line_1 = text_line_manager.create_text_line( {
+                        .content_text = "hello world",
+                        .static_capacity = 48,
                         .space_basis = e_space_type::world,
                         .transform = glm::vec4(0, 0, 0, 60), // x_pos_px, y_pos_px, 0, y_size_px (pivot top left)
                         .z_order = 10,
-                        .text_color = ray_colors::cyan,
-                        .outline_size_ndc = 0.1f,
-                        .outline_color = ray_colors::red,
-                        .background_color = ray_colors::blue
+                        .text_color = ray_colors::lime,
+                        .outline_size_ndc = 0.15f,
+                        .outline_color = ray_colors::magenta,
+                        .background_color = ray_colors::black
                 });
 
         if (auto text_1_handle_data = text_1_handle.access_draw_obj_data()) {
@@ -154,8 +156,8 @@ bool scene_logic::tick(window& win, renderer& rend) {
                         double sec_duration = std::chrono::duration_cast<std::chrono::duration<double>>(ns_duration).count();
                         double fps = 1.f / sec_duration;
                         //std::println("delta ns: {}, fps: {}", last_delta_time_ns, fps);
-                        const std::string fps_ms_str = std::format("delta ns: %.8f, fps: %.1f", last_delta_time_ns, fps);
-                        new_line_1->update(fps_ms_str);
+                        const std::string fps_ms_str = std::format("delta ms: {:.3f}, fps: {:.1f}", (float)sec_duration * 1000.f, (float)fps);
+                        new_line_1->update_content(fps_ms_str);
                 }
         }
 
@@ -190,6 +192,8 @@ bool scene_logic::tick(window& win, renderer& rend) {
 
 
 void scene_logic::cleanup(window& win, renderer& rend) {
+        text_line_manager.destroy(rend.pipe);
+
         for (auto p : all_pipelines) {
                 rend.pipe.destroy_pipeline(p);
         }

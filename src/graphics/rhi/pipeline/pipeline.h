@@ -40,8 +40,8 @@ struct pipeline_handle {
                 : obj_ptr(other.obj_ptr) {}
 
         Pipeline::pipeline_data_model_t* access_pipeline_data(bool set_need_update = true) const;
-        draw_obj_handle<Pipeline> create_draw_obj();
-        void destroy_draw_obj(draw_obj_handle_id obj_id);
+        draw_obj_handle<Pipeline> create_draw_obj() const;
+        void destroy_draw_obj(draw_obj_handle_id obj_id) const;
 };
 
 struct draw_obj_handle_id {
@@ -64,7 +64,7 @@ struct draw_obj_handle {
         draw_obj_handle(const draw_obj_handle<OtherPipeline>& other)
             : pipe_handle(other.pipe_handle), obj_index(other.obj_index) {}
 
-        Pipeline::draw_obj_model_t* access_draw_obj_data(bool set_need_update = true) const {
+        Pipeline::draw_obj_model_t* access_draw_obj_data(bool set_need_update = true) {
                 auto pipe_ptr = pipe_handle.obj_ptr.lock();
                 if (!pipe_ptr) {
                         return nullptr;
@@ -143,7 +143,7 @@ public:
         template <class PipeLine>
         requires std::derived_from<PipeLine, i_pipeline>
                 && ValidPipelineDataModel<PipeLine>
-        PipeLine::draw_obj_model_t* get_draw_model(draw_obj_handle_id obj_id) {
+        PipeLine::draw_obj_model_t* get_draw_model(draw_obj_handle_id& obj_id) {
                 return static_cast<PipeLine::draw_obj_model_t*>(get_draw_data(obj_id));
         }
 
@@ -180,7 +180,7 @@ Pipeline::pipeline_data_model_t* pipeline_handle<Pipeline>::access_pipeline_data
 
 
 template<class Pipeline>
-draw_obj_handle<Pipeline> pipeline_handle<Pipeline>::create_draw_obj() {
+draw_obj_handle<Pipeline> pipeline_handle<Pipeline>::create_draw_obj() const {
         auto pipe_ptr = obj_ptr.lock();
         if (!pipe_ptr) {
                 return draw_obj_handle<Pipeline>();
@@ -195,7 +195,7 @@ draw_obj_handle<Pipeline> pipeline_handle<Pipeline>::create_draw_obj() {
 
 
 template<class Pipeline>
-void pipeline_handle<Pipeline>::destroy_draw_obj(draw_obj_handle_id obj_id) {
+void pipeline_handle<Pipeline>::destroy_draw_obj(draw_obj_handle_id obj_id) const {
         auto pipe_ptr = obj_ptr.lock();
         if (!pipe_ptr) {
                 return;

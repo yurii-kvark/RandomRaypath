@@ -24,7 +24,7 @@ public:
         }
 
         template<class Pipeline>
-        pipeline_handle<Pipeline> create_pipeline(glm::u32 render_priority = 0) {
+        pipeline_handle<Pipeline> create_pipeline(glm::u32 render_priority = 0, bool auto_construct = true) {
                 pipeline_arguments args {
                         .index_pool = draw_object_index_pool,
                         .swapchain_format = swapchain_format,
@@ -33,7 +33,10 @@ public:
                 };
 
                 auto pipe = std::make_shared<Pipeline>(args);
-                pipe->construct_pipeline();
+
+                if (auto_construct) {
+                        pipe->construct_pipeline();
+                }
 
                 // binary search
                 auto found_pipe_it = std::lower_bound(
