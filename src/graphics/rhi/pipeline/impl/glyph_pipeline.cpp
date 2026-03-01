@@ -10,8 +10,8 @@
 using namespace ray::graphics;
 using namespace ray;
 
-void glyph_pipeline::provide_construction_data_loader(std::weak_ptr<glyph_font_data_loader> data_loader) {
-        construction_data_loader = std::move(data_loader);
+void glyph_pipeline::provide_construction_data_loader(std::weak_ptr<glyph_font_data> in_data_loader) {
+        data_loader = std::move(in_data_loader);
 }
 
 
@@ -63,51 +63,39 @@ void glyph_pipeline::destroy_graphical_buffers(VkDevice device) {
 
 
 void glyph_pipeline::create_atlas_texture(VkDevice device) {
-        auto loader = construction_data_loader.lock();
+        auto loader = data_loader.lock();
 
         if (!loader) {
-                loader = std::make_shared<glyph_font_data_loader>(
-                        glyph_font_data_loader::default_rgba_fontpath,
-                        glyph_font_data_loader::default_csv_mappath);
+                loader = std::make_shared<glyph_font_data>();
+
+                ray_error load_error = loader->load_files(
+                        glyph_font_data::default_rgba_atlas_file,
+                        glyph_font_data::default_csv_mapping_file);
+
+                if (load_error.has_value()) {
+                        ray_log(e_log_type::fatal, "glyph_pipeline.construction_data_loader did not provided, glyph_pipeline fallback load error: {}.", *load_error);
+                }
 
                 ray_log(e_log_type::warning, "glyph_pipeline.construction_data_loader did not provided, glyph_pipeline fallback to default font.");
         }
 
-        if (!loader) {
-                ray_log(e_log_type::fatal, "construction_data_loader did not provided");
+        if (!loader->is_valid()) {
+                ray_log(e_log_type::fatal, "construction_data_loader did not loaded");
                 return;
         }
 
-        const rgba_image& loaded_image_data = loader->load_image();
+        const glyph_rgba_atlas& loaded_image_data = loader->image_atlas;
 
         if (loaded_image_data.pixels_rgba.empty()) {
                 ray_log(e_log_type::fatal, "RGBA font file failed to load.");
                 return;
         }
 
-        const std::vector<glyph_mapping_entry>& glyph_vec = loader->load_raw_mapping();
+        glyph_mapping = loader->uv_mapping;
 
-        if (glyph_vec.empty()) {
+        if (glyph_mapping.empty()) {
                 ray_log(e_log_type::fatal, "glyph_mapping font file failed to load");
                 return;
-        }
-
-        glyph_mapping.clear();
-        glyph_mapping.reserve(256);
-
-        const glm::f32 inv_w = 1.0f / (glm::f32)loaded_image_data.width;
-        const glm::f32 inv_h = 1.0f / (glm::f32)loaded_image_data.height;
-
-        for (const auto& em : glyph_vec) {
-                glyph_mapping[em.mapped_character] = glyph_uv_mapping{
-                        .mapped_character = em.mapped_character,
-                        .uv_rect = glm::vec4(
-                            (glm::f32)em.atlas_left_px * inv_w,
-                            (glm::f32)em.atlas_top_px * inv_h,
-                            (glm::f32)em.atlas_right_px * inv_w,
-                            (glm::f32)em.atlas_bottom_px * inv_h
-                            )
-                };
         }
 
         const VkImageCreateInfo image_info {

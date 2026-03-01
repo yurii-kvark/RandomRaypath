@@ -49,15 +49,16 @@ scene_logic::scene_logic(window& win, renderer& rend) {
         pipeline_handle<rainbow_rect_pipeline> rainbow_pipeline = rend.pipe.create_pipeline<rainbow_rect_pipeline>(2);
         pipeline_handle<solid_rect_pipeline> rect_pipeline = rend.pipe.create_pipeline<solid_rect_pipeline>(1);
 
-        pipeline_handle<glyph_pipeline> text_pipeline = rend.pipe.create_pipeline<glyph_pipeline>(3);
+        //pipeline_handle<glyph_pipeline> text_pipeline = rend.pipe.create_pipeline<glyph_pipeline>(3);
 
-        if (!rainbow_pipeline.is_valid() || !rect_pipeline.is_valid() || !text_pipeline.is_valid()) {
+        if (!rainbow_pipeline.is_valid() || !rect_pipeline.is_valid() ){//|| !text_pipeline.is_valid()) {
                 return;
         }
 
+        pipeline_handle<glyph_pipeline> text_pipeline;
         all_pipelines.push_back(rainbow_pipeline);
         all_pipelines.push_back(rect_pipeline);
-        all_pipelines.push_back(text_pipeline);
+        //all_pipelines.push_back(text_pipeline);
 
         rainbow_1_screen = rainbow_pipeline.create_draw_obj();
         rainbow_2_screen = rainbow_pipeline.create_draw_obj();
@@ -73,7 +74,7 @@ scene_logic::scene_logic(window& win, renderer& rend) {
         all_pipelines.push_back(text_line_manager.get_pipeline());
 
         new_line_1 = text_line_manager.create_text_line( {
-                        .content_text = "hello world",
+                        .content_text = "hell",
                         .static_capacity = 48,
                         .space_basis = e_space_type::world,
                         .transform = glm::vec4(0, 0, 0, 60), // x_pos_px, y_pos_px, 0, y_size_px (pivot top left)

@@ -26,12 +26,16 @@ class logical_text_line {
 public:
         void update_content(std::string_view in_new_content);
 
-        void init(const glyph_font_data_loader& data_loader, const pipeline_handle<glyph_pipeline>& in_pipe, logical_text_line_args in_args);
+        void init(const std::weak_ptr<glyph_font_data>& in_loader, const pipeline_handle<glyph_pipeline>& in_pipe, logical_text_line_args in_args);
         void destroy();
 
 protected:
+        glm::vec4 iterate_line_transform(const glyph_plane_mapping& in_plane, glm::f32 line_top_em, glm::f32& i_cursor_x_em);
+
+        std::weak_ptr<glyph_font_data> data_loader;
         pipeline_handle<glyph_pipeline> pipe {};
         std::vector<draw_obj_handle_id> draw_obj_handles {};
+        glm::vec4 pivot_transform {};
 };
 
 
@@ -51,7 +55,7 @@ public:
 
 protected:
         pipeline_handle<glyph_pipeline> text_pipeline_handle {};
-        std::shared_ptr<glyph_font_data_loader> data_loader = nullptr;
+        std::shared_ptr<glyph_font_data> data_loader = nullptr;
 };
 
 #endif

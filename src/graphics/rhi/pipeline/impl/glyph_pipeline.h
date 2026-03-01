@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "../object_2d_pipeline.h"
-#include "utils/ray_font.h"
+#include "utils/ray_glyph.h"
 
 
 namespace ray::graphics {
@@ -35,16 +35,11 @@ struct glyph_pipeline_data_model {
 };
 
 
-struct glyph_uv_mapping {
-        unsigned char mapped_character = 0;
-        glm::vec4 uv_rect = {};
-};
-
 class glyph_pipeline final : public object_2d_pipeline<glyph_pipeline_data_model> {
 public:
         using object_2d_pipeline::object_2d_pipeline;
 public:
-        void provide_construction_data_loader(std::weak_ptr<glyph_font_data_loader> data_loader);
+        void provide_construction_data_loader(std::weak_ptr<glyph_font_data> in_data_loader);
         virtual void update_render_obj(const typename glyph_pipeline_data_model::draw_obj& inout_draw_data, typename glyph_pipeline_data_model::pipe2d_draw_obj_ssbo& inout_ssbo_obj) override;
 
 protected:
@@ -67,8 +62,8 @@ protected:
         VkImageView atlas_view = VK_NULL_HANDLE;
         VkSampler atlas_sampler = VK_NULL_HANDLE;
 
-        std::weak_ptr<glyph_font_data_loader> construction_data_loader;
-        std::unordered_map<unsigned char, glyph_uv_mapping> glyph_mapping;
+        std::weak_ptr<glyph_font_data> data_loader;
+        std::array<glyph_uv_mapping, 256> glyph_mapping;
 
 private:
         void create_atlas_texture(VkDevice device);
