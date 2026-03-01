@@ -1,7 +1,8 @@
 ﻿cmake_minimum_required(VERSION 4.1)
 
 #set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
-
+# .\msdf-atlas-gen.exe -varfont "source/GoogleSansCode-VariableFont_wght.ttf?wght=500" -type mtsdf -overlap -scanline -size 48 -pxrange 8 -potr -yorigin top -format rgba -imageout "gsanscode_w500_mtsdf.rgba" -csv "gsanscode_w500.csv"
+# must be -pxrange 8
 option(RAY_DEBUG_NO_OPT "Enable debug build options." ON)
 
 if(RAY_DEBUG_NO_OPT)

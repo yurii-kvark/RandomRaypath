@@ -22,20 +22,20 @@ renderer::renderer(std::weak_ptr<GLFWwindow> basis_win)
         : gl_window(std::move(basis_win)) {
 
         if (gl_window.expired()) {
-                std::println("renderer: basis_win == nullptr");
+                ray_log(e_log_type::fatal, "renderer: basis_win == nullptr");
                 return;
         }
 
         driver_lifetime = g_app_driver::thread_safe().init_driver_handler();
 
         if (!driver_lifetime) {
-                std::println("error renderer: can't create driver.");
+                ray_log(e_log_type::fatal, "error renderer: can't create driver.");
                 return;
         }
 
         const bool success_creation = create();
         if (!success_creation) {
-                std::println("error renderer: can't properly init Vulkan runtime.");
+                ray_log(e_log_type::fatal, "error renderer: can't properly init Vulkan runtime.");
                 return;
         }
 }
@@ -218,20 +218,20 @@ void renderer::destroy() {
 
 bool renderer::create_surface() {
         if (surface != VK_NULL_HANDLE) {
-                std::println("renderer: create_surface surface already exist.");
+                ray_log(e_log_type::fatal, "renderer: create_surface surface already exist.");
                 return false;
         }
 
         VkInstance instance = g_app_driver::thread_safe().instance;
 
         if (instance == VK_NULL_HANDLE) {
-                std::println("renderer: create_surface instance is null.");
+                ray_log(e_log_type::fatal, "renderer: create_surface instance is null.");
                 return false;
         }
 
         if (auto window_lock = gl_window.lock()) {
                 if (glfwCreateWindowSurface(instance, window_lock.get(), nullptr, &surface) != VK_SUCCESS) {
-                        std::println("renderer: glfwCreateWindowSurface failed");
+                        ray_log(e_log_type::fatal, "renderer: glfwCreateWindowSurface failed");
                         return false;
                 }
 
@@ -239,7 +239,7 @@ bool renderer::create_surface() {
                         driver_lifetime->try_init_with_surface(surface);
                 }
         } else {
-                std::println("renderer: create_surface gl_window is null.");
+                ray_log(e_log_type::fatal, "renderer: create_surface gl_window is null.");
         }
 
         return surface != VK_NULL_HANDLE;
@@ -284,7 +284,7 @@ bool renderer::create_swapchain() {
         vkGetPhysicalDeviceSurfacePresentModesKHR(physical, surface, &present_mode_count, present_modes.data());
 
         if (format_count == 0 || present_mode_count == 0) {
-                std::println("renderer: surface has no formats or present modes");
+                ray_log(e_log_type::fatal, "renderer: surface has no formats or present modes");
                 return false;
         }
 
@@ -315,7 +315,7 @@ bool renderer::create_swapchain() {
                 }
 
                 if (w == 0 || h == 0) {
-                        std::println("renderer: gl_window({}), glfwGetFramebufferSize return 0, 0 surface size.", gl_window.expired() ? "null" : "present");
+                        ray_log(e_log_type::fatal, "renderer: gl_window({}), glfwGetFramebufferSize return 0, 0 surface size.", gl_window.expired() ? "null" : "present");
                         return false;
                 }
 
@@ -369,7 +369,7 @@ bool renderer::create_swapchain() {
         swapchain_create_info.imageUsage = usage;
 
         if (vkCreateSwapchainKHR(device, &swapchain_create_info, nullptr, &swapchain) != VK_SUCCESS) {
-                std::println("renderer: vkCreateSwapchainKHR failed");
+                ray_log(e_log_type::fatal, "renderer: vkCreateSwapchainKHR failed");
                 return false;
         }
 
@@ -401,7 +401,7 @@ bool renderer::create_swapchain() {
                 image_view_ci.subresourceRange.layerCount = 1;
 
                 if (vkCreateImageView(device, &image_view_ci, nullptr, &swapchain_image_views[i]) != VK_SUCCESS) {
-                        std::println("renderer: vkCreateImageView failed");
+                        ray_log(e_log_type::fatal, "renderer: vkCreateImageView failed");
                         return false;
                 }
         }
@@ -449,7 +449,7 @@ bool renderer::create_commands() {
         command_pool_cinf.queueFamilyIndex = gfx_family;
 
         if (vkCreateCommandPool(device, &command_pool_cinf, nullptr, &cmd_pool) != VK_SUCCESS) {
-                std::println("renderer: vkCreateCommandPool failed");
+                ray_log(e_log_type::fatal, "renderer: vkCreateCommandPool failed");
                 return false;
         }
 
@@ -459,7 +459,7 @@ bool renderer::create_commands() {
         buffer_allocate_info.commandBufferCount = g_app_driver::k_frames_in_flight;
 
         if (vkAllocateCommandBuffers(device, &buffer_allocate_info, cmd) != VK_SUCCESS) {
-                std::println("renderer: vkAllocateCommandBuffers failed");
+                ray_log(e_log_type::fatal, "renderer: vkAllocateCommandBuffers failed");
                 return false;
         }
 

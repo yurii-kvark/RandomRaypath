@@ -13,17 +13,17 @@ layout(set = 0, binding = 0) uniform pipe_frame_ubo {
     vec4 camera_transform_ndc; // x_px, y_px, scale, 1.0
 } pipe_frame;
 
-struct DrawObj {
+struct pipe2d_draw_obj_ssbo {
     vec4 transform_ndc;  // x_ndc, y_ndc, wFactor, hFactor
     vec4 color;
-    uint render_order;
     uint space_basis;
     uint _pad0;
     uint _pad1;
+    uint _pad2;
 };
 
-layout(std430, set = 0, binding = 1) readonly buffer DrawObjs {
-    DrawObj objs[];
+layout(std430, set = 0, binding = 1) readonly buffer pipe2d_draw_obj_ssbos {
+    pipe2d_draw_obj_ssbo objs[];
 } ssbo;
 
 
@@ -37,7 +37,7 @@ layout(std430, set = 0, binding = 1) readonly buffer DrawObjs {
 
 
 void main() {
-    DrawObj obj = ssbo.objs[gl_InstanceIndex];
+    pipe2d_draw_obj_ssbo obj = ssbo.objs[gl_InstanceIndex];
 
     vec2 pos = obj.transform_ndc.xy;
     vec2 scl = obj.transform_ndc.zw;

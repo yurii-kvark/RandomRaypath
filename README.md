@@ -12,7 +12,7 @@ and ultimately distributed network workers, batching rays, aggregating area segm
 No persistent result of computation storage, only RAM and VRAM usage at the maximum limit.  
   
 Current status:  
-build pipeline - 100%   
+build pipeline - 80%
 optimized graphics - 30%  
 simulation and interaction - 10%  
 network distribution - 0%  

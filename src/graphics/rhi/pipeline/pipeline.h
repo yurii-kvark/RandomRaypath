@@ -58,11 +58,11 @@ struct draw_obj_handle {
 };
 
 struct i_pipeline_data_model {
-        struct pipeline { // POD type
+        struct pipeline {
                 bool need_update = true; // init update true
         };
 
-        struct draw_obj { // POD type
+        struct draw_obj {
                 bool need_update = true; // init update true
                 draw_obj_id id = UINT64_MAX;
         };

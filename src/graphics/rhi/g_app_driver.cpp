@@ -1,5 +1,7 @@
 ﻿#include "g_app_driver.h"
 
+#include "utils/ray_log.h"
+
 #include <cstring>
 #include <memory>
 #include <print>
@@ -62,7 +64,7 @@ std::shared_ptr<g_app_driver::driver_handler> g_app_driver::init_driver_handler(
                         static_init_done = true;
 
                         if (volkInitialize() != VK_SUCCESS) {
-                                std::println("renderer: no Vulkan runtime (missing vulkan-1.dll / libvulkan.so)");
+                                ray_log(e_log_type::fatal, "renderer: no Vulkan runtime (missing vulkan-1.dll / libvulkan.so)");
                         }
                 }
 
@@ -202,7 +204,7 @@ void g_app_driver::graphic_init() {
         ci.ppEnabledExtensionNames = extensions.data();
 
         if (vkCreateInstance(&ci, nullptr, &instance) != VK_SUCCESS) {
-                std::println("renderer: vkCreateInstance failed");
+                ray_log(e_log_type::fatal, "renderer: vkCreateInstance failed");
                 return;
         }
 
@@ -214,7 +216,7 @@ void g_app_driver::graphic_init_surface(VkSurfaceKHR surface) {
         uint32_t device_count = 0;
         vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
         if (device_count == 0) {
-                std::println("renderer: no physical devices found");
+                ray_log(e_log_type::fatal, "renderer: no physical devices found");
                 return;
         }
 
@@ -231,7 +233,7 @@ void g_app_driver::graphic_init_surface(VkSurfaceKHR surface) {
                 auto& device_el = devices[i];
 
                 std::string name = device_helpers::device_name(device_el);
-                std::println("renderer: detected GPU: {}", name);
+                ray_log(e_log_type::info, "renderer: detected GPU: {}", name);
 
                 if (!device_helpers::has_extension(device_el, VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
                         continue;
@@ -273,11 +275,11 @@ void g_app_driver::graphic_init_surface(VkSurfaceKHR surface) {
         }
 
         if (physical == VK_NULL_HANDLE) {
-                std::println("renderer: failed to find suitable GPU");
+                ray_log(e_log_type::fatal, "renderer: failed to find suitable GPU");
                 return;
         }
 
-        std::println("INFO renderer: Seleced GPU device [{}]", best_device_name);
+        ray_log(e_log_type::info, "renderer: Seleced GPU device [{}]", best_device_name);
 
         std::set<glm::u32> require_family_indexes = {
                 gfx_family,
@@ -308,7 +310,7 @@ void g_app_driver::graphic_init_surface(VkSurfaceKHR surface) {
         device_create_info.ppEnabledExtensionNames = dev_exts;
 
         if (vkCreateDevice(physical, &device_create_info, nullptr, &device) != VK_SUCCESS) {
-                std::println("renderer: vkCreateDevice failed");
+                ray_log(e_log_type::fatal, "renderer: vkCreateDevice failed");
                 return;
         }
 
