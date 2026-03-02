@@ -33,6 +33,13 @@ void glyph_pipeline::update_render_obj(const typename glyph_pipeline_data_model:
         inout_ssbo_obj.space_basis = (glm::u32)inout_draw_data.space_basis;
 
         inout_ssbo_obj.transform_ndc = inout_draw_data.transform;
+
+        inout_ssbo_obj.transform_ndc.x *= 2.f;
+        inout_ssbo_obj.transform_ndc.y *= 2.f;
+
+        inout_ssbo_obj.transform_ndc.x += inout_ssbo_obj.transform_ndc.z;
+        inout_ssbo_obj.transform_ndc.y += inout_ssbo_obj.transform_ndc.w;
+
         inout_ssbo_obj.transform_ndc.x /= this->resolution.x;
         inout_ssbo_obj.transform_ndc.y /= this->resolution.y;
         inout_ssbo_obj.transform_ndc.z /= this->resolution.x;

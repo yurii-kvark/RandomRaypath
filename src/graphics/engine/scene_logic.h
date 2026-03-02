@@ -27,19 +27,19 @@ public:
 public:
         void tick_camera_movement(window& win, renderer& rend); // todo: move camera to logical_system
 
-        glm::vec4 transform_dyn_3 = {};
-        glm::vec4 transform_dyn_4 = {};
+        glm::vec4 transform_dyn_1 = {};
+        glm::vec4 transform_dyn_2 = {};
 
         std::vector<pipeline_handle<object_2d_pipeline<>>> all_pipelines;
 
-        draw_obj_handle<rainbow_rect_pipeline> rainbow_1_screen;
-        draw_obj_handle<rainbow_rect_pipeline> rainbow_2_screen;
-        draw_obj_handle<solid_rect_pipeline> rect_3_dyn_world;
-        draw_obj_handle<solid_rect_pipeline> rect_4_dyn_world;
-        draw_obj_handle<solid_rect_pipeline> rect_5_world;
+        draw_obj_handle<rainbow_rect_pipeline> rainbow_a;
+        draw_obj_handle<rainbow_rect_pipeline> rainbow_b;
+        draw_obj_handle<solid_rect_pipeline> rect_1;
+        draw_obj_handle<solid_rect_pipeline> rect_2;
+        draw_obj_handle<solid_rect_pipeline> rect_3;
 
-        draw_obj_handle<glyph_pipeline> text_1_handle;
-        draw_obj_handle<glyph_pipeline> text_2_handle;
+        draw_obj_handle<glyph_pipeline> text_M_handle;
+        //draw_obj_handle<glyph_pipeline> text_K_handle;
 
         glm::u64 last_time_ns = 0; // TODO: move fps and other HUD stats to logical_system
         glm::u64 last_delta_time_ns = 0;

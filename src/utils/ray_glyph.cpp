@@ -98,14 +98,14 @@ ray_error _load_glyph_mapping_csv_file(const std::filesystem::path& csv_mapping_
                 entry.advance_em = _parse_f64(cols[1]);
 
                 entry.plane_left_em = _parse_f64(cols[2]);
-                entry.plane_bottom_em = _parse_f64(cols[3]);
+                entry.plane_top_em = _parse_f64(cols[3]);
                 entry.plane_right_em = _parse_f64(cols[4]);
-                entry.plane_top_em = _parse_f64(cols[5]);
+                entry.plane_bottom_em = _parse_f64(cols[5]);
 
                 entry.atlas_left_px = _parse_f64(cols[6]);
-                entry.atlas_bottom_px = _parse_f64(cols[7]);
+                entry.atlas_top_px = _parse_f64(cols[7]);
                 entry.atlas_right_px = _parse_f64(cols[8]);
-                entry.atlas_top_px = _parse_f64(cols[9]);
+                entry.atlas_bottom_px = _parse_f64(cols[9]);
 
                 out_mapping_vec.push_back(entry);
         }
@@ -198,22 +198,25 @@ ray_error glyph_font_data::load_mapping_file(const std::filesystem::path& csv_ma
         const glm::f32 inv_h = 1.0f / (glm::f32)std::max(image_atlas.height, 1u);
         plane_line_top_em = 1.f;
 
+        plane_mapping[0] = glyph_plane_mapping {};
+        uv_mapping[0] = glyph_uv_mapping {};
+
         for (const auto& mapping : vec_mapping) {
                 plane_mapping[mapping.mapped_character] = glyph_plane_mapping {
                         .advance_em = mapping.advance_em,
                         .plane_em = glm::vec4(
                                 mapping.plane_left_em,
-                                mapping.plane_bottom_em,
+                                mapping.plane_top_em,
                                 mapping.plane_right_em,
-                                mapping.plane_top_em
+                                mapping.plane_bottom_em
                         )};
 
                 uv_mapping[mapping.mapped_character] = glyph_uv_mapping {
                         .uv_rect = glm::vec4(
                                 mapping.atlas_left_px * inv_w,
-                                mapping.atlas_top_px * inv_h,
+                                mapping.atlas_bottom_px * inv_h,
                                 mapping.atlas_right_px * inv_w,
-                                mapping.atlas_bottom_px * inv_h
+                                mapping.atlas_top_px * inv_h
                         )};
 
                 plane_line_top_em = std::max(plane_line_top_em, mapping.plane_top_em);

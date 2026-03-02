@@ -91,16 +91,20 @@ void logical_text_line::init(const std::weak_ptr<glyph_font_data>& in_loader, co
         }
 }
 
-
 glm::vec4 logical_text_line::iterate_line_transform(const glyph_plane_mapping& in_plane, glm::f32 line_top_em, glm::f32& i_cursor_x_em) {
-        const glm::f32 glyph_scale_px = std::max(1.f, pivot_transform.w);
-        const glm::f32 glyph_width_em = std::max(0.f, in_plane.right_em() - in_plane.left_em());
-        const glm::f32 glyph_x_px = pivot_transform.x + (i_cursor_x_em + in_plane.left_em()) * glyph_scale_px;
-        const glm::f32 glyph_y_px = pivot_transform.y + (line_top_em - in_plane.top_em()) * glyph_scale_px;
+        const glm::f32 glyph_scale_px = std::max(1.f, pivot_transform.w * 0.75f);
+        const glm::f32 glyph_width_em = std::max(0.f,  in_plane.right_em() - in_plane.left_em());
+        const glm::f32 glyph_height_em = std::max(0.f, in_plane.bottom_em() - in_plane.top_em());
+
+        const glm::f32 left_px = pivot_transform.x + (i_cursor_x_em + in_plane.left_em()) * glyph_scale_px;
+        const glm::f32 top_px = pivot_transform.y + (line_top_em + in_plane.top_em()) * glyph_scale_px;
+
+        const glm::f32 width_px = glyph_width_em * glyph_scale_px;
+        const glm::f32 height_px = glyph_height_em * glyph_scale_px;
 
         i_cursor_x_em += std::max(0.f, in_plane.advance_em);
 
-        return glm::vec4(glyph_x_px, glyph_y_px, glyph_width_em * glyph_scale_px, glyph_scale_px);
+        return glm::vec4(left_px, top_px, width_px, height_px);
 }
 
 
