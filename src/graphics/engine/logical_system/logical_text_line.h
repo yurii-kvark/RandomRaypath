@@ -16,7 +16,7 @@ struct logical_text_line_args {
         glm::vec4 transform = glm::vec4(0.f, 0.f, 0.f, 50.f); // x_pos_px, y_pos_px, 0, y_size_px (pivot top left)
         glm::u32 z_order = 0;
         glm::vec4 text_color = glm::vec4(1);
-        glm::f32 outline_size_ndc = 0.1f;
+        glm::f32 outline_size_px = 2.f;
         glm::vec4 outline_color = glm::vec4(0.5f, 1.f, 0.5f, 1.f);
         glm::vec4 background_color = glm::vec4(0);
 };
@@ -46,7 +46,7 @@ public:
         logical_text_line_manager() = default;
         ~logical_text_line_manager() = default;
 
-        void init(pipeline_manager& pipe, glm::u32 render_order);
+        ray_error init(pipeline_manager& pipe, glm::u32 render_order);
         void destroy(pipeline_manager& pipe);
 
         pipeline_handle<object_2d_pipeline<>> get_pipeline();

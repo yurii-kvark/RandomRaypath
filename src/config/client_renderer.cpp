@@ -97,6 +97,12 @@ std::expected<client_renderer, std::string> client_renderer::load(std::filesyste
                 cnf_cr.window.zoom_speed = (glm::f32)ptr_zoom_f->get();
         }
 
+        if (const auto logical_scene = toml_cnf_cr->get_as<std::string>("logical_scene")) {
+                cnf_cr.logical_scene = logical_scene->get();
+        } else {
+                return std::unexpected("Can't parse client_renderer.logical_scene");
+        }
+
         if (const auto* toml_visual_style = toml_cnf_cr->get_as<toml::table>("visual_style")) {
                 auto read_color = [&](std::string_view key, glm::dvec4& out) -> std::optional<std::string> {
                         if (toml_visual_style->find(key) == toml_visual_style->end()) { // no key - no error

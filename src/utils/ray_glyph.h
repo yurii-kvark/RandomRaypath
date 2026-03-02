@@ -51,8 +51,8 @@ struct glyph_raw_mapping_entry {
 
 class glyph_font_data {
 public:
-        static constexpr char default_rgba_atlas_file[] = "../resource/font/gsanscode_w500_mtsdf.rgba";
-        static constexpr char default_csv_mapping_file[] = "../resource/font/gsanscode_w500.csv";
+        static constexpr char default_rgba_atlas_file[] = "../resource/font/gsanscode_w400_mtsdf.rgba";
+        static constexpr char default_csv_mapping_file[] = "../resource/font/gsanscode_w400.csv";
 
         ray_error load_files(std::filesystem::path rgba_atlas_file, std::filesystem::path csv_mapping_file);
         bool is_valid() const;

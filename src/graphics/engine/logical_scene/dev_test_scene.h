@@ -1,13 +1,10 @@
 ﻿#pragma once
-#include "graphics/rhi/pipeline/object_2d_pipeline.h"
-#include "graphics/rhi/pipeline/pipeline.h"
+#include "i_logical_scene.h"
+#include "graphics/engine/logical_system/logical_2d_world_view.h"
+#include "graphics/engine/logical_system/logical_text_line.h"
+#include "graphics/rhi/pipeline/impl/glyph_pipeline.h"
 #include "graphics/rhi/pipeline/impl/rainbow_rect_pipeline.h"
 #include "graphics/rhi/pipeline/impl/solid_rect_pipeline.h"
-#include "graphics/rhi/pipeline/impl/glyph_pipeline.h"
-#include "logical_system/logical_text_line.h"
-
-#include <vector>
-
 
 namespace ray::graphics {
 
@@ -15,22 +12,20 @@ namespace ray::graphics {
 class window;
 class renderer;
 
-class scene_logic {
+class dev_test_scene : public i_logical_scene {
 public:
-        scene_logic(window& win, renderer& rend);
-        ~scene_logic();
-
-        bool tick(window& win, renderer& rend);
-
-        void cleanup(window& win, renderer& rend);
-
+        virtual ray_error init(window& win, pipeline_manager& rend) override;
+        virtual bool tick(window& win, pipeline_manager& rend) override;
+        virtual void cleanup(window& win, pipeline_manager& rend) override;
 public:
-        void tick_camera_movement(window& win, renderer& rend); // todo: move camera to logical_system
+        //void tick_camera_movement(window& win, const pipeline_manager& pipe); // todo: move camera to logical_system
+
+        logical_2d_world_view world_processor;
 
         glm::vec4 transform_dyn_1 = {};
         glm::vec4 transform_dyn_2 = {};
 
-        std::vector<pipeline_handle<object_2d_pipeline<>>> all_pipelines;
+        std::vector<pipeline_handle<i_pipeline>> lifetime_pipelines;
 
         draw_obj_handle<rainbow_rect_pipeline> rainbow_a;
         draw_obj_handle<rainbow_rect_pipeline> rainbow_b;
@@ -44,12 +39,13 @@ public:
         glm::u64 last_time_ns = 0; // TODO: move fps and other HUD stats to logical_system
         glm::u64 last_delta_time_ns = 0;
 
-        glm::vec4 camera_transform = {0, 0, 1, 0};
-        std::optional<glm::vec2> base_move_position = std::nullopt;
+        //glm::vec4 camera_transform = {0, 0, 1, 0};
+        //std::optional<glm::vec2> base_move_position = std::nullopt;
 
         logical_text_line_manager text_line_manager;
         logical_text_line_handler new_line_1 = nullptr;
         logical_text_line_handler new_line_2 = nullptr;
+        logical_text_line_handler new_line_3 = nullptr;
 };
 
 #endif

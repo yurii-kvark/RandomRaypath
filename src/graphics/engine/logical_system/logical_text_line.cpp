@@ -5,6 +5,7 @@
 
 #if RAY_GRAPHICS_ENABLE
 
+using namespace ray;
 using namespace ray::graphics;
 
 
@@ -78,7 +79,7 @@ void logical_text_line::init(const std::weak_ptr<glyph_font_data>& in_loader, co
                 const unsigned char glyph_value = i < in_args.content_text.length() ? in_args.content_text[i] : 0;
                 glyph_data->content_glyph = glyph_value;
 
-                glyph_data->text_outline_size_px = in_args.outline_size_ndc;
+                glyph_data->text_outline_size_px = in_args.outline_size_px;
                 glyph_data->text_outline_color = in_args.outline_color;
                 glyph_data->background_color = in_args.background_color;
                 glyph_data->space_basis = in_args.space_basis;
@@ -92,7 +93,7 @@ void logical_text_line::init(const std::weak_ptr<glyph_font_data>& in_loader, co
 }
 
 glm::vec4 logical_text_line::iterate_line_transform(const glyph_plane_mapping& in_plane, glm::f32 line_top_em, glm::f32& i_cursor_x_em) {
-        const glm::f32 glyph_scale_px = std::max(1.f, pivot_transform.w * 0.75f);
+        const glm::f32 glyph_scale_px = std::max(1.f, pivot_transform.w);
         const glm::f32 glyph_width_em = std::max(0.f,  in_plane.right_em() - in_plane.left_em());
         const glm::f32 glyph_height_em = std::max(0.f, in_plane.bottom_em() - in_plane.top_em());
 
@@ -120,17 +121,17 @@ void logical_text_line::destroy() {
 }
 
 
-void logical_text_line_manager::init(pipeline_manager& pipe, glm::u32 render_order) {
+ray_error logical_text_line_manager::init(pipeline_manager& pipe, glm::u32 render_order) {
         text_pipeline_handle = pipe.create_pipeline<glyph_pipeline>(render_order, false);
 
         auto pipe_ptr = static_cast<glyph_pipeline*>(text_pipeline_handle.obj_ptr.lock().get());
         if (!pipe_ptr) {
-                return;
+                return "Can't create glyph_pipeline.";
         }
 
         data_loader = std::make_shared<glyph_font_data>();
         if (!data_loader) {
-                return;
+                return "make_shared glyph_font_data alloc error.";
         }
 
         ray_error load_error = data_loader->load_files(
@@ -138,12 +139,13 @@ void logical_text_line_manager::init(pipeline_manager& pipe, glm::u32 render_ord
                 glyph_font_data::default_csv_mapping_file);
 
         if (load_error.has_value()) {
-                ray_log(e_log_type::fatal, "can't load glyph_font_data: {}", *load_error);
-                return;
+                return std::format("can't load glyph_font_data: {}", *load_error);
         }
 
         pipe_ptr->provide_construction_data_loader(data_loader);
         pipe_ptr->construct_pipeline();
+
+        return {};
 }
 
 
