@@ -85,6 +85,7 @@ void logical_text_line::init(const std::weak_ptr<glyph_font_data>& in_loader, co
                 glyph_data->space_basis = in_args.space_basis;
                 glyph_data->z_order = in_args.z_order;
                 glyph_data->color = in_args.text_color;
+                glyph_data->pivot_offset_ndc = in_args.pivot_offset_ndc;
                 glyph_data->need_update = true;
 
                 const glyph_plane_mapping& plane = planes[glyph_value];

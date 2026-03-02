@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "i_logical_scene.h"
 #include "graphics/engine/logical_system/logical_2d_world_view.h"
+#include "graphics/engine/logical_system/logical_hud_info.h"
 #include "graphics/engine/logical_system/logical_text_line.h"
 #include "graphics/rhi/pipeline/impl/glyph_pipeline.h"
 #include "graphics/rhi/pipeline/impl/rainbow_rect_pipeline.h"
@@ -14,13 +15,14 @@ class renderer;
 
 class dev_test_scene : public i_logical_scene {
 public:
-        virtual ray_error init(window& win, pipeline_manager& rend) override;
-        virtual bool tick(window& win, pipeline_manager& rend) override;
-        virtual void cleanup(window& win, pipeline_manager& rend) override;
+        virtual ray_error init(window& win, pipeline_manager& pipe) override;
+        virtual bool tick(window& win, pipeline_manager& pipe) override;
+        virtual void cleanup(window& win, pipeline_manager& pipe) override;
 public:
         //void tick_camera_movement(window& win, const pipeline_manager& pipe); // todo: move camera to logical_system
 
         logical_2d_world_view world_processor;
+        logical_hud_info hud_info;
 
         glm::vec4 transform_dyn_1 = {};
         glm::vec4 transform_dyn_2 = {};

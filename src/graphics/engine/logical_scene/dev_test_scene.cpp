@@ -4,6 +4,7 @@
 #include "graphics/window/window.h"
 #include "graphics/rhi/renderer.h"
 #include "graphics/rhi/pipeline/impl/glyph_pipeline.h"
+#include "utils/ray_colors.h"
 #include "utils/ray_time.h"
 
 #include <thread>
@@ -13,40 +14,6 @@ using namespace ray;
 using namespace ray::graphics;
 
 #if RAY_GRAPHICS_ENABLE
-
-
-class ray_colors final {
-public:
-        static constexpr float alpha_value = 0.5f;
-
-        static constexpr glm::vec4 transparent {0.0f, 0.0f, 0.0f, 0.0f};
-
-        static constexpr glm::vec4 black {0.0f, 0.0f, 0.0f, alpha_value};
-        static constexpr glm::vec4 white {1.0f, 1.0f, 1.0f, alpha_value};
-        static constexpr glm::vec4 gray {0.5f, 0.5f, 0.5f, alpha_value};
-
-        static constexpr glm::vec4 red {1.0f, 0.0f, 0.0f, alpha_value};
-        static constexpr glm::vec4 green {0.0f, 1.0f, 0.0f, alpha_value};
-        static constexpr glm::vec4 blue {0.0f, 0.0f, 1.0f, alpha_value};
-
-        static constexpr glm::vec4 yellow {1.0f, 1.0f, 0.0f, alpha_value};
-        static constexpr glm::vec4 cyan {0.0f, 1.0f, 1.0f, alpha_value};
-        static constexpr glm::vec4 magenta {1.0f, 0.0f, 1.0f, alpha_value};
-        static constexpr glm::vec4 orange {1.0f, 0.5f, 0.0f, alpha_value};
-        static constexpr glm::vec4 purple {0.5f, 0.0f, 1.0f, alpha_value};
-        static constexpr glm::vec4 pink {1.0f, 0.25f, 0.5f, alpha_value};
-        static constexpr glm::vec4 brown {0.55f, 0.27f, 0.07f, alpha_value};
-        static constexpr glm::vec4 lime {0.50f, 1.00f, 0.00f, alpha_value};
-        static constexpr glm::vec4 teal {0.00f, 0.50f, 0.50f, alpha_value};
-        static constexpr glm::vec4 navy {0.00f, 0.00f, 0.50f, alpha_value};
-        static constexpr glm::vec4 maroon {0.50f, 0.00f, 0.00f, alpha_value};
-        static constexpr glm::vec4 olive {0.50f, 0.50f, 0.00f, alpha_value};
-
-        static glm::vec4 solid(glm::vec4 in) {
-                return {in.x, in.y, in.z, 1};
-        }
-};
-
 
 ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
         last_time_ns = now_ticks_ns();
@@ -66,12 +33,18 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
                 return text_error;
         }
 
+        ray_error hud_error = hud_info.init(win, pipe);
+        if (hud_error) {
+                return hud_error;
+        }
+
         //pipeline_handle<glyph_pipeline> text_pipeline;
         lifetime_pipelines.push_back(rainbow_pipeline);
         lifetime_pipelines.push_back(rect_pipeline);
         lifetime_pipelines.push_back(text_line_manager.get_pipeline());
         lifetime_pipelines.push_back(text_pipeline);
 
+        world_processor.register_pipeline(hud_info.get_pipeline());
         world_processor.register_pipeline(rainbow_pipeline);
         world_processor.register_pipeline(rect_pipeline);
         world_processor.register_pipeline(text_line_manager.get_pipeline());
@@ -186,23 +159,28 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
 
 
 bool dev_test_scene::tick(window& win, pipeline_manager& pipe) {
-        {
-                glm::u64 curr_time_ns = now_ticks_ns();
-                last_delta_time_ns = curr_time_ns - last_time_ns;
-                last_time_ns = curr_time_ns;
-
-                if (!!new_line_1) {
-                        std::chrono::duration<glm::u64, std::nano> ns_duration {last_delta_time_ns};
-                        double sec_duration = std::chrono::duration_cast<std::chrono::duration<double>>(ns_duration).count();
-                        double fps = 1.f / sec_duration;
-                        //std::println("delta ns: {}, fps: {}", last_delta_time_ns, fps)
-                        glm::vec4 camera_transform = world_processor.get_camera_transform();
-                        const std::string fps_ms_str = std::format("print('Hello Google!') {}:{}:{} | delta ms: {:.3f}, fps: {:.1f}", camera_transform.x, camera_transform.y, camera_transform.z, (float)sec_duration * 1000.f, (float)fps);
-                        new_line_1->update_content(fps_ms_str);
-                }
-        }
+        // {
+        //         glm::u64 curr_time_ns = now_ticks_ns();
+        //         last_delta_time_ns = curr_time_ns - last_time_ns;
+        //         last_time_ns = curr_time_ns;
+        //
+        //         if (!!new_line_1) {
+        //                 std::chrono::duration<glm::u64, std::nano> ns_duration {last_delta_time_ns};
+        //                 double sec_duration = std::chrono::duration_cast<std::chrono::duration<double>>(ns_duration).count();
+        //                 double fps = 1.f / sec_duration;
+        //                 //std::println("delta ns: {}, fps: {}", last_delta_time_ns, fps)
+        //                 glm::vec4 camera_transform = world_processor.get_camera_transform();
+        //                 const std::string fps_ms_str = std::format("print('Hello Google!') {}:{}:{} | delta ms: {:.3f}, fps: {:.1f}", camera_transform.x, camera_transform.y, camera_transform.z, (float)sec_duration * 1000.f, (float)fps);
+        //                 new_line_1->update_content(fps_ms_str);
+        //         }
+        // }
 
         world_processor.tick(win, pipe);
+
+        const glm::vec4 new_cam_transform = world_processor.get_camera_transform();
+        hud_info.update_camera_transform(new_cam_transform);
+
+        hud_info.tick(win, pipe);
 
         // tick_camera_movement(win, pipe);
 
@@ -236,6 +214,7 @@ bool dev_test_scene::tick(window& win, pipeline_manager& pipe) {
 
 void dev_test_scene::cleanup(window& win, pipeline_manager& pipe) {
         text_line_manager.destroy(pipe);
+        hud_info.destroy(win, pipe);
 
         for (auto p : lifetime_pipelines) {
                 pipe.destroy_pipeline(p);

@@ -44,6 +44,9 @@ void glyph_pipeline::update_render_obj(const typename glyph_pipeline_data_model:
         inout_ssbo_obj.transform_ndc.y /= this->resolution.y;
         inout_ssbo_obj.transform_ndc.z /= this->resolution.x;
         inout_ssbo_obj.transform_ndc.w /= this->resolution.y;
+
+        inout_ssbo_obj.transform_ndc.x += inout_draw_data.pivot_offset_ndc.x;
+        inout_ssbo_obj.transform_ndc.y += inout_draw_data.pivot_offset_ndc.y;
 }
 
 
