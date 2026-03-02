@@ -24,7 +24,7 @@ void glyph_pipeline::update_render_obj(const typename glyph_pipeline_data_model:
 
         inout_ssbo_obj.uv_rect = glyph_mapping[inout_draw_data.content_glyph].uv_rect;
 
-        inout_ssbo_obj.outline_size_ndc = inout_draw_data.text_outline_size_ndc;
+        inout_ssbo_obj.outline_size_px = inout_draw_data.text_outline_size_px;
 
         inout_ssbo_obj.outline_color = inout_draw_data.text_outline_color;
         inout_ssbo_obj.background_color = inout_draw_data.background_color;

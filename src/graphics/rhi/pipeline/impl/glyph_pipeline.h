@@ -13,7 +13,7 @@ struct glyph_pipeline_data_model {
 
         struct draw_obj : object_2d_pipeline_data_model::draw_obj {
                 unsigned char content_glyph = 0;
-                glm::f32 text_outline_size_ndc = 1.f;
+                glm::f32 text_outline_size_px = 1.f;
                 glm::vec4 text_outline_color {};
                 glm::vec4 background_color {};
         };
@@ -26,7 +26,7 @@ struct glyph_pipeline_data_model {
                 glm::vec4 color = {};
                 glm::u32 space_basis = 0.f;
                 glm::u32 display_enable = 1.f;
-                glm::f32 outline_size_ndc = 0.f;
+                glm::f32 outline_size_px = 0.f;
                 glm::i32 _pad0 = 0;
 
                 glm::vec4 outline_color;

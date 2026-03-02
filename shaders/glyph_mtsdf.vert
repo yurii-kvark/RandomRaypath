@@ -7,7 +7,7 @@ layout(location = 1) out int vDisplayEnable;
 layout(location = 2) out vec4 vFillColor;
 layout(location = 3) out vec4 vOutlineColor;
 layout(location = 4) out vec4 vBackgroundColor;
-layout(location = 5) out float vOutlineSize_ndc;
+layout(location = 5) out float vOutlineSizePx;
 
 layout(set = 0, binding = 0) uniform pipe_frame_ubo {
     int time_ms;
@@ -24,7 +24,7 @@ struct pipe2d_draw_obj_ssbo {
     vec4 color;
     int space_basis;
     int display_enable;
-    float outline_size_ndc;
+    float outline_size_px;
     int _pad0;
 
     vec4 outline_color;
@@ -47,9 +47,10 @@ void main() {
     vec2 pos = inst.transform_ndc.xy;
     vec2 scl = inst.transform_ndc.zw;
 
+    float camScale = 1;
     if (inst.space_basis == 1u) { // world basis
         vec2 camPos = pipe_frame.camera_transform_ndc.xy * 2.0;
-        float camScale = pipe_frame.camera_transform_ndc.z;
+        camScale = pipe_frame.camera_transform_ndc.z;
 
         pos = (pos - camPos) * camScale;
         scl = scl * camScale;
@@ -62,5 +63,5 @@ void main() {
     vFillColor = inst.color;
     vOutlineColor = inst.outline_color;
     vBackgroundColor = inst.background_color;
-    vOutlineSize_ndc = inst.outline_size_ndc;
+    vOutlineSizePx = inst.outline_size_px * camScale;
 }

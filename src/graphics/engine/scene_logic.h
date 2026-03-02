@@ -39,7 +39,7 @@ public:
         draw_obj_handle<solid_rect_pipeline> rect_3;
 
         draw_obj_handle<glyph_pipeline> text_M_handle;
-        //draw_obj_handle<glyph_pipeline> text_K_handle;
+        draw_obj_handle<glyph_pipeline> text_K_handle;
 
         glm::u64 last_time_ns = 0; // TODO: move fps and other HUD stats to logical_system
         glm::u64 last_delta_time_ns = 0;
@@ -49,6 +49,7 @@ public:
 
         logical_text_line_manager text_line_manager;
         logical_text_line_handler new_line_1 = nullptr;
+        logical_text_line_handler new_line_2 = nullptr;
 };
 
 #endif

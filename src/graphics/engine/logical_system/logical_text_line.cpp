@@ -78,7 +78,7 @@ void logical_text_line::init(const std::weak_ptr<glyph_font_data>& in_loader, co
                 const unsigned char glyph_value = i < in_args.content_text.length() ? in_args.content_text[i] : 0;
                 glyph_data->content_glyph = glyph_value;
 
-                glyph_data->text_outline_size_ndc = in_args.outline_size_ndc;
+                glyph_data->text_outline_size_px = in_args.outline_size_ndc;
                 glyph_data->text_outline_color = in_args.outline_color;
                 glyph_data->background_color = in_args.background_color;
                 glyph_data->space_basis = in_args.space_basis;

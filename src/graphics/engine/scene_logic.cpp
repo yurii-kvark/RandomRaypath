@@ -15,7 +15,7 @@ using namespace ray::graphics;
 
 class ray_colors final {
 public:
-        static constexpr float alpha_value = 0.8f;
+        static constexpr float alpha_value = 0.5f;
 
         static constexpr glm::vec4 transparent {0.0f, 0.0f, 0.0f, 0.0f};
 
@@ -39,6 +39,10 @@ public:
         static constexpr glm::vec4 navy {0.00f, 0.00f, 0.50f, alpha_value};
         static constexpr glm::vec4 maroon {0.50f, 0.00f, 0.00f, alpha_value};
         static constexpr glm::vec4 olive {0.50f, 0.50f, 0.00f, alpha_value};
+
+        static glm::vec4 solid(glm::vec4 in) {
+                return {in.x, in.y, in.z, 1};
+        }
 };
 
 
@@ -70,24 +74,35 @@ scene_logic::scene_logic(window& win, renderer& rend) {
         rect_3 = rect_pipeline.create_draw_obj();
 
         text_M_handle = text_pipeline.create_draw_obj();
-       // text_2_handle = text_pipeline.create_draw_obj();
+        text_K_handle = text_pipeline.create_draw_obj();
 
-        // TODO: fix position slows *2 and text size
         new_line_1 = text_line_manager.create_text_line( {
                         .content_text = "hell",
                         .static_capacity = 64,
                         .space_basis = e_space_type::world,
-                        .transform = glm::vec4(100, 100, 0, 60), // x_pos_px, y_pos_px, 0, y_size_px (pivot top left)
+                        .transform = glm::vec4(100, 100, 0, 12), // x_pos_px, y_pos_px, 0, y_size_px (pivot top left)
                         .z_order = 10,
-                        .text_color = ray_colors::lime,
-                        .outline_size_ndc = 0.15f,
-                        .outline_color = ray_colors::magenta,
-                        .background_color = glm::vec4(0.,0.,0.,0.2f)
+                        .text_color = ray_colors::solid(ray_colors::white),
+                        .outline_size_ndc = 2.f,
+                        .outline_color = ray_colors::solid(ray_colors::black),
+                        .background_color = ray_colors::transparent
                 });
+
+        new_line_2 = text_line_manager.create_text_line( {
+                .content_text = "Hello World 123 .;Hi':",
+                .static_capacity = 64,
+                .space_basis = e_space_type::world,
+                .transform = glm::vec4(-0, -0, 0, 30), // x_pos_px, y_pos_px, 0, y_size_px (pivot top left)
+                .z_order = 10,
+                .text_color = ray_colors::solid(ray_colors::green),
+                .outline_size_ndc = 2.0f,
+                .outline_color = ray_colors::solid(ray_colors::black),
+                .background_color = ray_colors::transparent
+        });
 
         if (auto text_1_handle_data = text_M_handle.access_draw_obj_data()) {
                 text_1_handle_data->content_glyph = 'h';
-                text_1_handle_data->text_outline_size_ndc = 0.1f;
+                text_1_handle_data->text_outline_size_px = 10.0f;
                 text_1_handle_data->text_outline_color = ray_colors::red;
                 text_1_handle_data->background_color = ray_colors::blue;
                 text_1_handle_data->space_basis = e_space_type::world;
@@ -95,17 +110,17 @@ scene_logic::scene_logic(window& win, renderer& rend) {
                 text_1_handle_data->transform = glm::vec4(100, 100, 100, 100); // x_pos, y_pos, x_size, y_size
                 text_1_handle_data->color = ray_colors::cyan;
         }
-        //
-        // if (auto text_2_handle_data = text_2_handle.access_draw_obj_data()) {
-        //         text_2_handle_data->content_glyph = 'Q';
-        //         text_2_handle_data->text_outline_size_ndc = 0.2f;
-        //         text_2_handle_data->color = glm::vec4(1);
-        //         text_2_handle_data->text_outline_color = ray_colors::lime;
-        //         text_2_handle_data->background_color = ray_colors::transparent;
-        //         text_2_handle_data->space_basis = e_space_type::world;
-        //         text_2_handle_data->z_order = 11;
-        //         text_2_handle_data->transform = glm::vec4(-200, -200, 150, 200); // x_pos, y_pos, x_size, y_size
-        // }
+
+         if (auto text_K_handle_data = text_K_handle.access_draw_obj_data()) {
+                 text_K_handle_data->content_glyph = 'Q';
+                 text_K_handle_data->text_outline_size_px = 10.0f;
+                 text_K_handle_data->text_outline_color = ray_colors::red;
+                 text_K_handle_data->background_color = ray_colors::yellow;
+                 text_K_handle_data->space_basis = e_space_type::screen;
+                 text_K_handle_data->z_order = 2;
+                 text_K_handle_data->transform = glm::vec4(180, 80, 80, 60); // x_pos, y_pos, x_size, y_size
+                 text_K_handle_data->color = ray_colors::cyan;
+         }
 
         if (auto rainbow_a_data = rainbow_a.access_draw_obj_data()) {
                 rainbow_a_data->space_basis = e_space_type::screen;
@@ -124,7 +139,7 @@ scene_logic::scene_logic(window& win, renderer& rend) {
         if (auto rect_1_data = rect_1.access_draw_obj_data()) {
                 rect_1_data->space_basis = e_space_type::world;
                 rect_1_data->z_order = 3;
-                transform_dyn_1 = glm::vec4(205, 0, 300, 60);
+                transform_dyn_1 = glm::vec4(210, 0, 300, 60);
                 rect_1_data->transform = transform_dyn_1;
                 rect_1_data->color = ray_colors::blue;
         }
@@ -158,7 +173,7 @@ bool scene_logic::tick(window& win, renderer& rend) {
                         double fps = 1.f / sec_duration;
                         //std::println("delta ns: {}, fps: {}", last_delta_time_ns, fps);
 
-                        const std::string fps_ms_str = std::format("{}:{} | delta ms: {:.3f}, fps: {:.1f}", camera_transform.x, camera_transform.y, (float)sec_duration * 1000.f, (float)fps);
+                        const std::string fps_ms_str = std::format("print('Hello Google!') {}:{} | delta ms: {:.3f}, fps: {:.1f}", camera_transform.x, camera_transform.y, (float)sec_duration * 1000.f, (float)fps);
                         new_line_1->update_content(fps_ms_str);
                 }
         }
