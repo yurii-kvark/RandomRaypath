@@ -22,6 +22,7 @@ public:
         bool enable_computational_server; // if true, it needs computational_server.toml
         graphics::window::config window;
         visual_style style;
+        std::string logical_scene;
 
 public:
         static const client_renderer default_renderer;

@@ -10,12 +10,21 @@
 using namespace ray::graphics;
 using namespace ray;
 
+void glyph_pipeline::provide_construction_data_loader(std::weak_ptr<glyph_font_data> in_data_loader) {
+        data_loader = std::move(in_data_loader);
+}
+
+
 void glyph_pipeline::update_render_obj(const typename glyph_pipeline_data_model::draw_obj& inout_draw_data, typename glyph_pipeline_data_model::pipe2d_draw_obj_ssbo& inout_ssbo_obj) {
+
+        inout_ssbo_obj.display_enable = inout_draw_data.content_glyph != 0;
+        if (!inout_ssbo_obj.display_enable) {
+                return;
+        }
 
         inout_ssbo_obj.uv_rect = glyph_mapping[inout_draw_data.content_glyph].uv_rect;
 
-        inout_ssbo_obj.display_enable = inout_draw_data.content_glyph != 0;
-        inout_ssbo_obj.outline_size_ndc = inout_draw_data.text_outline_size_ndc;
+        inout_ssbo_obj.outline_size_px = inout_draw_data.text_outline_size_px;
 
         inout_ssbo_obj.outline_color = inout_draw_data.text_outline_color;
         inout_ssbo_obj.background_color = inout_draw_data.background_color;
@@ -24,10 +33,20 @@ void glyph_pipeline::update_render_obj(const typename glyph_pipeline_data_model:
         inout_ssbo_obj.space_basis = (glm::u32)inout_draw_data.space_basis;
 
         inout_ssbo_obj.transform_ndc = inout_draw_data.transform;
+
+        inout_ssbo_obj.transform_ndc.x *= 2.f;
+        inout_ssbo_obj.transform_ndc.y *= 2.f;
+
+        inout_ssbo_obj.transform_ndc.x += inout_ssbo_obj.transform_ndc.z;
+        inout_ssbo_obj.transform_ndc.y += inout_ssbo_obj.transform_ndc.w;
+
         inout_ssbo_obj.transform_ndc.x /= this->resolution.x;
         inout_ssbo_obj.transform_ndc.y /= this->resolution.y;
         inout_ssbo_obj.transform_ndc.z /= this->resolution.x;
         inout_ssbo_obj.transform_ndc.w /= this->resolution.y;
+
+        inout_ssbo_obj.transform_ndc.x += inout_draw_data.pivot_offset_ndc.x;
+        inout_ssbo_obj.transform_ndc.y += inout_draw_data.pivot_offset_ndc.y;
 }
 
 
@@ -53,194 +72,40 @@ void glyph_pipeline::destroy_graphical_buffers(VkDevice device) {
 }
 
 
-struct rgba_image {
-        std::uint32_t width = 0;
-        std::uint32_t height = 0;
-        std::vector<std::uint8_t> pixels_rgba; // width * height * 4
-};
-
-static std::uint32_t read_u32_be(std::istream& stream) {
-        std::uint8_t b[4]{};
-        stream.read(reinterpret_cast<char*>(b), 4);
-        return (std::uint32_t(b[0]) << 24) | (std::uint32_t(b[1]) << 16) | (std::uint32_t(b[2]) << 8) | std::uint32_t(b[3]);
-}
-
-static rgba_image load_rgba_file(const std::string& file_path) {
-        std::ifstream file(file_path, std::ios::binary);
-        if (!file) {
-                ray_log(e_log_type::warning, "Failed to open .rgba file: {}", file_path);
-                return rgba_image();
-        }
-
-        char descriptor[4] {};
-        file.read(descriptor, 4);
-        if (!(descriptor[0]=='R' && descriptor[1]=='G' && descriptor[2]=='B' && descriptor[3]=='A')) {
-                ray_log(e_log_type::warning, "Not an RGBA file (bad start descriptor) RGBA != {}", descriptor);
-                return rgba_image();
-        }
-
-        rgba_image out;
-        out.width  = read_u32_be(file);
-        out.height = read_u32_be(file);
-
-        const std::size_t byte_count = std::size_t(out.width) * std::size_t(out.height) * 4u;
-        out.pixels_rgba.resize(byte_count);
-        // TODO: write into vulkan mapped memory directly
-        file.read(reinterpret_cast<char*>(out.pixels_rgba.data()), std::streamsize(byte_count));
-
-        if (!file) {
-                ray_log(e_log_type::warning, "RGBA file truncated");
-                return rgba_image();
-        }
-
-        const std::uint32_t expected_size = out.width * out.height * 4u;
-        if (out.pixels_rgba.size() != expected_size) {
-                ray_log(e_log_type::warning, "RGBA file sizes not matching: {} != {} (out.width {} * out.height {} * 4u)", out.pixels_rgba.size(), expected_size, out.width, out.height);
-                return rgba_image();
-        }
-
-        return out;
-}
-
-
-static inline void trim_cr(std::string& s) {
-        if (!s.empty() && s.back() == '\r') {
-                s.pop_back();
-        }
-}
-
-static bool split_csv(const std::string& line, std::vector<std::string_view>& out, size_t max_split) {
-        out.clear();
-        out.reserve(max_split);
-
-        const char* b = line.data();
-        const char* e = b + line.size();
-
-        const char* token_begin = b;
-        for (const char* p = b; p != e; ++p) {
-                if (*p == ',') {
-                        out.emplace_back(token_begin, std::size_t(p - token_begin));
-                        token_begin = p + 1;
-                }
-        }
-        out.emplace_back(token_begin, std::size_t(e - token_begin));
-        return !out.empty();
-}
-
-static std::uint32_t parse_u32(std::string_view sv) {
-        const std::string tmp(sv);
-        char* end = nullptr;
-        unsigned long v = std::strtoul(tmp.c_str(), &end, 10);
-        if (end == tmp.c_str()) {
-                ray_log(e_log_type::warning, "Bad integer in CSV");
-                return 0;
-        }
-        return static_cast<std::uint32_t>(v);
-}
-
-static double parse_f64(std::string_view sv) {
-        const std::string tmp(sv);
-        char* end = nullptr;
-        double v = std::strtod(tmp.c_str(), &end);
-        if (end == tmp.c_str()) {
-                ray_log(e_log_type::warning, "Bad float in CSV");
-                return 0;
-        }
-        return v;
-}
-
-std::vector<glyph_mapping_entry> load_glyph_mapping_csv_file(const std::string& csv_path) {
-        std::ifstream file(csv_path, std::ios::binary);
-        if (!file) {
-                ray_log(e_log_type::warning, "Failed to open glyph CSV: {}", csv_path);
-                return {};
-        }
-
-        std::vector<glyph_mapping_entry> result;
-        result.reserve(256);
-
-        std::string line;
-        std::vector<std::string_view> cols;
-
-        while (std::getline(file, line)) {
-                trim_cr(line);
-
-                if (line.empty()) {
-                        continue;
-                }
-
-                if (!split_csv(line, cols, 10)) {
-                        continue;
-                }
-
-                if (cols.size() < 6) {
-                        continue;
-                }
-
-                const std::uint32_t codepoint = parse_u32(cols[0]);
-
-                if (codepoint > 255) {
-                        ray_log(e_log_type::warning, "unsupported glyph mapping > 255: {}", cols[0]);
-                        continue;
-                }
-
-                glyph_mapping_entry entry{};
-                if (cols.size() < 10) {
-                        continue;
-                }
-
-                entry.mapped_character = static_cast<unsigned char>(parse_u32(cols[0]));
-                entry.advance_em       = parse_f64(cols[1]);
-
-                entry.plane_left_em   = parse_f64(cols[2]);
-                entry.plane_bottom_em = parse_f64(cols[3]);
-                entry.plane_right_em  = parse_f64(cols[4]);
-                entry.plane_top_em    = parse_f64(cols[5]);
-
-                entry.atlas_left_px   = parse_f64(cols[6]);
-                entry.atlas_bottom_px = parse_f64(cols[7]);
-                entry.atlas_right_px  = parse_f64(cols[8]);
-                entry.atlas_top_px    = parse_f64(cols[9]);
-
-                result.push_back(entry);
-        }
-
-        return result;
-}
-
-
 void glyph_pipeline::create_atlas_texture(VkDevice device) {
+        auto loader = data_loader.lock();
 
-        rgba_image loaded_image_data = load_rgba_file("../resource/font/gsanscode_w500_mtsdf.rgba");
+        if (!loader) {
+                loader = std::make_shared<glyph_font_data>();
+
+                ray_error load_error = loader->load_files(
+                        glyph_font_data::default_rgba_atlas_file,
+                        glyph_font_data::default_csv_mapping_file);
+
+                if (load_error.has_value()) {
+                        ray_log(e_log_type::fatal, "glyph_pipeline.construction_data_loader did not provided, glyph_pipeline fallback load error: {}.", *load_error);
+                }
+
+                ray_log(e_log_type::warning, "glyph_pipeline.construction_data_loader did not provided, glyph_pipeline fallback to default font.");
+        }
+
+        if (!loader->is_valid()) {
+                ray_log(e_log_type::fatal, "construction_data_loader did not loaded");
+                return;
+        }
+
+        const glyph_rgba_atlas& loaded_image_data = loader->image_atlas;
 
         if (loaded_image_data.pixels_rgba.empty()) {
                 ray_log(e_log_type::fatal, "RGBA font file failed to load.");
                 return;
         }
 
-        std::vector<glyph_mapping_entry> glyph_vec = load_glyph_mapping_csv_file("../resource/font/gsanscode_w500.csv");
+        glyph_mapping = loader->uv_mapping;
 
-        if (glyph_vec.empty()) {
+        if (glyph_mapping.empty()) {
                 ray_log(e_log_type::fatal, "glyph_mapping font file failed to load");
                 return;
-        }
-
-        glyph_mapping.clear();
-        glyph_mapping.reserve(256);
-
-        const glm::f32 inv_w = 1.0f / (glm::f32)loaded_image_data.width;
-        const glm::f32 inv_h = 1.0f / (glm::f32)loaded_image_data.height;
-
-        for (const auto& em : glyph_vec) {
-                glyph_mapping[em.mapped_character] = glyph_uv_mapping{
-                        .mapped_character = em.mapped_character,
-                        .uv_rect = glm::vec4(
-                            (glm::f32)em.atlas_left_px * inv_w,
-                            (glm::f32)em.atlas_top_px * inv_h,
-                            (glm::f32)em.atlas_right_px * inv_w,
-                            (glm::f32)em.atlas_bottom_px * inv_h
-                            )
-                };
         }
 
         const VkImageCreateInfo image_info {

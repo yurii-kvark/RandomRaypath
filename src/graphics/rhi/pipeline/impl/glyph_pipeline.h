@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "../object_2d_pipeline.h"
+#include "utils/ray_glyph.h"
 
 
 namespace ray::graphics {
@@ -12,7 +13,7 @@ struct glyph_pipeline_data_model {
 
         struct draw_obj : object_2d_pipeline_data_model::draw_obj {
                 unsigned char content_glyph = 0;
-                glm::f32 text_outline_size_ndc = 1.f;
+                glm::f32 text_outline_size_px = 1.f;
                 glm::vec4 text_outline_color {};
                 glm::vec4 background_color {};
         };
@@ -25,7 +26,7 @@ struct glyph_pipeline_data_model {
                 glm::vec4 color = {};
                 glm::u32 space_basis = 0.f;
                 glm::u32 display_enable = 1.f;
-                glm::f32 outline_size_ndc = 0.f;
+                glm::f32 outline_size_px = 0.f;
                 glm::i32 _pad0 = 0;
 
                 glm::vec4 outline_color;
@@ -33,30 +34,12 @@ struct glyph_pipeline_data_model {
         };
 };
 
-struct glyph_mapping_entry {
-        unsigned char mapped_character = 0;
-        double advance_em = 0;
-
-        double plane_left_em = 0;
-        double plane_bottom_em = 0;
-        double plane_right_em = 0;
-        double plane_top_em = 0;
-
-        double atlas_left_px = 0;
-        double atlas_bottom_px = 0;
-        double atlas_right_px = 0;
-        double atlas_top_px = 0;
-};
-
-struct glyph_uv_mapping {
-        unsigned char mapped_character = 0;
-        glm::vec4 uv_rect = {};
-};
 
 class glyph_pipeline final : public object_2d_pipeline<glyph_pipeline_data_model> {
 public:
         using object_2d_pipeline::object_2d_pipeline;
 public:
+        void provide_construction_data_loader(std::weak_ptr<glyph_font_data> in_data_loader);
         virtual void update_render_obj(const typename glyph_pipeline_data_model::draw_obj& inout_draw_data, typename glyph_pipeline_data_model::pipe2d_draw_obj_ssbo& inout_ssbo_obj) override;
 
 protected:
@@ -79,7 +62,8 @@ protected:
         VkImageView atlas_view = VK_NULL_HANDLE;
         VkSampler atlas_sampler = VK_NULL_HANDLE;
 
-        std::unordered_map<unsigned char, glyph_uv_mapping> glyph_mapping;
+        std::weak_ptr<glyph_font_data> data_loader;
+        std::array<glyph_uv_mapping, 256> glyph_mapping;
 
 private:
         void create_atlas_texture(VkDevice device);

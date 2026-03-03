@@ -31,7 +31,8 @@ struct object_2d_pipeline_data_model {
         struct draw_obj : base_pipeline_data_model::draw_obj {
                 e_space_type space_basis = e_space_type::screen;
                 glm::u32 z_order = 0; // bigger on top. void to touch frequently. e_space_type::screen set significant bit to 1
-                glm::vec4 transform = {}; // x_pos, y_pos, x_size, y_size
+                glm::vec4 transform = {}; // x_pos_px, y_pos_px, x_size_px, y_size_px
+                glm::vec2 pivot_offset_ndc {}; //
                 glm::vec4 color {};
 
                 glm::u32 get_render_order() const {
@@ -288,10 +289,20 @@ void object_2d_pipeline<PipelineDataModel>::update_render_obj(const typename Pip
         inout_ssbo_obj.space_basis = (glm::u32)inout_draw_data.space_basis;
 
         inout_ssbo_obj.transform_ndc = inout_draw_data.transform;
+
+        inout_ssbo_obj.transform_ndc.x *= 2.f;
+        inout_ssbo_obj.transform_ndc.y *= 2.f;
+
+        inout_ssbo_obj.transform_ndc.x += inout_ssbo_obj.transform_ndc.z;
+        inout_ssbo_obj.transform_ndc.y += inout_ssbo_obj.transform_ndc.w;
+
         inout_ssbo_obj.transform_ndc.x /= this->resolution.x;
         inout_ssbo_obj.transform_ndc.y /= this->resolution.y;
         inout_ssbo_obj.transform_ndc.z /= this->resolution.x;
         inout_ssbo_obj.transform_ndc.w /= this->resolution.y;
+
+        inout_ssbo_obj.transform_ndc.x += inout_draw_data.pivot_offset_ndc.x;
+        inout_ssbo_obj.transform_ndc.y += inout_draw_data.pivot_offset_ndc.y;
 }
 
 

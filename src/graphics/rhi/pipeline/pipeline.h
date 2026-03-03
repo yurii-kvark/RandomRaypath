@@ -21,6 +21,10 @@ concept ValidPipelineModelUpcastable =
     std::derived_from<typename FromPipeline::pipeline_data_model_t, typename ToPipeline::pipeline_data_model_t> &&
     std::derived_from<typename FromPipeline::draw_obj_model_t, typename ToPipeline::draw_obj_model_t>;
 
+struct draw_obj_handle_id;
+template<class Pipeline>
+struct draw_obj_handle;
+
 template<class Pipeline = i_pipeline>
 struct pipeline_handle {
         std::weak_ptr<i_pipeline> obj_ptr;
@@ -34,6 +38,10 @@ struct pipeline_handle {
         requires ValidPipelineModelUpcastable<Pipeline, OtherPipeline>
         pipeline_handle(const pipeline_handle<OtherPipeline>& other)
                 : obj_ptr(other.obj_ptr) {}
+
+        Pipeline::pipeline_data_model_t* access_pipeline_data(bool set_need_update = true) const;
+        draw_obj_handle<Pipeline> create_draw_obj() const;
+        void destroy_draw_obj(draw_obj_handle_id obj_id) const;
 };
 
 struct draw_obj_handle_id {
@@ -55,6 +63,21 @@ struct draw_obj_handle {
         requires ValidPipelineModelUpcastable<Pipeline, OtherPipeline>
         draw_obj_handle(const draw_obj_handle<OtherPipeline>& other)
             : pipe_handle(other.pipe_handle), obj_index(other.obj_index) {}
+
+        Pipeline::draw_obj_model_t* access_draw_obj_data(bool set_need_update = true) {
+                auto pipe_ptr = pipe_handle.obj_ptr.lock();
+                if (!pipe_ptr) {
+                        return nullptr;
+                }
+
+                auto model_ptr = pipe_ptr->template get_draw_model<Pipeline>(obj_index);
+
+                if (set_need_update && model_ptr) {
+                        model_ptr->need_update = true;
+                }
+
+                return model_ptr;
+        }
 };
 
 struct i_pipeline_data_model {
@@ -120,7 +143,7 @@ public:
         template <class PipeLine>
         requires std::derived_from<PipeLine, i_pipeline>
                 && ValidPipelineDataModel<PipeLine>
-        PipeLine::draw_obj_model_t* get_draw_model(draw_obj_handle_id obj_id) {
+        PipeLine::draw_obj_model_t* get_draw_model(draw_obj_handle_id& obj_id) {
                 return static_cast<PipeLine::draw_obj_model_t*>(get_draw_data(obj_id));
         }
 
@@ -138,6 +161,48 @@ protected:
         glm::uvec2 resolution = glm::uvec2(1);
         glm::u32 pipe_render_order = 0;
 };
+
+
+template<class Pipeline>
+Pipeline::pipeline_data_model_t* pipeline_handle<Pipeline>::access_pipeline_data(bool set_need_update) const {
+        auto pipe_ptr = obj_ptr.lock();
+        if (!pipe_ptr) {
+                return nullptr;
+        }
+
+        auto model_ptr = pipe_ptr->template get_pipeline_model<Pipeline>();
+        if (set_need_update && model_ptr) {
+                model_ptr->need_update = true;
+        }
+
+        return model_ptr;
+}
+
+
+template<class Pipeline>
+draw_obj_handle<Pipeline> pipeline_handle<Pipeline>::create_draw_obj() const {
+        auto pipe_ptr = obj_ptr.lock();
+        if (!pipe_ptr) {
+                return draw_obj_handle<Pipeline>();
+        }
+
+        draw_obj_handle_id obj_handle_id = pipe_ptr->create_draw_obj();
+        auto obj_handler = draw_obj_handle<Pipeline>();
+        obj_handler.pipe_handle.obj_ptr = obj_ptr;
+        obj_handler.obj_index = obj_handle_id;
+        return obj_handler;
+}
+
+
+template<class Pipeline>
+void pipeline_handle<Pipeline>::destroy_draw_obj(draw_obj_handle_id obj_id) const {
+        auto pipe_ptr = obj_ptr.lock();
+        if (!pipe_ptr) {
+                return;
+        }
+
+        pipe_ptr->destroy_draw_obj(obj_id);
+}
 
 
 struct base_pipeline_data_model {

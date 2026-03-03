@@ -24,7 +24,7 @@ public:
         }
 
         template<class Pipeline>
-        pipeline_handle<Pipeline> create_pipeline(glm::u32 render_priority = 0) {
+        pipeline_handle<Pipeline> create_pipeline(glm::u32 render_priority = 0, bool auto_construct = true) {
                 pipeline_arguments args {
                         .index_pool = draw_object_index_pool,
                         .swapchain_format = swapchain_format,
@@ -33,7 +33,10 @@ public:
                 };
 
                 auto pipe = std::make_shared<Pipeline>(args);
-                pipe->construct_pipeline();
+
+                if (auto_construct) {
+                        pipe->construct_pipeline();
+                }
 
                 // binary search
                 auto found_pipe_it = std::lower_bound(
@@ -62,60 +65,6 @@ public:
                 if (found_it != pipe_instances.end()) {
                         pipe_instances.erase(found_it);
                 }
-        }
-
-        template<class Pipeline>
-        draw_obj_handle<Pipeline> create_draw_obj(pipeline_handle<Pipeline> pipe_id) {
-                auto pipe_ptr = pipe_id.obj_ptr.lock();
-                if (!pipe_ptr) {
-                        return draw_obj_handle<Pipeline>();
-                }
-
-                draw_obj_handle_id obj_handle_id = pipe_ptr->create_draw_obj();
-                auto obj_handler = draw_obj_handle<Pipeline>();
-                obj_handler.pipe_handle.obj_ptr = pipe_id.obj_ptr;
-                obj_handler.obj_index = obj_handle_id;
-                return obj_handler;
-        }
-
-        void destroy_draw_obj(draw_obj_handle<> obj_id) {
-                auto pipe_ptr = obj_id.pipe_handle.obj_ptr.lock();
-                if (!pipe_ptr) {
-                        return;
-                }
-
-                pipe_ptr->destroy_draw_obj(obj_id.obj_index);
-        }
-
-        template<class Pipeline>
-        Pipeline::pipeline_data_model_t* access_pipeline_data(pipeline_handle<Pipeline> pipe_id, bool set_need_update = true) const {
-                auto pipe_ptr = pipe_id.obj_ptr.lock();
-                if (!pipe_ptr) {
-                        return nullptr;
-                }
-
-                auto model_ptr = pipe_ptr->template get_pipeline_model<Pipeline>();
-                if (set_need_update && model_ptr) {
-                        model_ptr->need_update = true;
-                }
-
-                return model_ptr;
-        }
-
-        template<class Pipeline>
-        Pipeline::draw_obj_model_t* access_draw_obj_data(draw_obj_handle<Pipeline> draw_id, bool set_need_update = true) const {
-                auto pipe_ptr = draw_id.pipe_handle.obj_ptr.lock();
-                if (!pipe_ptr) {
-                        return nullptr;
-                }
-
-                auto model_ptr = pipe_ptr->template get_draw_model<Pipeline>(draw_id.obj_index);
-
-                if (set_need_update && model_ptr) {
-                        model_ptr->need_update = true;
-                }
-
-                return model_ptr;
         }
 
 private:
