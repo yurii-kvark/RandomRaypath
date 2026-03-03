@@ -16,7 +16,7 @@ ray_error main_scene::init(window& win, pipeline_manager& pipe) {
                 return hud_error;
         }
 
-        world_processor.register_pipeline(hud_info.get_pipeline());
+       // world_processor.register_pipelines(hud_info.get_pipelines());
 
         return {};
 }

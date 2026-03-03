@@ -41,13 +41,14 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
         //pipeline_handle<glyph_pipeline> text_pipeline;
         lifetime_pipelines.push_back(rainbow_pipeline);
         lifetime_pipelines.push_back(rect_pipeline);
-        lifetime_pipelines.push_back(text_line_manager.get_pipeline());
         lifetime_pipelines.push_back(text_pipeline);
 
-        world_processor.register_pipeline(hud_info.get_pipeline());
+        //std::vector<pipeline_handle<object_2d_pipeline<>>> a = hud_info.get_pipelines();
+        //world_processor.register_pipelines(a);
         world_processor.register_pipeline(rainbow_pipeline);
         world_processor.register_pipeline(rect_pipeline);
-        world_processor.register_pipeline(text_line_manager.get_pipeline());
+        const pipeline_handle<object_2d_pipeline<>>& text_2d_pipeline = text_line_manager.get_pipeline();
+        world_processor.register_pipeline(text_2d_pipeline);
         world_processor.register_pipeline(text_pipeline);
 
         rainbow_a = rainbow_pipeline.create_draw_obj();

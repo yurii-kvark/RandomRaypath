@@ -38,6 +38,7 @@ void logical_2d_world_view::tick(window& win, pipeline_manager& pipe) {
         }
 }
 
+
 void logical_2d_world_view::register_pipeline(const pipeline_handle<object_2d_pipeline<>>& pipe_to_register) {
         world_2d_pipes.push_back(pipe_to_register);
 }
