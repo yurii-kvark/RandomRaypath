@@ -24,8 +24,8 @@ struct visual_grid_pipeline_data_model {
                 glm::vec4 transform_ndc = {}; // x_ndc, y_ndc, w_ndc, h_ndc
                 glm::vec4 color = {};
                 glm::vec4 background_color {};
-                glm::vec2 grid_size_ndc; // by w (y-scale)
-                glm::vec2 line_size_ndc; // by w (y-scale)
+                glm::vec2 grid_size_ndc; // in transform_ndc space
+                glm::vec2 line_size_ndc; // in transform_ndc space
                 glm::u32 space_basis = 0;
                 glm::u32 apply_camera_to_frag = 0;
         };

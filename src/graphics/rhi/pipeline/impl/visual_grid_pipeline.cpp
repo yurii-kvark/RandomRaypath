@@ -10,12 +10,13 @@ void visual_grid_pipeline::update_render_obj(const typename visual_grid_pipeline
         inout_ssbo_obj.background_color = inout_draw_data.background_color;
         inout_ssbo_obj.apply_camera_to_frag = inout_draw_data.apply_camera_to_frag;
 
-        const glm::vec2 pivot_scale_offset = {inout_draw_data.pivot_offset_ndc.z, inout_draw_data.pivot_offset_ndc.w};
-        const glm::vec2 raw_transform_px = {inout_draw_data.transform.z ,inout_draw_data.transform.w };
-        const glm::vec2 actual_size_px = raw_transform_px * (pivot_scale_offset + 1.f);
+        { // convert size_ndc in transform_ndc space
+                const glm::vec2 scale_size_ndc = {inout_ssbo_obj.transform_ndc.z, inout_ssbo_obj.transform_ndc.w};
+                const glm::vec2 scale_size_px = (glm::vec2)this->resolution * scale_size_ndc;
 
-        inout_ssbo_obj.grid_size_ndc = inout_draw_data.grid_size_px / actual_size_px;
-        inout_ssbo_obj.line_size_ndc = inout_draw_data.line_size_px / actual_size_px;
+                inout_ssbo_obj.grid_size_ndc = inout_draw_data.grid_size_px / scale_size_px;
+                inout_ssbo_obj.line_size_ndc = inout_draw_data.line_size_px / scale_size_px;
+        }
 }
 
 

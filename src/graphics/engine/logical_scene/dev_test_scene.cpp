@@ -17,9 +17,6 @@ using namespace ray::graphics;
 #if RAY_GRAPHICS_ENABLE
 
 ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
-        last_time_ns = now_ticks_ns();
-        last_delta_time_ns = 0;
-
         pipeline_handle<rainbow_rect_pipeline> rainbow_pipeline = pipe.create_pipeline<rainbow_rect_pipeline>(1);
         pipeline_handle<solid_rect_pipeline> rect_pipeline = pipe.create_pipeline<solid_rect_pipeline>(4);
         pipeline_handle<glyph_pipeline> text_pipeline = pipe.create_pipeline<glyph_pipeline>(3);
@@ -104,8 +101,6 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
         //         .background_color = ray_colors::transparent
         // });
 
-
-
         //         in sync   in sync
         // screen  pure[0]   cam[1]
         // world   cam[2]    pure[3]
@@ -113,72 +108,72 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
         if (auto visual_grid_data = visual_grid_handle[0].access_draw_obj_data()) {
                 visual_grid_data->space_basis = e_space_type::screen;
                 visual_grid_data->z_order = 1;
-                visual_grid_data->pivot_offset_ndc = {};//glm::vec4(0.1, 0.1, 0.5, 0.5);
-                visual_grid_data->transform = glm::vec4(-220, -170, 200, 150);
+                visual_grid_data->pivot_offset_ndc = {0, 0, 0.9, 0.9};//glm::vec4(0.1, 0.1, 0.5, 0.5);
+                visual_grid_data->transform = glm::vec4(0, 0, 0, 0);
                 visual_grid_data->color = ray_colors::lime;
                 visual_grid_data->background_color = ray_colors::alpha(ray_colors::cyan, 0.05);
                 visual_grid_data->grid_size_px = 50;
-                visual_grid_data->line_size_px = 5;
-                visual_grid_data->apply_camera_to_frag = false;
-        }
-
-        if (auto visual_grid_data = visual_grid_handle[1].access_draw_obj_data()) {
-                visual_grid_data->space_basis = e_space_type::screen;
-                visual_grid_data->z_order = 1;
-                visual_grid_data->pivot_offset_ndc = {};//glm::vec4(0.1, 0.1, 0.5, 0.5);
-                visual_grid_data->transform = glm::vec4(20, -170, 200, 150);
-                visual_grid_data->color = ray_colors::orange;
-                visual_grid_data->background_color = ray_colors::alpha(ray_colors::cyan, 0.05);
-                visual_grid_data->grid_size_px = 50;
-                visual_grid_data->line_size_px = 5;
+                visual_grid_data->line_size_px = 10;
                 visual_grid_data->apply_camera_to_frag = true;
         }
+        //
+        // if (auto visual_grid_data = visual_grid_handle[1].access_draw_obj_data()) {
+        //         visual_grid_data->space_basis = e_space_type::screen;
+        //         visual_grid_data->z_order = 1;
+        //         visual_grid_data->pivot_offset_ndc = {};//glm::vec4(0.1, 0.1, 0.5, 0.5);
+        //         visual_grid_data->transform = glm::vec4(20, -170, 200, 150);
+        //         visual_grid_data->color = ray_colors::orange;
+        //         visual_grid_data->background_color = ray_colors::alpha(ray_colors::cyan, 0.05);
+        //         visual_grid_data->grid_size_px = 50;
+        //         visual_grid_data->line_size_px = 5;
+        //         visual_grid_data->apply_camera_to_frag = true;
+        // }
+        //
+        // if (auto visual_grid_data = visual_grid_handle[2].access_draw_obj_data()) {
+        //         visual_grid_data->space_basis = e_space_type::world;
+        //         visual_grid_data->z_order = 1;
+        //         visual_grid_data->pivot_offset_ndc = {};//glm::vec4(0.1, 0.1, 0.5, 0.5);
+        //         visual_grid_data->transform = glm::vec4(-220, 20, 200, 150);
+        //         visual_grid_data->color = ray_colors::lime;
+        //         visual_grid_data->background_color = ray_colors::alpha(ray_colors::navy, 0.05);
+        //         visual_grid_data->grid_size_px = 50;
+        //         visual_grid_data->line_size_px = 5;
+        //         visual_grid_data->apply_camera_to_frag = true;
+        // }
+        //
+        // if (auto visual_grid_data = visual_grid_handle[3].access_draw_obj_data()) {
+        //         visual_grid_data->space_basis = e_space_type::world;
+        //         visual_grid_data->z_order = 1;
+        //         visual_grid_data->pivot_offset_ndc = {};//glm::vec4(0.1, 0.1, 0.5, 0.5);
+        //         visual_grid_data->transform = glm::vec4(-20, -20, 200, 150);
+        //         visual_grid_data->color = ray_colors::orange;
+        //         visual_grid_data->background_color = ray_colors::alpha(ray_colors::navy, 0.05);
+        //         visual_grid_data->grid_size_px = 50;
+        //         visual_grid_data->line_size_px = 5;
+        //         visual_grid_data->apply_camera_to_frag = false;
+        // }
 
-        if (auto visual_grid_data = visual_grid_handle[2].access_draw_obj_data()) {
-                visual_grid_data->space_basis = e_space_type::world;
-                visual_grid_data->z_order = 1;
-                visual_grid_data->pivot_offset_ndc = {};//glm::vec4(0.1, 0.1, 0.5, 0.5);
-                visual_grid_data->transform = glm::vec4(-220, 20, 200, 150);
-                visual_grid_data->color = ray_colors::lime;
-                visual_grid_data->background_color = ray_colors::alpha(ray_colors::navy, 0.05);
-                visual_grid_data->grid_size_px = 50;
-                visual_grid_data->line_size_px = 5;
-                visual_grid_data->apply_camera_to_frag = true;
-        }
-
-        if (auto visual_grid_data = visual_grid_handle[3].access_draw_obj_data()) {
-                visual_grid_data->space_basis = e_space_type::world;
-                visual_grid_data->z_order = 1;
-                visual_grid_data->pivot_offset_ndc = {};//glm::vec4(0.1, 0.1, 0.5, 0.5);
-                visual_grid_data->transform = glm::vec4(-20, -20, 200, 150);
-                visual_grid_data->color = ray_colors::orange;
-                visual_grid_data->background_color = ray_colors::alpha(ray_colors::navy, 0.05);
-                visual_grid_data->grid_size_px = 50;
-                visual_grid_data->line_size_px = 5;
-                visual_grid_data->apply_camera_to_frag = false;
-        }
-
-        if (auto text_1_handle_data = text_M_handle.access_draw_obj_data()) {
-                text_1_handle_data->content_glyph = 'h';
-                text_1_handle_data->text_outline_size_px = 10.0f;
-                text_1_handle_data->text_outline_color = ray_colors::red;
-                text_1_handle_data->background_color = ray_colors::blue;
-                text_1_handle_data->space_basis = e_space_type::world;
-                text_1_handle_data->z_order = 10;
-                text_1_handle_data->transform = glm::vec4(0, 0, 150, 150); // x_pos, y_pos, x_size, y_size
-                text_1_handle_data->color = ray_colors::cyan;
-        }
-
-         if (auto text_K_handle_data = text_K_handle.access_draw_obj_data()) {
-                 text_K_handle_data->content_glyph = 'h';
-                 text_K_handle_data->text_outline_size_px = 8.0f;
-                 text_K_handle_data->text_outline_color = ray_colors::solid(ray_colors::red);
-                 text_K_handle_data->background_color = ray_colors::alpha(ray_colors::cyan, 0.1);
-                 text_K_handle_data->space_basis = e_space_type::screen;
-                 text_K_handle_data->z_order = 2;
-                 text_K_handle_data->transform = glm::vec4(180, 80, 80, 80); // x_pos, y_pos, x_size, y_size
-                 text_K_handle_data->color = ray_colors::alpha(ray_colors::yellow, 0.1);
-         }
+        // if (auto text_1_handle_data = text_M_handle.access_draw_obj_data()) {
+        //         text_1_handle_data->content_glyph = 'h';
+        //         text_1_handle_data->text_outline_size_px = 10.0f;
+        //         text_1_handle_data->text_outline_color = ray_colors::red;
+        //         text_1_handle_data->background_color = ray_colors::blue;
+        //         text_1_handle_data->space_basis = e_space_type::world;
+        //         text_1_handle_data->z_order = 10;
+        //         text_1_handle_data->transform = glm::vec4(0, 0, 150, 150); // x_pos, y_pos, x_size, y_size
+        //         text_1_handle_data->color = ray_colors::cyan;
+        // }
+        //
+        //  if (auto text_K_handle_data = text_K_handle.access_draw_obj_data()) {
+        //          text_K_handle_data->content_glyph = 'h';
+        //          text_K_handle_data->text_outline_size_px = 8.0f;
+        //          text_K_handle_data->text_outline_color = ray_colors::solid(ray_colors::red);
+        //          text_K_handle_data->background_color = ray_colors::alpha(ray_colors::cyan, 0.1);
+        //          text_K_handle_data->space_basis = e_space_type::screen;
+        //          text_K_handle_data->z_order = 2;
+        //          text_K_handle_data->transform = glm::vec4(180, 80, 80, 80); // x_pos, y_pos, x_size, y_size
+        //          text_K_handle_data->color = ray_colors::alpha(ray_colors::yellow, 0.1);
+        //  }
 
         if (auto rainbow_a_data = rainbow_a.access_draw_obj_data()) {
                 rainbow_a_data->space_basis = e_space_type::screen;
@@ -197,8 +192,9 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
         if (auto rect_1_data = rect_1.access_draw_obj_data()) {
                 rect_1_data->space_basis = e_space_type::world;
                 rect_1_data->z_order = 3;
-                transform_dyn_1 = glm::vec4(210, 0, 300, 60);
-                rect_1_data->transform = transform_dyn_1;
+                //transform_dyn_1 = glm::vec4(0, 0, 100, 100);
+                rect_1_data->transform = glm::vec4(0, 0, 100, 100);
+                //rect_1_data->pivot_offset_ndc = glm::vec4(0, 0, 1, 1);
                 rect_1_data->color = ray_colors::blue;
         }
 

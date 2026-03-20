@@ -32,7 +32,7 @@ struct object_2d_pipeline_data_model {
                 e_space_type space_basis = e_space_type::screen;
                 glm::u32 z_order = 0; // bigger on top. void to touch frequently. e_space_type::screen set significant bit to 1
                 glm::vec4 transform = {}; // x_pos_px, y_pos_px, x_size_px, y_size_px
-                glm::vec4 pivot_offset_ndc {}; // x_pos_px, y_pos_px, x_size_px, y_size_px
+                glm::vec4 pivot_offset_ndc {}; // [-1..1] (x_pos, y_pos), [0..1] (x_size, y_size), with pivot in center
                 glm::vec4 color {};
 
                 glm::u32 get_render_order() const {
