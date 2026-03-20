@@ -18,8 +18,8 @@ using namespace ray::graphics;
 // TODO: add vulkan debug module
 
 
-renderer::renderer(std::weak_ptr<GLFWwindow> basis_win)
-        : gl_window(std::move(basis_win)) {
+renderer::renderer(std::weak_ptr<GLFWwindow> basis_win, config::visual_style in_style)
+        : gl_window(std::move(basis_win)), style(std::move(in_style)) {
 
         if (gl_window.expired()) {
                 ray_log(e_log_type::fatal, "renderer: basis_win == nullptr");
@@ -99,7 +99,7 @@ bool renderer::draw_frame() {
         vkCmdPipelineBarrier2(command_buffer, &dep1);
 
         VkClearValue clear{};
-        clear.color = { { 0.02f, 0.02f, 0.02f, 1.0f } };
+        clear.color = { { style.color_background.r, style.color_background.g, style.color_background.b, style.color_background.a } }; // { { 0.02f, 0.02f, 0.02f, 1.0f } };
 
         VkRenderingAttachmentInfo color_render_att{ VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO };
         color_render_att.imageView = swapchain_image_views[imageIndex];

@@ -30,7 +30,7 @@ struct render_thread {
 
         void operator()(std::stop_token stop_t) const {
                 window win(cfg.window);
-                renderer rend(win.get_gl_window());
+                renderer rend(win.get_gl_window(), cfg.style);
 
                 std::unique_ptr<i_logical_scene> logic = make_scene_by_name(cfg.logical_scene);
 
@@ -38,6 +38,8 @@ struct render_thread {
                         ray_log(e_log_type::fatal, "Can't load scene by config name: {}", cfg.logical_scene);
                         return;
                 }
+
+                logic->setup_visual_style(cfg.style);
 
                 ray_error init_scene_error = logic->init(win, rend.pipe);
 
@@ -53,6 +55,10 @@ struct render_thread {
                 }
 
                 logic->cleanup(win, rend.pipe);
+
+#ifdef RAY_DEBUG_NO_OPT
+                rend.pipe.verify_pipeline_destruction();
+#endif
         }
 
         config::client_renderer cfg;

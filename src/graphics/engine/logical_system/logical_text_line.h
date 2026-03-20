@@ -19,7 +19,7 @@ struct logical_text_line_args {
         glm::f32 outline_size_px = 2.f;
         glm::vec4 outline_color = glm::vec4(0.5f, 1.f, 0.5f, 1.f);
         glm::vec4 background_color = glm::vec4(0);
-        glm::vec2 pivot_offset_ndc {};
+        glm::vec4 pivot_offset_ndc {};
 };
 
 
@@ -45,7 +45,6 @@ using logical_text_line_handler = std::shared_ptr<logical_text_line>;
 class logical_text_line_manager {
 public:
         logical_text_line_manager() = default;
-        ~logical_text_line_manager() = default;
 
         ray_error init(pipeline_manager& pipe, glm::u32 render_order);
         void destroy(pipeline_manager& pipe);

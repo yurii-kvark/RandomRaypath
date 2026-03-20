@@ -32,14 +32,19 @@ struct object_2d_pipeline_data_model {
                 e_space_type space_basis = e_space_type::screen;
                 glm::u32 z_order = 0; // bigger on top. void to touch frequently. e_space_type::screen set significant bit to 1
                 glm::vec4 transform = {}; // x_pos_px, y_pos_px, x_size_px, y_size_px
-                glm::vec2 pivot_offset_ndc {}; //
+                glm::vec4 pivot_offset_ndc {}; // [-1..1] (x_pos, y_pos), [0..1] (x_size, y_size), with pivot in center
                 glm::vec4 color {};
 
+                // not the best approach, maybe need separate screen_overlay basis or just refuse
+                // glm::u32 get_render_order() const {
+                //         const glm::u32 space_type_bit = (space_basis == e_space_type::screen)
+                //                 ? glm::u32(1) << (sizeof(glm::u32) * CHAR_BIT - 1)
+                //                 : 0u;
+                //         return glm::u32(z_order) | space_type_bit;
+                // }
+
                 glm::u32 get_render_order() const {
-                        const glm::u32 space_type_bit = (space_basis == e_space_type::screen)
-                                ? glm::u32(1) << (sizeof(glm::u32) * CHAR_BIT - 1)
-                                : 0u;
-                        return glm::u32(z_order) | space_type_bit;
+                        return z_order;
                 }
         };
 
@@ -206,6 +211,10 @@ void object_2d_pipeline<PipelineDataModel>::draw_commands(VkCommandBuffer in_com
                 frame_ubo_t* ubo_low_obj = reinterpret_cast<frame_ubo_t*>(pipe_frame_ubos_data[frame_index].mapped);
                 ubo_low_obj->time_ms = this->pipe_data.time_ms;
                 ubo_low_obj->camera_transform_ndc = this->pipe_data.camera_transform;
+
+                ubo_low_obj->camera_transform_ndc.x *= 2;
+                ubo_low_obj->camera_transform_ndc.y *= 2;
+
                 ubo_low_obj->camera_transform_ndc.x /= this->resolution.x;
                 ubo_low_obj->camera_transform_ndc.y /= this->resolution.y;
         }
@@ -290,19 +299,32 @@ void object_2d_pipeline<PipelineDataModel>::update_render_obj(const typename Pip
 
         inout_ssbo_obj.transform_ndc = inout_draw_data.transform;
 
+        // ndc transform space has screen 2 units per screen 1 pixel, vulkan screen has range 2: [-1 ... +1]
         inout_ssbo_obj.transform_ndc.x *= 2.f;
         inout_ssbo_obj.transform_ndc.y *= 2.f;
 
+        // move origin to top left
         inout_ssbo_obj.transform_ndc.x += inout_ssbo_obj.transform_ndc.z;
         inout_ssbo_obj.transform_ndc.y += inout_ssbo_obj.transform_ndc.w;
 
+        // cast to ndc units.
         inout_ssbo_obj.transform_ndc.x /= this->resolution.x;
         inout_ssbo_obj.transform_ndc.y /= this->resolution.y;
         inout_ssbo_obj.transform_ndc.z /= this->resolution.x;
         inout_ssbo_obj.transform_ndc.w /= this->resolution.y;
 
-        inout_ssbo_obj.transform_ndc.x += inout_draw_data.pivot_offset_ndc.x;
-        inout_ssbo_obj.transform_ndc.y += inout_draw_data.pivot_offset_ndc.y;
+        // arbitrary offset option
+        inout_ssbo_obj.transform_ndc += inout_draw_data.pivot_offset_ndc;
+
+         // inout_ssbo_obj.transform_ndc.x = 0.5;
+         // inout_ssbo_obj.transform_ndc.y = 0.5;
+         // inout_ssbo_obj.transform_ndc.z = 1;
+         // inout_ssbo_obj.transform_ndc.w = 1;
+
+        // shader in:
+        // screen_size NDC:
+        // transform_ndc.xy [-1 .. +1], origin at (0; 0), unit scale: 2, because screen from -1 to 1.
+        // transform_ndc.zw [0 .. +1] , origin at (0; 0), unit scale: 1, half-size is exact pixel
 }
 
 
@@ -364,7 +386,7 @@ void object_2d_pipeline<PipelineDataModel>::remove_draw_obj(draw_obj_handle_id t
         }
 }template<class PipelineDataModel>
 std::filesystem::path object_2d_pipeline<PipelineDataModel>::get_vertex_shader_path() const {
-        return "camera.vert.spv";
+        return "mono_color.vert.spv";
 }
 
 

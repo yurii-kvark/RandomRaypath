@@ -7,19 +7,18 @@
 
 using namespace ray;
 using namespace ray::config;
-using namespace ray::graphics;
 
 const visual_style visual_style::default_style = {
-        .color_nothing = glm::dvec4(0.f, 0.f, 0.f, 1.f),
-        .color_density_low = glm::dvec4(0.f, 1.f, 0.f, 1.f),
-        .color_density_high = glm::dvec4(0.f, 0.f, 1.f, 1.f)
+        .color_background = glm::vec4(0.f, 0.f, 0.f, 1.f),
+        .color_hud_info = glm::vec4(0.f, 1.f, 0.f, 1.f),
+        .color_grid = glm::vec4(0.05f, 0.04f, 0.06f, 1.f)
 };
 
 const client_renderer client_renderer::default_renderer = {
         .enable_computational_server = true,
         .window = {
                 .graphics_window_enabled = true,
-                .window_mode = graphics::e_window_mode::windowed,
+                .window_mode = e_window_mode::windowed,
                 .window_position = glm::i32vec2(300, 200),
                 .window_size = glm::i32vec2(800, 500),
                 .zoom_speed = 0.1f
@@ -104,7 +103,7 @@ std::expected<client_renderer, std::string> client_renderer::load(std::filesyste
         }
 
         if (const auto* toml_visual_style = toml_cnf_cr->get_as<toml::table>("visual_style")) {
-                auto read_color = [&](std::string_view key, glm::dvec4& out) -> std::optional<std::string> {
+                auto read_color = [&](std::string_view key, glm::vec4& out) -> std::optional<std::string> {
                         if (toml_visual_style->find(key) == toml_visual_style->end()) { // no key - no error
                                 return std::nullopt;
                         }
@@ -127,20 +126,20 @@ std::expected<client_renderer, std::string> client_renderer::load(std::filesyste
                                 return std::format("client_renderer.visual_style.{}: r({}), g({}), b({}), a({})", key, !!r, !!g, !!b, !!a);
                         }
 
-                        out = glm::dvec4(r->get(), g->get(), b->get(), a->get());
+                        out = glm::vec4(r->get(), g->get(), b->get(), a->get());
 
                         return std::nullopt;
                 };
 
-                if (auto err = read_color("color_nothing", cnf_cr.style.color_nothing)) {
+                if (auto err = read_color("color_background", cnf_cr.style.color_background)) {
                         return std::unexpected(*err);
                 }
 
-                if (auto err = read_color("color_density_low", cnf_cr.style.color_density_low)) {
+                if (auto err = read_color("color_hud_info", cnf_cr.style.color_hud_info)) {
                         return std::unexpected(*err);
                 }
 
-                if (auto err = read_color("color_density_high", cnf_cr.style.color_density_high)) {
+                if (auto err = read_color("color_grid", cnf_cr.style.color_grid)) {
                         return std::unexpected(*err);
                 }
         }
@@ -163,16 +162,16 @@ std::string client_renderer::to_string() const {
         "window_size = [{}, {}]\n\n"
         "zoom_speed = {}\n"
         "[client_renderer.visual_style]\n"
-        "color_nothing = \"{}\"\n"
-        "color_density_low = \"{}\"\n"
-        "color_density_high = \"{}\"\n",
+        "color_background = \"{}\"\n"
+        "color_hud_info = \"{}\"\n"
+        "color_grid = \"{}\"\n",
         enable_computational_server ? "true" : "false",
         window.graphics_window_enabled ? "true" : "false",
         static_cast<int>(window.window_mode),
         window.window_position.x, window.window_position.y,
         window.window_size.x, window.window_size.y,
         window.zoom_speed,
-        color_to_toml_arr(style.color_nothing),
-        color_to_toml_arr(style.color_density_low),
-        color_to_toml_arr(style.color_density_high));
+        color_to_toml_arr(style.color_background),
+        color_to_toml_arr(style.color_hud_info),
+        color_to_toml_arr(style.color_grid));
 }

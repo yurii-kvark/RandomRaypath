@@ -39,7 +39,7 @@ struct glfw_runtime_init {
 };
 
 
-window::window(const config& in_config)
+window::window(const config::window_config& in_config)
         : used_config(in_config) {
 
         if (!used_config.graphics_window_enabled) {
@@ -53,7 +53,7 @@ window::window(const config& in_config)
         glfwWindowHint(GLFW_POSITION_Y, used_config.window_position.y);
 
         GLFWmonitor* monitor_ptr = nullptr;
-        if (used_config.window_mode == e_window_mode::fullscreen) {
+        if (used_config.window_mode == config::e_window_mode::fullscreen) {
                 monitor_ptr = glfwGetPrimaryMonitor();
                 const GLFWvidmode* mode = glfwGetVideoMode(monitor_ptr);
 

@@ -39,4 +39,12 @@ glm::uvec2 pipeline_manager::get_target_resolution() const {
         return resolution;
 }
 
+#ifdef RAY_DEBUG_NO_OPT
+void pipeline_manager::verify_pipeline_destruction() {
+        if (!pipe_instances.empty()) {
+                ray_log(e_log_type::fatal, "destruction of pipelines did not processed correctly. '{}' pipelines is still alive.", pipe_instances.size());
+        }
+}
+#endif
+
 #endif

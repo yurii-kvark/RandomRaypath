@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "g_app_driver.h"
+#include "config/client_renderer.h"
 #include "graphics/graphic_libs.h"
 #include "glm/glm.hpp"
 #include "pipeline/pipeline_manager.h"
@@ -14,7 +15,7 @@ namespace ray::graphics {
 // The goal is to achieve 2d editor crisp feeling.
 class renderer {
 public:
-        renderer(std::weak_ptr<GLFWwindow> basis_win);
+        renderer(std::weak_ptr<GLFWwindow> basis_win, config::visual_style in_style);
         ~renderer();
 
         renderer(const renderer&) = delete;
@@ -46,6 +47,7 @@ private:
 
 private:
         std::weak_ptr<GLFWwindow> gl_window;
+        config::visual_style style;
 
         std::shared_ptr<g_app_driver::driver_handler> driver_lifetime;
         VkSurfaceKHR surface = VK_NULL_HANDLE;
