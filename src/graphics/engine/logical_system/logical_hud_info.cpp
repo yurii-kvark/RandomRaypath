@@ -4,7 +4,7 @@
 #include "graphics/rhi/pipeline/pipeline_manager.h"
 #include "graphics/rhi/pipeline/impl/solid_rect_pipeline.h"
 #include "graphics/window/window.h"
-#include "utils/ray_colors.h"
+#include "utils/ray_visual_config.h"
 #include "utils/ray_error.h"
 #include "utils/ray_time.h"
 
@@ -13,13 +13,13 @@
 using namespace ray;
 using namespace ray::graphics;
 
-ray_error logical_hud_info::init(window& win, pipeline_manager& pipe) {
-        ray_error manager_error = text_line_manager.init(pipe, 100500);
+ray_error logical_hud_info::init(window& win, pipeline_manager& pipe, glm::vec4 text_color) {
+        ray_error manager_error = text_line_manager.init(pipe, ray_pipeline_order::hud_info);
         if (manager_error.has_value()) {
                 return manager_error;
         }
 
-        background_rect_pipeline = pipe.create_pipeline<solid_rect_pipeline>(100499);
+        background_rect_pipeline = pipe.create_pipeline<solid_rect_pipeline>(ray_pipeline_order::hud_info - 1);
         background_fps_obj = background_rect_pipeline.create_draw_obj();
 
         const glm::vec2 back_pivot_add_px = {4, 4};
@@ -35,7 +35,7 @@ ray_error logical_hud_info::init(window& win, pipeline_manager& pipe) {
                 .space_basis = e_space_type::screen,
                 .transform = glm::vec4(text_pivot_add_px.x, text_pivot_add_px.y, 0, text_size_px), // x_pos_px, y_pos_px, 0, y_size_px (pivot top left) / 8
                 .z_order = 10,
-                .text_color = ray_colors::solid(ray_colors::green),
+                .text_color = text_color,
                 .outline_size_px = text_size_px / 20.f,
                 .outline_color = ray_colors::solid(ray_colors::black),
                 .background_color = ray_colors::transparent,
@@ -61,7 +61,7 @@ ray_error logical_hud_info::init(window& win, pipeline_manager& pipe) {
         return {};
 }
 
-
+// TODO: add frame counter
 void logical_hud_info::tick(window& win, pipeline_manager& pipe) {
         glm::u64 curr_time_ns = now_ticks_ns();
         last_delta_time_ns = curr_time_ns - last_time_ns;
@@ -122,7 +122,7 @@ void logical_hud_info::destroy(window& win, pipeline_manager& pipe) {
 }
 
 
-void logical_hud_info::update_camera_transform(glm::vec4 new_cam) {
+void logical_hud_info::update_camera_transform_info(glm::vec4 new_cam) {
         camera_transform = new_cam;
 }
 

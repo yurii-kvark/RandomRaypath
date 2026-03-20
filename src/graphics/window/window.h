@@ -8,23 +8,8 @@
 
 namespace ray::graphics {
 
-enum class e_window_mode : glm::i8 {
-        none = 0,
-        windowed = none,
-        fullscreen = 1,
-        count
-};
-
 class window {
 public:
-        struct config {
-                bool graphics_window_enabled;
-                e_window_mode window_mode; // 0 - windowed, 1 - fullscreen
-                glm::i32vec2 window_position;
-                glm::i32vec2 window_size;
-                glm::f32 zoom_speed;
-        };
-
         enum class e_mouse_cursor : glm::i8 {
                 arrow_pointer = 0,
                 move_hand = 1,
@@ -33,7 +18,7 @@ public:
 
 #if RAY_GRAPHICS_ENABLE
 public:
-        window(const config& in_config);
+        window(const config::window_config& in_config);
         ~window();
 
         window(const window&) = delete;
@@ -60,7 +45,7 @@ private:
         void glfw_dealloc_cursors();
 
 private:
-        config used_config;
+        config::window_config used_config;
         std::shared_ptr<GLFWwindow> gl_win;
 
         glm::f64 mouse_wheel_delta_frame;

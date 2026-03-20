@@ -11,7 +11,6 @@ layout(location = 8) flat in int vApplyFragCam;
 
 layout(location=0) out vec4 outColor;
 
-
 float gridLineAlpha(vec2 coord, vec2 gridSize, vec2 lineSize)
 {
     vec2 halfLine = 0.5 * lineSize;
@@ -22,8 +21,17 @@ float gridLineAlpha(vec2 coord, vec2 gridSize, vec2 lineSize)
     float aaX = length(vec2(dFdx(coord.x), dFdy(coord.x)));
     float aaY = length(vec2(dFdx(coord.y), dFdy(coord.y)));
 
-    float ax = 1.0 - smoothstep(halfLine.x - aaX, halfLine.x + aaX, dist.x);
-    float ay = 1.0 - smoothstep(halfLine.y - aaY, halfLine.y + aaY, dist.y);
+    float halfPixelX = 0.5 * aaX;
+    float halfPixelY = 0.5 * aaY;
+
+    float fadeX = clamp(halfLine.x / halfPixelX, 0.0, 1.0);
+    float fadeY = clamp(halfLine.y / halfPixelY, 0.0, 1.0);
+
+    float effectiveHalfX = max(halfLine.x, halfPixelX);
+    float effectiveHalfY = max(halfLine.y, halfPixelY);
+
+    float ax = (1.0 - smoothstep(effectiveHalfX - aaX, effectiveHalfX + aaX, dist.x)) * fadeX * fadeX;
+    float ay = (1.0 - smoothstep(effectiveHalfY - aaY, effectiveHalfY + aaY, dist.y)) * fadeY * fadeY;
 
     return max(ax, ay);
 }

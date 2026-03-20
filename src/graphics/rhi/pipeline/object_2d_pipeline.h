@@ -35,11 +35,16 @@ struct object_2d_pipeline_data_model {
                 glm::vec4 pivot_offset_ndc {}; // [-1..1] (x_pos, y_pos), [0..1] (x_size, y_size), with pivot in center
                 glm::vec4 color {};
 
+                // not the best approach, maybe need separate screen_overlay basis or just refuse
+                // glm::u32 get_render_order() const {
+                //         const glm::u32 space_type_bit = (space_basis == e_space_type::screen)
+                //                 ? glm::u32(1) << (sizeof(glm::u32) * CHAR_BIT - 1)
+                //                 : 0u;
+                //         return glm::u32(z_order) | space_type_bit;
+                // }
+
                 glm::u32 get_render_order() const {
-                        const glm::u32 space_type_bit = (space_basis == e_space_type::screen)
-                                ? glm::u32(1) << (sizeof(glm::u32) * CHAR_BIT - 1)
-                                : 0u;
-                        return glm::u32(z_order) | space_type_bit;
+                        return z_order;
                 }
         };
 

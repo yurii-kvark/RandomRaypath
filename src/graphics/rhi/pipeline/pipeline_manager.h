@@ -67,6 +67,10 @@ public:
                 }
         }
 
+#ifdef RAY_DEBUG_NO_OPT
+        void verify_pipeline_destruction();
+#endif
+
 private:
         std::vector<std::shared_ptr<i_pipeline>> pipe_instances; // single owner
         std::shared_ptr<index_pool> draw_object_index_pool = std::make_shared<index_pool>();

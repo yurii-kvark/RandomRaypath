@@ -45,7 +45,6 @@ using logical_text_line_handler = std::shared_ptr<logical_text_line>;
 class logical_text_line_manager {
 public:
         logical_text_line_manager() = default;
-        ~logical_text_line_manager() = default;
 
         ray_error init(pipeline_manager& pipe, glm::u32 render_order);
         void destroy(pipeline_manager& pipe);

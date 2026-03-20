@@ -39,5 +39,13 @@ public:
                 return {in.x, in.y, in.z, alpha};
         }
 };
+
+class ray_pipeline_order final {
+public:
+        static constexpr glm::u32 world_obj = 1000;
+        static constexpr glm::u32 grid = 100;
+        static constexpr glm::u32 hud_info = 100500;
+};
+
 #endif
 };

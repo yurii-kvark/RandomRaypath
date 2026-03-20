@@ -1,7 +1,7 @@
 ﻿#pragma once
-#include "graphics/window/window.h"
+#include "glm/glm.hpp"
 
-#include <glm/vec4.hpp>
+
 #include <filesystem>
 #include <string>
 #include <expected>
@@ -10,17 +10,32 @@
 namespace ray::config {
 
 struct visual_style {
-        glm::dvec4 color_nothing;
-        glm::dvec4 color_density_low;
-        glm::dvec4 color_density_high;
+        glm::vec4 color_background;
+        glm::vec4 color_hud_info;
+        glm::vec4 color_grid;
 
         static const visual_style default_style;
+};
+
+enum class e_window_mode : glm::i8 {
+        none = 0,
+        windowed = none,
+        fullscreen = 1,
+        count
+};
+
+struct window_config {
+        bool graphics_window_enabled;
+        e_window_mode window_mode; // 0 - windowed, 1 - fullscreen
+        glm::i32vec2 window_position;
+        glm::i32vec2 window_size;
+        glm::f32 zoom_speed;
 };
 
 class client_renderer {
 public:
         bool enable_computational_server; // if true, it needs computational_server.toml
-        graphics::window::config window;
+        window_config window;
         visual_style style;
         std::string logical_scene;
 

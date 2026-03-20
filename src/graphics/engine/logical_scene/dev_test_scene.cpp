@@ -5,7 +5,7 @@
 #include "graphics/rhi/renderer.h"
 #include "graphics/rhi/pipeline/impl/glyph_pipeline.h"
 #include "graphics/rhi/pipeline/impl/visual_grid_pipeline.h"
-#include "utils/ray_colors.h"
+#include "utils/ray_visual_config.h"
 #include "utils/ray_time.h"
 
 #include <thread>
@@ -17,23 +17,28 @@ using namespace ray::graphics;
 #if RAY_GRAPHICS_ENABLE
 
 ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
-        pipeline_handle<rainbow_rect_pipeline> rainbow_pipeline = pipe.create_pipeline<rainbow_rect_pipeline>(1);
-        pipeline_handle<solid_rect_pipeline> rect_pipeline = pipe.create_pipeline<solid_rect_pipeline>(4);
-        pipeline_handle<glyph_pipeline> text_pipeline = pipe.create_pipeline<glyph_pipeline>(3);
-        pipeline_handle<visual_grid_pipeline> grid_pipeline = pipe.create_pipeline<visual_grid_pipeline>(20);
+        pipeline_handle<rainbow_rect_pipeline> rainbow_pipeline = pipe.create_pipeline<rainbow_rect_pipeline>(ray_pipeline_order::world_obj + 1);
+        pipeline_handle<solid_rect_pipeline> rect_pipeline = pipe.create_pipeline<solid_rect_pipeline>(ray_pipeline_order::world_obj + 4);
+        pipeline_handle<glyph_pipeline> text_pipeline = pipe.create_pipeline<glyph_pipeline>(ray_pipeline_order::world_obj + 3);
+        pipeline_handle<visual_grid_pipeline> grid_pipeline = pipe.create_pipeline<visual_grid_pipeline>(ray_pipeline_order::world_obj + 20);
 
         if (!rainbow_pipeline.is_valid() || !rect_pipeline.is_valid() || !text_pipeline.is_valid() || !grid_pipeline.is_valid()) {
                 return "can't init some pipelines";
         }
 
-        ray_error text_error = text_line_manager.init(pipe, 10);
+        ray_error text_error = text_line_manager.init(pipe, ray_pipeline_order::world_obj + 10);
         if (text_error.has_value()) {
                 return text_error;
         }
 
-        ray_error hud_error = hud_info.init(win, pipe);
+        ray_error hud_error = hud_info.init(win, pipe, style.color_hud_info);
         if (hud_error) {
                 return hud_error;
+        }
+
+        ray_error grid_error = visual_grid_system.init(win, pipe, style.color_grid);
+        if (grid_error) {
+                return grid_error;
         }
 
         //pipeline_handle<glyph_pipeline> text_pipeline;
@@ -44,6 +49,8 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
 
         //std::vector<pipeline_handle<object_2d_pipeline<>>> a = hud_info.get_pipelines();
         //world_processor.register_pipelines(a);
+
+        world_processor.register_pipeline(visual_grid_system.get_pipeline());
         world_processor.register_pipeline(rainbow_pipeline);
         world_processor.register_pipeline(rect_pipeline);
         const pipeline_handle<object_2d_pipeline<>>& text_2d_pipeline = text_line_manager.get_pipeline();
@@ -105,17 +112,17 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
         // screen  pure[0]   cam[1]
         // world   cam[2]    pure[3]
 
-        if (auto visual_grid_data = visual_grid_handle[0].access_draw_obj_data()) {
-                visual_grid_data->space_basis = e_space_type::screen;
-                visual_grid_data->z_order = 1;
-                visual_grid_data->pivot_offset_ndc = {0, 0, 0.9, 0.9};//glm::vec4(0.1, 0.1, 0.5, 0.5);
-                visual_grid_data->transform = glm::vec4(0, 0, 0, 0);
-                visual_grid_data->color = ray_colors::lime;
-                visual_grid_data->background_color = ray_colors::alpha(ray_colors::cyan, 0.05);
-                visual_grid_data->grid_size_px = 50;
-                visual_grid_data->line_size_px = 10;
-                visual_grid_data->apply_camera_to_frag = true;
-        }
+        // if (auto visual_grid_data = visual_grid_handle[0].access_draw_obj_data()) {
+        //         visual_grid_data->space_basis = e_space_type::screen;
+        //         visual_grid_data->z_order = 1;
+        //         visual_grid_data->pivot_offset_ndc = {0, 0, 0.9, 0.9};//glm::vec4(0.1, 0.1, 0.5, 0.5);
+        //         visual_grid_data->transform = glm::vec4(0, 0, 0, 0);
+        //         visual_grid_data->color = ray_colors::lime;
+        //         visual_grid_data->background_color = ray_colors::alpha(ray_colors::cyan, 0.05);
+        //         visual_grid_data->grid_size_px = 50;
+        //         visual_grid_data->line_size_px = 10;
+        //         visual_grid_data->apply_camera_to_frag = true;
+        // }
         //
         // if (auto visual_grid_data = visual_grid_handle[1].access_draw_obj_data()) {
         //         visual_grid_data->space_basis = e_space_type::screen;
@@ -222,7 +229,7 @@ bool dev_test_scene::tick(window& win, pipeline_manager& pipe) {
         world_processor.tick(win, pipe);
 
         const glm::vec4 new_cam_transform = world_processor.get_camera_transform();
-        hud_info.update_camera_transform(new_cam_transform);
+        hud_info.update_camera_transform_info(new_cam_transform);
 
         hud_info.tick(win, pipe);
 
@@ -245,12 +252,11 @@ bool dev_test_scene::tick(window& win, pipeline_manager& pipe) {
 void dev_test_scene::cleanup(window& win, pipeline_manager& pipe) {
         text_line_manager.destroy(pipe);
         hud_info.destroy(win, pipe);
+        visual_grid_system.destroy(win, pipe);
 
         for (auto p : lifetime_pipelines) {
                 pipe.destroy_pipeline(p);
         }
-
-        new_line_1.reset();
 }
 
 

@@ -10,6 +10,6 @@ logical_scene = "dev_test" # main / dev_test
 
 # color - RGBA 0..1 float32
 [client_renderer.visual_style]
-color_nothing = [0.0, 0.0, 0.0, 1.0]
-color_density_low = [0.0, 1.0, 0.0, 1.0]
-color_density_high = [0.0, 0.0, 1.0, 1.0]
+color_background = [0.005, 0.005, 0.005, 1.0]
+color_hud_info = [0.0, 1.0, 0.0, 1.0]
+color_grid = [0.03, 0.02, 0.04, 1.0]
