@@ -2,10 +2,10 @@
 #version 450
 layout(location = 0) in vec2 vUV;
 layout(location = 1) flat in int vDisplayEnable;
-layout(location = 2) in vec4 vFillColor;
-layout(location = 3) in vec4 vOutlineColor;
-layout(location = 4) in vec4 vBackgroundColor;
-layout(location = 5) in float vOutlineSizePx;
+layout(location = 2) flat in vec4 vFillColor;
+layout(location = 3) flat in vec4 vOutlineColor;
+layout(location = 4) flat in vec4 vBackgroundColor;
+layout(location = 5) flat in float vOutlineSizePx;
 
 layout(location = 0) out vec4 outColor;
 layout(set = 0, binding = 2) uniform sampler2D atlasSampler;

@@ -39,7 +39,7 @@ ray_error logical_hud_info::init(window& win, pipeline_manager& pipe) {
                 .outline_size_px = text_size_px / 20.f,
                 .outline_color = ray_colors::solid(ray_colors::black),
                 .background_color = ray_colors::transparent,
-                .pivot_offset_ndc = glm::vec2(-1.f, -1.f),
+                .pivot_offset_ndc = glm::vec4(-1.f, -1.f, 0, 0),
         };
 
         fps_text_line = text_line_manager.create_text_line(text_args);
@@ -55,7 +55,7 @@ ray_error logical_hud_info::init(window& win, pipeline_manager& pipe) {
                 back_data->z_order = 3;
                 back_data->transform = glm::vec4(back_pivot_add_px.x, back_pivot_add_px.y, 380, text_args.transform.y + line_height_px * 0.8);
                 back_data->color = ray_colors::alpha(ray_colors::black, 0.5);
-                back_data->pivot_offset_ndc = glm::vec2(-1.f, -1.f);
+                back_data->pivot_offset_ndc = glm::vec4(-1.f, -1.f, 0, 0);
         }
 
         return {};

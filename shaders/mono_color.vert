@@ -26,16 +26,6 @@ layout(std430, set = 0, binding = 1) readonly buffer pipe2d_draw_obj_ssbos {
     pipe2d_draw_obj_ssbo objs[];
 } ssbo;
 
-
-//void main() {
-//    vUV = inUV;
-//
-//    vec2 p = inPos;
-//    p = (p - pipe_frame.camera_transform_ndc.xy) * pipe_frame.camera_transform_ndc.z;
-//    gl_Position = vec4(p, 0.0, 1.0);
-//}
-
-
 void main() {
     pipe2d_draw_obj_ssbo obj = ssbo.objs[gl_InstanceIndex];
 
@@ -43,7 +33,7 @@ void main() {
     vec2 scl = obj.transform_ndc.zw;
 
     if (obj.space_basis == 1u) { // world basis
-        vec2 camPos = pipe_frame.camera_transform_ndc.xy * 2.0;
+        vec2 camPos = pipe_frame.camera_transform_ndc.xy;
         float camScale = pipe_frame.camera_transform_ndc.z;
 
         pos = (pos - camPos) * camScale;

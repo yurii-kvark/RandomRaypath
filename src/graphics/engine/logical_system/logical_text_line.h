@@ -19,7 +19,7 @@ struct logical_text_line_args {
         glm::f32 outline_size_px = 2.f;
         glm::vec4 outline_color = glm::vec4(0.5f, 1.f, 0.5f, 1.f);
         glm::vec4 background_color = glm::vec4(0);
-        glm::vec2 pivot_offset_ndc {};
+        glm::vec4 pivot_offset_ndc {};
 };
 
 

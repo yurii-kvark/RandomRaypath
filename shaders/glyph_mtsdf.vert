@@ -3,11 +3,11 @@ layout(location = 0) in vec2 inPos;
 layout(location = 1) in vec2 inUV;
 
 layout(location = 0) out vec2 vUV;
-layout(location = 1) out int vDisplayEnable;
-layout(location = 2) out vec4 vFillColor;
-layout(location = 3) out vec4 vOutlineColor;
-layout(location = 4) out vec4 vBackgroundColor;
-layout(location = 5) out float vOutlineSizePx;
+layout(location = 1) flat out int vDisplayEnable;
+layout(location = 2) flat out vec4 vFillColor;
+layout(location = 3) flat out vec4 vOutlineColor;
+layout(location = 4) flat out vec4 vBackgroundColor;
+layout(location = 5) flat out float vOutlineSizePx;
 
 layout(set = 0, binding = 0) uniform pipe_frame_ubo {
     int time_ms;
@@ -16,7 +16,6 @@ layout(set = 0, binding = 0) uniform pipe_frame_ubo {
     int _pad2;
     vec4 camera_transform_ndc;
 } pipe_frame;
-
 
 struct pipe2d_draw_obj_ssbo {
     vec4 transform_ndc; // x_ndc, y_ndc, w_ndc, h_ndc
@@ -49,7 +48,7 @@ void main() {
 
     float camScale = 1;
     if (inst.space_basis == 1u) { // world basis
-        vec2 camPos = pipe_frame.camera_transform_ndc.xy * 2.0;
+        vec2 camPos = pipe_frame.camera_transform_ndc.xy;
         camScale = pipe_frame.camera_transform_ndc.z;
 
         pos = (pos - camPos) * camScale;
