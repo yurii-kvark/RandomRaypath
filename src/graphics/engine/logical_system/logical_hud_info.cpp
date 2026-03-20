@@ -45,6 +45,9 @@ ray_error logical_hud_info::init(window& win, pipeline_manager& pipe, glm::vec4 
         fps_text_line = text_line_manager.create_text_line(text_args);
 
         text_args.transform.y += line_height_px;
+        frame_text_line = text_line_manager.create_text_line(text_args);
+
+        text_args.transform.y += line_height_px;
         mouse_text_line = text_line_manager.create_text_line(text_args);
 
         text_args.transform.y += line_height_px;
@@ -53,19 +56,20 @@ ray_error logical_hud_info::init(window& win, pipeline_manager& pipe, glm::vec4 
         if (auto back_data = background_fps_obj.access_draw_obj_data()) {
                 back_data->space_basis = e_space_type::screen;
                 back_data->z_order = 3;
-                back_data->transform = glm::vec4(back_pivot_add_px.x, back_pivot_add_px.y, 380, text_args.transform.y + line_height_px * 0.8);
-                back_data->color = ray_colors::alpha(ray_colors::black, 0.5);
+                back_data->transform = glm::vec4(back_pivot_add_px.x, back_pivot_add_px.y, 360, text_args.transform.y + line_height_px * 0.8);
+                back_data->color = ray_colors::alpha(ray_colors::black, 0.7);
                 back_data->pivot_offset_ndc = glm::vec4(-1.f, -1.f, 0, 0);
         }
 
         return {};
 }
 
-// TODO: add frame counter
 void logical_hud_info::tick(window& win, pipeline_manager& pipe) {
         glm::u64 curr_time_ns = now_ticks_ns();
         last_delta_time_ns = curr_time_ns - last_time_ns;
         last_time_ns = curr_time_ns;
+
+        frame_counter += 1;
 
         if (!!fps_text_line) {
                 std::chrono::duration<glm::u64, std::nano> ns_duration {last_delta_time_ns};
@@ -88,27 +92,23 @@ void logical_hud_info::tick(window& win, pipeline_manager& pipe) {
                 collecting_max_fps = std::max(collecting_max_fps, fps);
                 collecting_min_fps = std::min(collecting_min_fps, fps);
 
-                const std::string fps_str =std::format("frame: {:.2f} ms, avg_fps: {:.1f} | min {:.1f} | max {:.1f}", sec_duration * 1000, smoothed_fps, min_fps, max_fps);
+                const std::string fps_str =std::format("avg_fps: {:.1f} | min {:.1f} | max {:.1f}", smoothed_fps, min_fps, max_fps);
                 fps_text_line->update_content(fps_str);
 
                 const glm::vec4 cam_vec = camera_transform ? *camera_transform : glm::vec4();
 
-                float cam_zoom = cam_vec.z;
-                bool sign_zoom_plus = false;
-                if (cam_vec.z < 1.0) {
-                        cam_zoom = 1/cam_zoom;
-                        sign_zoom_plus = true;
-                }
-
-                const std::string cam_str =std::format("cam: ({:.1f}, {:.1f}) | 1:{}{:.1f}", cam_vec.x, cam_vec.y, sign_zoom_plus ? "+" : "-", cam_zoom);
+                const std::string cam_str =std::format("cam: ({:.1f}, {:.1f}) | zoom: {:.2f}", cam_vec.x, cam_vec.y, cam_vec.z);
                 cam_text_line->update_content(cam_str);
 
                 glm::vec2 viewport_px = (glm::vec2)pipe.get_target_resolution();
-                glm::vec2 screen_mouse_pos = win.get_mouse_position();
-                glm::vec2 world_mouse = (screen_mouse_pos - viewport_px * 0.5f) * (1.0f / cam_vec.z);
+                glm::vec2 screen_mouse_pos = win.get_mouse_position() - viewport_px * 0.5f;
+                glm::vec2 world_mouse = (screen_mouse_pos / cam_vec.z) + glm::vec2 {cam_vec.x, cam_vec.y};
 
-                const std::string mouse_str =std::format("mouse: screen ({:.1f}, {:.1f}) | world ({:.1f}, {:.1f})", screen_mouse_pos.x, screen_mouse_pos.y, world_mouse.x, world_mouse.y);
+                const std::string mouse_str = std::format("mouse: screen ({:.1f}, {:.1f}) | world ({:.1f}, {:.1f})", screen_mouse_pos.x, screen_mouse_pos.y, world_mouse.x, world_mouse.y);
                 mouse_text_line->update_content(mouse_str);
+
+                const std::string frame_str = std::format("frame: {} | {:.2f} ms", frame_counter, sec_duration * 1000);
+                frame_text_line->update_content(frame_str);
         }
 }
 
@@ -117,6 +117,7 @@ void logical_hud_info::destroy(window& win, pipeline_manager& pipe) {
         fps_text_line = nullptr;
         cam_text_line = nullptr;
         mouse_text_line = nullptr;
+        frame_text_line = nullptr;
 
         pipe.destroy_pipeline(background_rect_pipeline);
 }

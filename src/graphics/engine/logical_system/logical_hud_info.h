@@ -25,6 +25,7 @@ private:
         logical_text_line_handler fps_text_line = nullptr;
         logical_text_line_handler cam_text_line = nullptr;
         logical_text_line_handler mouse_text_line = nullptr;
+        logical_text_line_handler frame_text_line = nullptr;
 
         pipeline_handle<solid_rect_pipeline> background_rect_pipeline;
         draw_obj_handle<solid_rect_pipeline> background_fps_obj;
@@ -33,6 +34,7 @@ private:
         glm::u64 last_time_ns = 0;
         glm::u64 last_delta_time_ns = 0;
 
+        int frame_counter = 0;
         double smoothed_fps = 0.0;
         double fps_delay_reset_sec = 0.0;
         double max_fps = 0.0;
