@@ -94,7 +94,7 @@ private:
                 }
 
                 {
-                        RAY_PROFILE_SCOPE("logic_tick", ray_colors::orange);
+                        RAY_PROFILE_SCOPE("draw_frame", ray_colors::orange);
 
                         const bool render_success = rend.draw_frame();
                         if (!render_success) {

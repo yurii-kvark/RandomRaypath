@@ -8,7 +8,7 @@
 using namespace ray;
 using namespace ray::graphics;
 
-
+// TODO: optimize text update, stop rebuild everything each time
 void logical_text_line::update_content(std::string_view in_new_content) {
         auto pipe_ptr = pipe.obj_ptr.lock();
         if (!pipe_ptr) {

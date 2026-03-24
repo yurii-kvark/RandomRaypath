@@ -17,9 +17,6 @@ using namespace ray::graphics;
 
 // TODO: add vulkan debug module
 
-#if RAY_CPU_PROFILE && TRACY_ENABLE
-#include <tracy/Tracy.hpp>
-#endif
 
 renderer::renderer(std::weak_ptr<GLFWwindow> basis_win, config::visual_style in_style)
         : gl_window(std::move(basis_win)), style(std::move(in_style)) {
@@ -64,12 +61,12 @@ bool renderer::draw_frame() {
         }
 
         if (frame_submitted[frame_index]) {
-#if RAY_CPU_PROFILE && TRACY_ENABLE
-                ZoneScopedNC("fence_miss", tracy::Color::Red1);
-#endif
+                RAY_PROFILE_SCOPE("g_mem_fence_miss", ray_colors::red);
 
+                // Performance hit (up to 1.2 ms), but no matter for graphic sync.
                 vkWaitForFences(device, 1, &in_flight[frame_index], VK_TRUE, UINT64_MAX);
         }
+
         vkResetFences(device, 1, &in_flight[frame_index]);
         frame_submitted[frame_index] = false;
 
