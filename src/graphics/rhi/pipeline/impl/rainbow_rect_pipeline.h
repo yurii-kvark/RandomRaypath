@@ -8,6 +8,8 @@ namespace ray::graphics {
 
 
 struct rainbow_rect_pipeline_data_model {
+        static constexpr char pipeline_name[] = "rainbow_rect";
+
         struct pipeline : object_2d_pipeline_data_model::pipeline {
         };
 

@@ -8,6 +8,8 @@ namespace ray::graphics {
 #if RAY_GRAPHICS_ENABLE
 
 struct glyph_pipeline_data_model {
+        static constexpr char pipeline_name[] = "glyph";
+
         struct pipeline : object_2d_pipeline_data_model::pipeline {
         };
 

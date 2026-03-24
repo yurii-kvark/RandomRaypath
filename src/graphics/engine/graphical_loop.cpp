@@ -4,8 +4,11 @@
 #include "graphics/window/window.h"
 #include "graphics/rhi/renderer.h"
 #include "logical_scene/main_scene.h"
+#include "utils/ray_profile.h"
+#include "utils/ray_visual_config.h"
 
 #include <memory>
+
 
 using namespace ray;
 using namespace ray::graphics;
@@ -56,7 +59,7 @@ struct render_thread {
 
                 logic->cleanup(win, rend.pipe);
 
-#ifdef RAY_DEBUG_NO_OPT
+#if RAY_DEBUG_NO_OPT
                 rend.pipe.verify_pipeline_destruction();
 #endif
         }
@@ -65,24 +68,38 @@ struct render_thread {
 
 private:
         static bool tick(window& win, renderer& rend, i_logical_scene& logic) {
-                bool valid_view = false;
-                const bool window_success = win.draw_window(valid_view);
-                if (!window_success) {
-                        return false;
+                RAY_PROFILE_FRAME();
+
+                {
+                        RAY_PROFILE_SCOPE("draw_window", glm::vec3(0., 0., 1.));
+
+                        bool valid_view = false;
+                        const bool window_success = win.draw_window(valid_view);
+                        if (!window_success) {
+                                return false;
+                        }
+
+                        if (!valid_view) {
+                                return true;
+                        }
                 }
 
-                if (!valid_view) {
-                        return true;
+                {
+                        RAY_PROFILE_SCOPE("logic_tick", glm::vec3(0, 1, 0.));
+
+                        const bool logic_success = logic.tick(win, rend.pipe);
+                        if (!logic_success) {
+                                return false;
+                        }
                 }
 
-                const bool logic_success = logic.tick(win, rend.pipe);
-                if (!logic_success) {
-                        return false;
-                }
+                {
+                        RAY_PROFILE_SCOPE("logic_tick", ray_colors::orange);
 
-                const bool render_success = rend.draw_frame();
-                if (!render_success) {
-                        return false;
+                        const bool render_success = rend.draw_frame();
+                        if (!render_success) {
+                                return false;
+                        }
                 }
 
                 return true;

@@ -2,6 +2,8 @@
 #include "pipeline.h"
 #include "graphics/rhi/g_app_driver.h"
 #include "utils/ray_log.h"
+#include "utils/ray_profile.h"
+#include "utils/ray_visual_config.h"
 
 #include <cstring>
 #include <filesystem>
@@ -23,6 +25,8 @@ struct ray_vertex {
 };
 
 struct object_2d_pipeline_data_model {
+        static constexpr char pipeline_name[] = "object_2d";
+
         struct pipeline : base_pipeline_data_model::pipeline {
                 glm::u32 time_ms = 0;
                 glm::vec4 camera_transform = {0,0,1,0}; // x_px, y_px, scale, 1.0
@@ -186,10 +190,13 @@ void object_2d_pipeline<PipelineDataModel>::construct_pipeline() {
 
 template<class PipelineDataModel>
 void object_2d_pipeline<PipelineDataModel>::draw_commands(VkCommandBuffer in_command_buffer, glm::u32 frame_index) {
-#ifdef RAY_DEBUG_NO_OPT
+#if RAY_DEBUG_NO_OPT
         assert(frame_index < g_app_driver::k_frames_in_flight);
         assert(draw_ssbos_data[frame_index].capacity >= this->draw_obj_data.size());
 #endif
+
+        RAY_PROFILE_SCOPE("draw_commands", ray_colors::purple);
+
 
         vkCmdBindPipeline(in_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline);
 
@@ -225,21 +232,26 @@ void object_2d_pipeline<PipelineDataModel>::draw_commands(VkCommandBuffer in_com
                 render_order_dirty = false;
         }
 
+
         update_object_memory(frame_index, dirty_update);
 
-        vkCmdBindDescriptorSets(
-                in_command_buffer,
-                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                vk_pipeline_layout,
-                0,
-                1,
-                &vk_descriptor_sets[frame_index],
-                0,
-                nullptr
-        );
+        {
+                RAY_PROFILE_SCOPE("vkCmdDrawIndexed", ray_colors::green);
 
-        if (!render_order.empty()) {
-                vkCmdDrawIndexed(in_command_buffer, 6, render_order.size(), 0, 0, 0);
+                vkCmdBindDescriptorSets(
+                        in_command_buffer,
+                        VK_PIPELINE_BIND_POINT_GRAPHICS,
+                        vk_pipeline_layout,
+                        0,
+                        1,
+                        &vk_descriptor_sets[frame_index],
+                        0,
+                        nullptr
+                );
+
+                if (!render_order.empty()) {
+                        vkCmdDrawIndexed(in_command_buffer, 6, render_order.size(), 0, 0, 0);
+                }
         }
 }
 
@@ -263,8 +275,12 @@ void object_2d_pipeline<PipelineDataModel>::update_swapchain(VkFormat in_swapcha
 
 template<class PipelineDataModel>
 void object_2d_pipeline<PipelineDataModel>::update_object_memory(glm::u32 frame_index, bool dirty_update) {
+        RAY_PROFILE_SCOPE(PipelineDataModel::pipeline_name, ray_colors::blue);
+
         draw_obj_ssbo_t* ssbo_low_obj_arr = reinterpret_cast<draw_obj_ssbo_t*>(draw_ssbos_data[frame_index].mapped);
         for (size_t i = 0; i < render_order.size(); ++i) {
+                RAY_PROFILE_SCOPE("try_update", ray_colors::blue);
+
                 auto& render_entry = render_order[i];
                 auto& draw_data = this->draw_obj_data[render_entry.index];
 
@@ -274,20 +290,25 @@ void object_2d_pipeline<PipelineDataModel>::update_object_memory(glm::u32 frame_
                         continue;
                 }
 
-                if (data_need_update) {
-                        for (size_t frame_flight = 0; frame_flight < draw_ssbos_data.size(); ++frame_flight) {
-                                draw_ssbos_data[frame_flight].in_flight_data_valid[i] = false;
+                {
+                        RAY_PROFILE_SCOPE("mem_update", ray_colors::red);
+
+                        if (data_need_update) {
+                                for (size_t frame_flight = 0; frame_flight < draw_ssbos_data.size(); ++frame_flight) {
+                                        draw_ssbos_data[frame_flight].in_flight_data_valid[i] = false;
+                                }
                         }
+
+                        draw_ssbos_data[frame_index].in_flight_data_valid[i] = true;
+
+                        draw_data.need_update = false;
+                        const bool dirty_order = draw_data.get_render_order() != render_entry.render_order;
+                        render_order_dirty |= !dirty_update && dirty_order;
+
+                        draw_obj_ssbo_t& out_ssbo_low_obj = ssbo_low_obj_arr[i];
+
+                        update_render_obj(draw_data, out_ssbo_low_obj);
                 }
-                draw_ssbos_data[frame_index].in_flight_data_valid[i] = true;
-
-                draw_data.need_update = false;
-                const bool dirty_order = draw_data.get_render_order() != render_entry.render_order;
-                render_order_dirty |= !dirty_update && dirty_order;
-
-                draw_obj_ssbo_t& out_ssbo_low_obj = ssbo_low_obj_arr[i];
-
-                update_render_obj(draw_data, out_ssbo_low_obj);
         }
 }
 
@@ -330,6 +351,8 @@ void object_2d_pipeline<PipelineDataModel>::update_render_obj(const typename Pip
 
 template<class PipelineDataModel>
 void object_2d_pipeline<PipelineDataModel>::rebuild_order() {
+        RAY_PROFILE_SCOPE("rebuild_order", ray_colors::cyan);
+
         render_order.clear();
         render_order.reserve(this->draw_obj_data.size());
 
