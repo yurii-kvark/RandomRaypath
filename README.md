@@ -25,3 +25,12 @@ https://www.youtube.com/watch?v=7Cc08CGDKNY
   
 The project uses the standart CMake way for building.  
 Thrid-Party libs has been copied into the project as source code or uses github subrepository reference.  
+
+Design notes:
+* Graphical engine did not designed to handle huge amount of object, need to optimize object_2d_pipeline::update_object_memory.
+* Graphical engine should strictly hold above 200 FPS in true sync, some spikes are allowed, but not logic processing related.
+
+Known perf hits:
+* [renderer::draw_frame] Memory fence for graphical buffer waiting up to 1.4 ms sometimes, it's ok since this is graphical data update wait.
+* [logical_text_line::update_content] Trigger every glyph to update if text changed, up to 1 ms per frame for hud_info draw.
+* [object_2d_pipeline::update_object_memory] Pipeline iterates through every draw object to check if update need. Not critical for the engine purposes, but will make issues for a bigger quantity of draw objects.
