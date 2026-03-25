@@ -3,7 +3,8 @@
 #set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
 # .\msdf-atlas-gen.exe -varfont "source/GoogleSansCode-VariableFont_wght.ttf?wght=500" -type mtsdf -overlap -scanline -size 48 -pxrange 8 -potr -yorigin top -format rgba -imageout "gsanscode_w500_mtsdf.rgba" -csv "gsanscode_w500.csv"
 
-option(RAY_DEBUG_NO_OPT "Enable debug build options. Also enables additional checking or stat code." ON)
+option(RAY_ENABLE_PACKAGING "Enable distributable package generation via CPack." OFF)
+option(RAY_DEBUG_NO_OPT "Enable debug build options. Also enables additional checking or stat code." OFF)
 
 option(RAY_CPU_PROFILE "Enable profile build options." OFF)
 option(RAY_GPU_PROFILE "Enable profile build options." OFF)
@@ -16,6 +17,8 @@ if(RAY_DEBUG_NO_OPT)
     set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -fno-omit-frame-pointer -fno-inline" CACHE STRING "" FORCE)
     set(CMAKE_C_FLAGS_DEBUG   "-O0 -g3 -fno-omit-frame-pointer -fno-inline" CACHE STRING "" FORCE)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+else()
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 endif()
 
 project(RandomRaypath LANGUAGES CXX)
@@ -109,3 +112,8 @@ target_link_libraries(RayClientRenderer PRIVATE glfw)
 target_link_libraries(RayClientRenderer PRIVATE glm::glm)
 target_link_libraries(RayClientRenderer PRIVATE Tracy::TracyClient)
 target_link_libraries(RayClientRenderer PRIVATE stdc++exp)
+
+if(RAY_ENABLE_PACKAGING)
+    include("${CMAKE_SOURCE_DIR}/PackageRayDistribution.cmake")
+    ray_enable_packaging()
+endif()
