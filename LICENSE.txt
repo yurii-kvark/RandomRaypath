@@ -1,7 +1,7 @@
 DO WHAT THE FUCK YOU WANT TO BUT IT'S NOT MY FAULT PUBLIC LICENSE
-                    Version 1, October 2013
+                    Version 1, March 2026
 
- Copyright (C) 2013 Ben McGinnes <ben@adversary.org>
+ Copyright (C) 2026 Yurii Kvark <kvarkmail@gmail.com>
 
  Everyone is permitted to copy and distribute verbatim or modified
  copies of this license document, and changing it is allowed as long
