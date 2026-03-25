@@ -26,6 +26,7 @@ struct logical_text_line_args {
 class logical_text_line {
 public:
         void update_content(std::string_view in_new_content);
+        void update_transform(glm::vec4 new_transform);
 
         void init(const std::weak_ptr<glyph_font_data>& in_loader, const pipeline_handle<glyph_pipeline>& in_pipe, logical_text_line_args in_args);
         void destroy();

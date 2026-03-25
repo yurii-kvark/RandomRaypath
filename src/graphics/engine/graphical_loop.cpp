@@ -4,6 +4,7 @@
 #include "graphics/window/window.h"
 #include "graphics/rhi/renderer.h"
 #include "logical_scene/main_scene.h"
+#include "logical_scene/minecraft_scene.h"
 #include "utils/ray_profile.h"
 #include "utils/ray_visual_config.h"
 
@@ -22,6 +23,10 @@ std::unique_ptr<i_logical_scene> make_scene_by_name(std::string_view scene_class
 
         if (scene_class_name == "dev_test") {
                 return std::unique_ptr<i_logical_scene>(new dev_test_scene());
+        }
+
+        if (scene_class_name == "minecraft") {
+                return std::unique_ptr<i_logical_scene>(new minecraft_scene());
         }
 
         return nullptr;

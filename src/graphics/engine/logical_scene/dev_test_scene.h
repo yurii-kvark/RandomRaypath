@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "i_logical_scene.h"
 #include "graphics/engine/logical_system/logical_2d_world_view.h"
+#include "graphics/engine/logical_system/logical_crate_sim.h"
 #include "graphics/engine/logical_system/logical_grid.h"
 #include "graphics/engine/logical_system/logical_hud_info.h"
 #include "graphics/engine/logical_system/logical_text_line.h"
@@ -24,6 +25,7 @@ public:
         logical_2d_world_view world_processor;
         logical_hud_info hud_info;
         logical_grid visual_grid_system;
+        logical_crate_sim crate_sim;
 
         glm::vec4 transform_dyn_1 = {};
         glm::vec4 transform_dyn_2 = {};

@@ -41,6 +41,11 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
                 return grid_error;
         }
 
+        ray_error crate_sim_error = crate_sim.init(win, pipe);
+        if (crate_sim_error) {
+                return crate_sim_error;
+        }
+
         //pipeline_handle<glyph_pipeline> text_pipeline;
         lifetime_pipelines.push_back(rainbow_pipeline);
         lifetime_pipelines.push_back(rect_pipeline);
@@ -53,10 +58,10 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
         world_processor.register_pipeline(visual_grid_system.get_pipeline());
         world_processor.register_pipeline(rainbow_pipeline);
         world_processor.register_pipeline(rect_pipeline);
-        const pipeline_handle<object_2d_pipeline<>>& text_2d_pipeline = text_line_manager.get_pipeline();
-        world_processor.register_pipeline(text_2d_pipeline);
+        world_processor.register_pipeline(text_line_manager.get_pipeline());
         world_processor.register_pipeline(text_pipeline);
         world_processor.register_pipeline(grid_pipeline);
+        world_processor.register_pipelines(crate_sim.get_pipelines());
 
         rainbow_a = rainbow_pipeline.create_draw_obj();
         rainbow_b = rainbow_pipeline.create_draw_obj();
@@ -71,6 +76,13 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
         visual_grid_handle[1] = grid_pipeline.create_draw_obj();
         visual_grid_handle[2] = grid_pipeline.create_draw_obj();
         visual_grid_handle[3] = grid_pipeline.create_draw_obj();
+
+
+        crate_sim.add_crate(glm::vec2(0, 0), 50, 'G', ray_colors::cyan, ray_colors::green);
+        crate_sim.add_crate(glm::vec2(100, 100), 40, 'T', ray_colors::blue, ray_colors::red);
+        crate_sim.add_crate(glm::vec2(100, -100), 30, 'A', ray_colors::maroon, ray_colors::pink);
+        crate_sim.add_crate(glm::vec2(-100, 100), 20, '6', ray_colors::lime, ray_colors::orange);
+
 
         new_line_1 = text_line_manager.create_text_line( {
                         .content_text = "hell",
@@ -196,14 +208,14 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
                 rainbow_b_data->color = ray_colors::transparent;
         }
 
-        if (auto rect_1_data = rect_1.access_draw_obj_data()) {
-                rect_1_data->space_basis = e_space_type::world;
-                rect_1_data->z_order = 3;
-                //transform_dyn_1 = glm::vec4(0, 0, 100, 100);
-                rect_1_data->transform = glm::vec4(0, 0, 100, 100);
-                //rect_1_data->pivot_offset_ndc = glm::vec4(0, 0, 1, 1);
-                rect_1_data->color = ray_colors::blue;
-        }
+        // if (auto rect_1_data = rect_1.access_draw_obj_data()) {
+        //         rect_1_data->space_basis = e_space_type::world;
+        //         rect_1_data->z_order = 3;
+        //         //transform_dyn_1 = glm::vec4(0, 0, 100, 100);
+        //         rect_1_data->transform = glm::vec4(0, 0, 100, 100);
+        //         //rect_1_data->pivot_offset_ndc = glm::vec4(0, 0, 1, 1);
+        //         rect_1_data->color = ray_colors::blue;
+        // }
 
         if (auto rect_2_data = rect_2.access_draw_obj_data()) {
                 rect_2_data->space_basis = e_space_type::world;
@@ -233,6 +245,8 @@ bool dev_test_scene::tick(window& win, pipeline_manager& pipe) {
 
         hud_info.tick(win, pipe);
 
+        crate_sim.tick(new_cam_transform, win, pipe);
+
         if (auto rect_1_data = rect_1.access_draw_obj_data()) {
                 //rect_3_dyn_world_data->transform = transform_dyn_3 * std::sin((float)last_time_ns / 1'000'000'000 );
         } else {
@@ -257,6 +271,8 @@ void dev_test_scene::cleanup(window& win, pipeline_manager& pipe) {
         for (auto p : lifetime_pipelines) {
                 pipe.destroy_pipeline(p);
         }
+
+        crate_sim.destroy(pipe);
 }
 
 
