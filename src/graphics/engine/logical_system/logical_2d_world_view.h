@@ -16,6 +16,7 @@ public:
 
         // will be auto cleared
         void register_pipeline(const pipeline_handle<object_2d_pipeline<>>& pipe_to_register);
+        void register_pipelines(const std::vector<pipeline_handle<object_2d_pipeline<>>>& pipes_to_register);
         void unregister_pipeline(const pipeline_handle<object_2d_pipeline<>>& pipe_to_unregister);
 
         glm::vec4 get_camera_transform() const;

@@ -8,7 +8,7 @@
 using namespace ray;
 using namespace ray::graphics;
 
-
+// TODO: optimize text update, stop rebuild everything each time
 void logical_text_line::update_content(std::string_view in_new_content) {
         auto pipe_ptr = pipe.obj_ptr.lock();
         if (!pipe_ptr) {
@@ -37,6 +37,39 @@ void logical_text_line::update_content(std::string_view in_new_content) {
                 glyph_data->need_update = true;
 
                 const glyph_plane_mapping& plane = planes[glyph_value];
+                glyph_data->transform = iterate_line_transform(plane, line_top_em, cursor_x_em);
+        }
+}
+
+
+void logical_text_line::update_transform(glm::vec4 new_transform) {
+        pivot_transform = new_transform;
+
+        auto pipe_ptr = pipe.obj_ptr.lock();
+        if (!pipe_ptr) {
+                return;
+        }
+
+        auto data_loader_ptr = data_loader.lock();
+        if (!data_loader_ptr) {
+                return;
+        }
+
+        const std::array<glyph_plane_mapping, 256>& planes = data_loader_ptr->plane_mapping;
+        const glm::f32 line_top_em = data_loader_ptr->plane_line_top_em;
+
+        glm::f32 cursor_x_em = 0.f;
+
+        for (size_t i = 0; i < draw_obj_handles.size(); ++i) {
+                auto glyph_data = pipe_ptr->get_draw_model<glyph_pipeline>(draw_obj_handles[i]);
+
+                if (!glyph_data) {
+                        break;
+                }
+
+                glyph_data->need_update = true;
+
+                const glyph_plane_mapping& plane = planes[glyph_data->content_glyph];
                 glyph_data->transform = iterate_line_transform(plane, line_top_em, cursor_x_em);
         }
 }

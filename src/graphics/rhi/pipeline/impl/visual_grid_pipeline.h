@@ -8,6 +8,8 @@ namespace ray::graphics {
 
 
 struct visual_grid_pipeline_data_model {
+        static constexpr char pipeline_name[] = "visual_grid";
+
         struct pipeline : object_2d_pipeline_data_model::pipeline {
         };
 

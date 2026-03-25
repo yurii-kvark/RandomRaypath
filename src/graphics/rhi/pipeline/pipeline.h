@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "graphics/graphic_libs.h"
 #include "glm/glm.hpp"
-#include "utils/index_pool.h"
+#include "utils/ray_index.h"
 
 #include <algorithm>
 #include <memory>

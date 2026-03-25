@@ -2,7 +2,7 @@
 #include "object_2d_pipeline.h"
 #include "pipeline.h"
 #include "graphics/graphic_libs.h"
-#include "utils/index_pool.h"
+#include "utils/ray_index.h"
 
 #include <memory>
 
@@ -67,7 +67,7 @@ public:
                 }
         }
 
-#ifdef RAY_DEBUG_NO_OPT
+#if RAY_DEBUG_NO_OPT
         void verify_pipeline_destruction();
 #endif
 

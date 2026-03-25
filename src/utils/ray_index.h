@@ -31,7 +31,7 @@ public:
         }
 
         void free(gen_index h) {
-#ifdef RAY_DEBUG_NO_OPT
+#if RAY_DEBUG_NO_OPT
                 assert(std::find(free_list.begin(), free_list.end(), h) == free_list.end()
                         && "Severe user-code bug: index double free detected.");
                 assert(free_list.size() < 32000

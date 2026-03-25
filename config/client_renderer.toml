@@ -6,7 +6,7 @@ window_mode = 0 # 0 - windowed, 1 - fullscreen
 window_position = [800, 400] #in pixels [pos_x, pos_y] size_x, size_y]
 window_size = [900, 500] # in pixels [pos_x, pos_y] size_x, size_y]
 zoom_speed = 0.1
-logical_scene = "dev_test" # main / dev_test
+logical_scene = "minecraft" # main / dev_test / minecraft
 
 # color - RGBA 0..1 float32
 [client_renderer.visual_style]

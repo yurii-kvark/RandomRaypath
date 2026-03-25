@@ -71,6 +71,8 @@ void logical_hud_info::tick(window& win, pipeline_manager& pipe) {
 
         frame_counter += 1;
 
+        // Take up to 0.7 ms of update time, but ok for ui debug text
+        // Very inefficient update_content, that trigger full data update on every tick
         if (!!fps_text_line) {
                 std::chrono::duration<glm::u64, std::nano> ns_duration {last_delta_time_ns};
                 double sec_duration = std::chrono::duration_cast<std::chrono::duration<double>>(ns_duration).count();
@@ -92,12 +94,12 @@ void logical_hud_info::tick(window& win, pipeline_manager& pipe) {
                 collecting_max_fps = std::max(collecting_max_fps, fps);
                 collecting_min_fps = std::min(collecting_min_fps, fps);
 
-                const std::string fps_str =std::format("avg_fps: {:.1f} | min {:.1f} | max {:.1f}", smoothed_fps, min_fps, max_fps);
+                const std::string fps_str = std::format("avg_fps: {:.1f} | min {:.1f} | max {:.1f}", smoothed_fps, min_fps, max_fps);
                 fps_text_line->update_content(fps_str);
 
                 const glm::vec4 cam_vec = camera_transform ? *camera_transform : glm::vec4();
 
-                const std::string cam_str =std::format("cam: ({:.1f}, {:.1f}) | zoom: {:.2f}", cam_vec.x, cam_vec.y, cam_vec.z);
+                const std::string cam_str = std::format("cam: ({:.1f}, {:.1f}) | zoom: {:.2f}", cam_vec.x, cam_vec.y, cam_vec.z);
                 cam_text_line->update_content(cam_str);
 
                 glm::vec2 viewport_px = (glm::vec2)pipe.get_target_resolution();

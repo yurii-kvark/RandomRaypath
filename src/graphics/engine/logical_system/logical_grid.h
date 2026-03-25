@@ -15,13 +15,13 @@ class pipeline_manager;
 class logical_grid {
 public:
         static constexpr double grid_size_lvl_1 = 10;
-        static constexpr double grid_line_lvl_1 = 0.5;
+        static constexpr double grid_line_lvl_1 = 0.3;
 
         static constexpr double grid_size_lvl_2 = 100;
-        static constexpr double grid_line_lvl_2 = 2;
+        static constexpr double grid_line_lvl_2 = 1;
 
         static constexpr double grid_size_lvl_3 = 1000;
-        static constexpr double grid_line_lvl_3 = 5;
+        static constexpr double grid_line_lvl_3 = 3;
 
         ray_error init(window& win, pipeline_manager& pipe, glm::vec4 grid_color);
         void destroy(window& win, pipeline_manager& pipe);

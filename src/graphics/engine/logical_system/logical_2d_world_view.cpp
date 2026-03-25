@@ -44,6 +44,13 @@ void logical_2d_world_view::register_pipeline(const pipeline_handle<object_2d_pi
 }
 
 
+void logical_2d_world_view::register_pipelines(const std::vector<pipeline_handle<object_2d_pipeline<>>>& pipes_to_register) {
+        for (auto& to_register : pipes_to_register) {
+                register_pipeline(to_register);
+        }
+}
+
+
 void logical_2d_world_view::unregister_pipeline(const pipeline_handle<object_2d_pipeline<>>& pipe_to_unregister) {
         world_2d_pipes.push_back(pipe_to_unregister);
 }

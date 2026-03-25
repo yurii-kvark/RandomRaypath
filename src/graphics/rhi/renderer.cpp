@@ -61,8 +61,12 @@ bool renderer::draw_frame() {
         }
 
         if (frame_submitted[frame_index]) {
+                RAY_PROFILE_SCOPE("g_mem_fence_miss", ray_colors::red);
+
+                // Performance hit (up to 1.2 ms), but no matter for graphic sync.
                 vkWaitForFences(device, 1, &in_flight[frame_index], VK_TRUE, UINT64_MAX);
         }
+
         vkResetFences(device, 1, &in_flight[frame_index]);
         frame_submitted[frame_index] = false;
 
@@ -131,7 +135,12 @@ bool renderer::draw_frame() {
         rect_scissor.extent = swapchain_extent;
         vkCmdSetScissor(command_buffer, 0, 1, &rect_scissor);
 
-        pipe.renderer_perform_draw(command_buffer, frame_index);
+        {
+#if RAY_CPU_PROFILE && TRACY_ENABLE
+                ZoneScopedNC("renderer_perform_draw", tracy::Color::Orange2);
+#endif
+                pipe.renderer_perform_draw(command_buffer, frame_index);
+        }
 
         vkCmdEndRendering(command_buffer);
 

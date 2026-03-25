@@ -3,13 +3,22 @@
 #set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
 # .\msdf-atlas-gen.exe -varfont "source/GoogleSansCode-VariableFont_wght.ttf?wght=500" -type mtsdf -overlap -scanline -size 48 -pxrange 8 -potr -yorigin top -format rgba -imageout "gsanscode_w500_mtsdf.rgba" -csv "gsanscode_w500.csv"
 
-option(RAY_DEBUG_NO_OPT "Enable debug build options." ON)
+option(RAY_ENABLE_PACKAGING "Enable distributable package generation via CPack." OFF)
+option(RAY_DEBUG_NO_OPT "Enable debug build options. Also enables additional checking or stat code." OFF)
+
+option(RAY_CPU_PROFILE "Enable profile build options." OFF)
+option(RAY_GPU_PROFILE "Enable profile build options." OFF)
+
+set(RAY_CPU_PROFILE_IMPL "tracy" CACHE STRING "CPU profiler implementation")
+set(RAY_GPU_PROFILE_IMPL "tracy" CACHE STRING "GPU profiler implementation")
 
 if(RAY_DEBUG_NO_OPT)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
     set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -fno-omit-frame-pointer -fno-inline" CACHE STRING "" FORCE)
     set(CMAKE_C_FLAGS_DEBUG   "-O0 -g3 -fno-omit-frame-pointer -fno-inline" CACHE STRING "" FORCE)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+else()
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 endif()
 
 project(RandomRaypath LANGUAGES CXX)
@@ -57,12 +66,31 @@ set(VULKAN_HEADERS_INSTALL_DIR "${CMAKE_SOURCE_DIR}/third_party/Vulkan-Headers" 
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/volk)
 
+# tracy
+
+if(RAY_CPU_PROFILE AND RAY_CPU_PROFILE_IMPL STREQUAL "tracy")
+    set(TRACY_ENABLE ON CACHE BOOL "" FORCE)
+else()
+    set(TRACY_ENABLE OFF CACHE BOOL "" FORCE)
+endif()
+
+if((RAY_CPU_PROFILE OR RAY_GPU_PROFILE) AND
+(RAY_CPU_PROFILE_IMPL STREQUAL "tracy" OR RAY_GPU_PROFILE_IMPL STREQUAL "tracy"))
+    set(TRACY_ON_DEMAND ON CACHE BOOL "" FORCE)
+else()
+    set(TRACY_ON_DEMAND OFF CACHE BOOL "" FORCE)
+endif()
+
+add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/tracy)
+
 # ok
 target_compile_definitions(RayClientRenderer
         PRIVATE
             TOML_EXCEPTIONS=0
             RAY_GRAPHICS_ENABLE=$<IF:$<BOOL:${RAY_GRAPHICS_ENABLE}>,1,0>
             RAY_DEBUG_NO_OPT=$<IF:$<BOOL:${RAY_DEBUG_NO_OPT}>,1,0>
+            RAY_CPU_PROFILE=$<IF:$<BOOL:${RAY_CPU_PROFILE}>,1,0>
+            RAY_GPU_PROFILE=$<IF:$<BOOL:${RAY_GPU_PROFILE}>,1,0>
             GLM_FORCE_RADIANS
             GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
@@ -82,4 +110,10 @@ target_sources(RayClientRenderer
 target_link_libraries(RayClientRenderer PRIVATE Vulkan::Headers volk::volk)
 target_link_libraries(RayClientRenderer PRIVATE glfw)
 target_link_libraries(RayClientRenderer PRIVATE glm::glm)
+target_link_libraries(RayClientRenderer PRIVATE Tracy::TracyClient)
 target_link_libraries(RayClientRenderer PRIVATE stdc++exp)
+
+if(RAY_ENABLE_PACKAGING)
+    include("${CMAKE_SOURCE_DIR}/PackageRayDistribution.cmake")
+    ray_enable_packaging()
+endif()
