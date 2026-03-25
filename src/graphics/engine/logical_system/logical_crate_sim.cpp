@@ -57,6 +57,7 @@ void logical_crate_sim::tick(glm::vec4 new_cam_transform, window& win, pipeline_
                         }
 
                         if (auto rect_data = entry.rect_outline.access_draw_obj_data()) {
+                                rect_data->color = entry.original_back_color * 0.4f;
                                 rect_data->transform = entry.phys_transform;
                         }
 
@@ -65,8 +66,13 @@ void logical_crate_sim::tick(glm::vec4 new_cam_transform, window& win, pipeline_
                         }
                 } else {
                         if (auto rect_data = entry.rect_background.access_draw_obj_data()) {
-                                rect_data->color = entry.original_back_color * 2.5f;
+                                rect_data->color = entry.original_back_color * 2.1f;
                                 rect_data->transform = entry.get_background_transform();
+                        }
+
+                        if (auto rect_data = entry.rect_outline.access_draw_obj_data()) {
+                                rect_data->color = ray_colors::solid(entry.original_back_color * 1.0f);
+                                rect_data->transform = entry.phys_transform;
                         }
                 }
         }
@@ -91,6 +97,10 @@ void logical_crate_sim::tick(glm::vec4 new_cam_transform, window& win, pipeline_
                                 if (auto rect_data = crate_sim_objs[*focus_index].rect_background.access_draw_obj_data()) {
                                         rect_data->color = crate_sim_objs[*focus_index].original_back_color;
                                 }
+
+                                if (auto rect_data = crate_sim_objs[*focus_index].rect_outline.access_draw_obj_data()) {
+                                        rect_data->color = ray_colors::solid(crate_sim_objs[*focus_index].original_back_color * 0.1f);
+                                }
                         }
 
                         focus_index = {};
@@ -99,7 +109,11 @@ void logical_crate_sim::tick(glm::vec4 new_cam_transform, window& win, pipeline_
                                 focus_index = *new_focus_index;
 
                                 if (auto rect_data = crate_sim_objs[*focus_index].rect_background.access_draw_obj_data()) {
-                                        rect_data->color = crate_sim_objs[*focus_index].original_back_color * 2.5f;
+                                        rect_data->color = crate_sim_objs[*focus_index].original_back_color * 1.5f;
+                                }
+
+                                if (auto rect_data = crate_sim_objs[*focus_index].rect_outline.access_draw_obj_data()) {
+                                        rect_data->color = ray_colors::solid(crate_sim_objs[*focus_index].original_back_color * 0.1f);
                                 }
                         }
                 }
