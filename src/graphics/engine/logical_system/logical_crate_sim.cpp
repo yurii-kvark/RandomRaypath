@@ -149,7 +149,7 @@ void logical_crate_sim::add_crate(glm::vec2 init_pos, glm::f32 size_px, char nam
                 rect_data->color = ray_colors::solid(entry.original_back_color * 0.1f);
         }
 
-        const char glyph_cstr[] = { name_glyph };
+        const char glyph_cstr[] = { name_glyph, '\0' };
 
         const logical_text_line_args text_args = logical_text_line_args {
                 .content_text = glyph_cstr,
