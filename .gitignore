@@ -44,6 +44,8 @@
 # debug information files
 *.dwo
 /cmake-build-debug/
+/cmake-build-release/
+/cmake-build-package/
 
 *.spv
 .obsidian
