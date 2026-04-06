@@ -1,7 +1,7 @@
 #include "network/connection_test.h"
-#include "utils/ray_log.h"
+#include "../utils/asio_config.h"
 
-#include <boost/asio.hpp>
+#include <asio.hpp>
 
 #include <format>
 #include <chrono>
@@ -10,10 +10,10 @@
 namespace ray::network {
 
 ray_error test_tcp_connection(std::string_view host, glm::u16 port) {
-        using namespace boost::asio;
+        using namespace asio;
         using namespace std::chrono_literals;
 
-        boost::system::error_code ec;
+        std::error_code ec;
 
         io_context io_ctx;
 
@@ -40,7 +40,7 @@ ray_error test_tcp_connection(std::string_view host, glm::u16 port) {
         // Deadline timer for connection timeout (5 seconds)
         steady_timer timer(io_ctx, 5s);
 
-        timer.async_wait([&](const boost::system::error_code& timer_ec) {
+        timer.async_wait([&](const std::error_code& timer_ec) {
                 if (!timer_ec) {
                         // Timer fired before connection completed — cancel the socket
                         timed_out = true;
@@ -50,7 +50,7 @@ ray_error test_tcp_connection(std::string_view host, glm::u16 port) {
 
         // Async connect so the timer can interrupt it
         async_connect(socket, endpoints,
-                [&](const boost::system::error_code& connect_ec,
+                [&](const std::error_code& connect_ec,
                     const ip::tcp::endpoint& endpoint) {
                         timer.cancel(); // Connection finished — cancel the timer
                         if (!connect_ec) {

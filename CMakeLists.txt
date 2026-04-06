@@ -83,6 +83,23 @@ endif()
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/tracy)
 
+# Standalone Asio (header-only, vendored)
+target_include_directories(RayClientRenderer
+        PRIVATE
+            ${CMAKE_SOURCE_DIR}/third_party/asio-asio/include)
+
+target_compile_definitions(RayClientRenderer
+        PRIVATE
+            ASIO_STANDALONE
+            ASIO_NO_EXCEPTIONS
+            ASIO_NO_TYPEID
+            ASIO_NO_DEPRECATED)
+
+target_link_libraries(RayClientRenderer
+        PRIVATE
+            $<$<PLATFORM_ID:Windows>:ws2_32>
+            $<$<PLATFORM_ID:Windows>:mswsock>)
+
 # ok
 target_compile_definitions(RayClientRenderer
         PRIVATE
