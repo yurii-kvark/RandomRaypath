@@ -11,7 +11,7 @@ Random Raypath is a C++23 real-time Vulkan renderer for visualizing multi-ray pa
 Everything will be visible from public repository, 
 so don't leave personal or sensitive information in .md files.
 
-All AI-assistant context is organized under `.claude/autocode_md/`:
+All AI-assistant context is organized under `.claude/autocode_md/`:~~~~
 
 - **[Build](autocode_md/instructions/build.md)** — build commands, CMake options, prerequisites
 - **[Architecture](autocode_md/instructions/architecture.md)** — startup flow, layered structure, module responsibilities

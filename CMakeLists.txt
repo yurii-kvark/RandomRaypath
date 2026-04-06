@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 4.1)
+cmake_minimum_required(VERSION 4.1)
 
 #set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
 # .\msdf-atlas-gen.exe -varfont "source/GoogleSansCode-VariableFont_wght.ttf?wght=500" -type mtsdf -overlap -scanline -size 48 -pxrange 8 -potr -yorigin top -format rgba -imageout "gsanscode_w500_mtsdf.rgba" -csv "gsanscode_w500.csv"
@@ -83,6 +83,10 @@ endif()
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/tracy)
 
+# Glaze (header-only JSON library)
+set(glaze_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/glaze)
+
 # Standalone Asio (header-only, vendored)
 target_include_directories(RayClientRenderer
         PRIVATE
@@ -128,6 +132,7 @@ target_link_libraries(RayClientRenderer PRIVATE Vulkan::Headers volk::volk)
 target_link_libraries(RayClientRenderer PRIVATE glfw)
 target_link_libraries(RayClientRenderer PRIVATE glm::glm)
 target_link_libraries(RayClientRenderer PRIVATE Tracy::TracyClient)
+target_link_libraries(RayClientRenderer PRIVATE glaze::glaze)
 target_link_libraries(RayClientRenderer PRIVATE stdc++exp)
 
 if(RAY_ENABLE_PACKAGING)

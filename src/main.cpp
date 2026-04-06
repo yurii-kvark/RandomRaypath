@@ -7,6 +7,9 @@
 #include <print>
 #include "utils/ray_log.h"
 
+#include <glaze/glaze.hpp>
+#include <string>
+
 void test_func() {
         ray::ray_error error = ray::network::test_tcp_connection("google.com", 80);
 
@@ -18,9 +21,33 @@ void test_func() {
         }
 }
 
+struct test_message {
+        std::string type;
+        int32_t id;
+        double value;
+};
+
+void test_glaze() {
+        // Serialize
+        test_message msg{.type = "ray_batch", .id = 42, .value = 3.14};
+        std::string json = glz::write_json(msg).value_or("error");
+        ray::ray_log(ray::e_log_type::info, "serialized: {}", json);
+
+        // Deserialize
+        test_message parsed{};
+        auto err = glz::read_json(parsed, json);
+        if (err) {
+                ray::ray_log(ray::e_log_type::info, "glaze parse error: {}", glz::format_error(err, json));
+        }
+        else {
+                ray::ray_log(ray::e_log_type::info, "parsed: type={} id={} value={}", parsed.type, parsed.id, parsed.value);
+        }
+}
+
 int main() {
 
-        test_func();
+        //test_func();
+        test_glaze();
 
         return 0;
 
