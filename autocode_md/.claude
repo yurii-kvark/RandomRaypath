@@ -1,0 +1,6 @@
+# Claude Code project-level settings for RandomRaypath
+#
+# This directory (autocode_md/) organizes all AI-assistant context:
+#   instructions/  — build, architecture, and coding convention docs
+#   memory/        — persistent memory files for cross-session context
+#   .claude        — this settings file
