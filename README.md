@@ -42,10 +42,10 @@ Release Package build:
 
 ## Notes:
 Design:
-* Graphical engine did not designed to handle huge amount of object, need to optimize object_2d_pipeline::update_object_memory.
-* Graphical engine should strictly hold above 200 FPS in true sync, some spikes are allowed, but not logic processing related.
+* Graphical engine was not designed to handle a huge number of graphical drawing objects. It needs to optimize object_2d_pipeline::update_object_memory.
+* Graphical engine should strictly hold above 260 FPS in true sync. Some spikes are allowed, but not logic processing related.
 
 Known perf hits:
-* [renderer::draw_frame] Memory fence for graphical buffer waiting up to 1.4 ms sometimes, it's ok since this is graphical data update wait.
+* [renderer::draw_frame] Memory fence for graphical buffer waiting up to 1.4 ms sometimes. Could be fixed by a frame pass or a triple buffer. I am seeking max true response, so I am waiting for the hardware to arrive. Until 260 FPS drop, it's ok.
 * [logical_text_line::update_content] Trigger every glyph to update if text changed, up to 1 ms per frame for hud_info draw.
-* [object_2d_pipeline::update_object_memory] Pipeline iterates through every draw object to check if update need. Not critical for the engine purposes, but will make issues for a bigger quantity of draw objects.
+* [object_2d_pipeline::update_object_memory] Pipeline iterates through every draw object to check if an update is needed. Not critical for engine purposes, but it will cause issues with a larger number of draw objects.
