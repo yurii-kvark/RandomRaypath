@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "g_app_driver.h"
-#include "config/client_renderer.h"
+#include "config/config.h"
 #include "graphics/graphic_libs.h"
 #include "glm/glm.hpp"
 #include "pipeline/pipeline_manager.h"

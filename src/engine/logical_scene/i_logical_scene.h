@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "config/client_renderer.h"
+#include "config/config.h"
 #include "graphics/window/window.h"
 #include "utils/ray_error.h"
 

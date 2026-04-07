@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "config/client_renderer.h"
+#include "config/config.h"
 
 #include <thread>
 
@@ -8,7 +8,7 @@ namespace ray::logical {
 
 class async_logical_loop {
 public:
-        async_logical_loop(config::client_renderer in_config);
+        async_logical_loop(config::app_config in_config);
         ~async_logical_loop();
 
         bool is_alive() const;

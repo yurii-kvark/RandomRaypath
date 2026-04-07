@@ -1,0 +1,31 @@
+﻿
+[render_server]
+enable = true
+graphics_window_enabled = true # -headless flag will force it to false
+
+[render_server.network]
+listening_port = 47039
+enable_remote_control = false # -remote_control will force it to true
+server_control_addr = "127.0.0.1:57039" # address of control server
+
+[render_server.window]
+window_mode = 0 # 0 - windowed, 1 - fullscreen
+window_position = [800, 400] #in pixels [pos_x, pos_y] size_x, size_y]
+window_size = [900, 500] # in pixels [pos_x, pos_y] size_x, size_y]
+
+[render_server.scene]
+tickless_mode = false # -tickless will force it to true
+zoom_speed = 0.1
+logical_scene = "minecraft" # main / dev_test / minecraft
+
+# color - RGBA 0..1 float32
+[render_server.visual_style]
+color_background = [0.005, 0.005, 0.005, 1.0]
+color_hud_info = [0.0, 1.0, 0.0, 1.0]
+color_grid = [0.03, 0.02, 0.04, 1.0]
+
+
+[compute_client]
+enable = true # if render_server.eanble, will be instantiated in-process
+server_addr = "127.0.0.1:47039"
+thread_limit = 4 # -1 to enable optimal full

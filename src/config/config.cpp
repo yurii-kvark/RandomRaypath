@@ -1,4 +1,4 @@
-﻿#include "client_renderer.h"
+﻿#include "config.h"
 
 #include <filesystem>
 #include <string>
@@ -8,13 +8,13 @@
 using namespace ray;
 using namespace ray::config;
 
-const visual_style visual_style::default_style = {
+const visual_style_config visual_style_config::default_style = {
         .color_background = glm::vec4(0.f, 0.f, 0.f, 1.f),
         .color_hud_info = glm::vec4(0.f, 1.f, 0.f, 1.f),
         .color_grid = glm::vec4(0.05f, 0.04f, 0.06f, 1.f)
 };
 
-const client_renderer client_renderer::default_renderer = {
+const app_config app_config::default_renderer = {
         .enable_computational_server = true,
         .window = {
                 .graphics_window_enabled = true,
@@ -26,7 +26,7 @@ const client_renderer client_renderer::default_renderer = {
         .style = visual_style::default_style
 };
 
-std::expected<client_renderer, std::string> client_renderer::load(std::filesystem::path target) {
+std::expected<app_config, std::string> app_config::load(std::filesystem::path target) {
         toml::parse_result toml_result = toml::parse_file(target.string());
 
         if (toml_result.failed()) {
@@ -38,7 +38,7 @@ std::expected<client_renderer, std::string> client_renderer::load(std::filesyste
 
         const toml::table& table = toml_result.table();
 
-        client_renderer cnf_cr = default_renderer;
+        app_config cnf_cr = default_renderer;
 
         const auto* toml_cnf_cr = table.get_as<toml::table>("client_renderer");
 
@@ -148,7 +148,7 @@ std::expected<client_renderer, std::string> client_renderer::load(std::filesyste
 }
 
 
-std::string client_renderer::to_string() const {
+std::string app_config::to_string() const {
         auto color_to_toml_arr = [](const glm::dvec4& in) -> std::string {
                 return std::format("[{}, {}, {}, {}]", in.x, in.y, in.z, in.w);
         };
