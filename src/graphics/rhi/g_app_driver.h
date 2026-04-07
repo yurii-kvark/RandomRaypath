@@ -8,6 +8,8 @@
 #include <mutex>
 
 namespace ray::graphics {
+
+// TODO: fix or remove RAY_GRAPHICS_ENABLE disabling
 #if RAY_GRAPHICS_ENABLE
 
 struct g_app_driver {

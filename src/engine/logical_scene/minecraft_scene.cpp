@@ -1,13 +1,12 @@
 ﻿
 #include "minecraft_scene.h"
 
+#include "engine/logical_system/logical_crate_sim.h"
 #include "utils/ray_log.h"
 
 using namespace ray;
 using namespace ray::graphics;
-
-
-#if RAY_GRAPHICS_ENABLE
+using namespace ray::logical;
 
 
 ray_error minecraft_scene::init(window& win, pipeline_manager& pipe) {
@@ -60,5 +59,3 @@ void minecraft_scene::cleanup(window& win, pipeline_manager& pipe) {
         grid_system.destroy(win, pipe);
         crate_sim.destroy(pipe);
 }
-
-#endif

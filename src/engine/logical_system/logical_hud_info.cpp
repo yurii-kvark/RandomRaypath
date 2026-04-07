@@ -8,9 +8,9 @@
 #include "utils/ray_error.h"
 #include "utils/ray_time.h"
 
-#if RAY_GRAPHICS_ENABLE
 
 using namespace ray;
+using namespace ray::logical;
 using namespace ray::graphics;
 
 ray_error logical_hud_info::init(window& win, pipeline_manager& pipe, glm::vec4 text_color) {
@@ -128,5 +128,3 @@ void logical_hud_info::destroy(window& win, pipeline_manager& pipe) {
 void logical_hud_info::update_camera_transform_info(glm::vec4 new_cam) {
         camera_transform = new_cam;
 }
-
-#endif

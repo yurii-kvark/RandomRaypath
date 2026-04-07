@@ -6,11 +6,9 @@
 #include "utils/ray_time.h"
 #include <algorithm>
 
-#if RAY_GRAPHICS_ENABLE
-
 using namespace ray;
+using namespace ray::logical;
 using namespace ray::graphics;
-
 
 void logical_2d_world_view::tick(window& win, pipeline_manager& pipe) {
 
@@ -97,5 +95,3 @@ void logical_2d_world_view::tick_camera_transform(window& win, const pipeline_ma
         camera_transform.x += delta_move.x;
         camera_transform.y += delta_move.y;
 }
-
-#endif

@@ -1,20 +1,25 @@
 ﻿#pragma once
 #include "i_logical_scene.h"
-#include "graphics/engine/logical_system/logical_2d_world_view.h"
-#include "graphics/engine/logical_system/logical_crate_sim.h"
-#include "graphics/engine/logical_system/logical_grid.h"
-#include "graphics/engine/logical_system/logical_hud_info.h"
-#include "graphics/engine/logical_system/logical_text_line.h"
+#include "engine/logical_system/logical_2d_world_view.h"
+#include "engine/logical_system/logical_crate_sim.h"
+#include "engine/logical_system/logical_grid.h"
+#include "engine/logical_system/logical_hud_info.h"
+#include "engine/logical_system/logical_text_line.h"
 #include "graphics/rhi/pipeline/impl/glyph_pipeline.h"
 #include "graphics/rhi/pipeline/impl/rainbow_rect_pipeline.h"
 #include "graphics/rhi/pipeline/impl/solid_rect_pipeline.h"
 #include "graphics/rhi/pipeline/impl/visual_grid_pipeline.h"
 
-namespace ray::graphics {
 
-#if RAY_GRAPHICS_ENABLE
+namespace ray::graphics {
 class window;
-class renderer;
+class pipeline_manager;
+};
+
+
+namespace ray::logical {
+
+using namespace ray::graphics;
 
 class dev_test_scene : public i_logical_scene {
 public:
@@ -49,5 +54,4 @@ public:
         logical_text_line_handler new_line_3 = nullptr;
 };
 
-#endif
 };

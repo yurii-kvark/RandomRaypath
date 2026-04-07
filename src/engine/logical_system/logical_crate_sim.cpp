@@ -6,9 +6,8 @@
 
 #include <optional>
 
-#if RAY_GRAPHICS_ENABLE
-
 using namespace ray;
+using namespace ray::logical;
 using namespace ray::graphics;
 
 
@@ -172,5 +171,3 @@ void logical_crate_sim::destroy(pipeline_manager& pipe) {
         pipe.destroy_pipeline(rect_pipeline_handle);
         text_line_manager.destroy(pipe);
 }
-
-#endif

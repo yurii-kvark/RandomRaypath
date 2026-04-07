@@ -1,5 +1,5 @@
 ﻿#include "config/client_renderer.h"
-#include "graphics/engine/graphical_loop.h"
+#include "engine/logical_loop.h"
 #include "graphics/window/window.h"
 #include "network/connection_test.h"
 
@@ -59,7 +59,7 @@ int main() {
         }
 
 #if RAY_GRAPHICS_ENABLE
-        ray::graphics::async_graphical_loop async_loop(*config_res);
+        ray::logical::async_logical_loop async_loop(*config_res);
         async_loop.wait_blocking();
 #endif
 

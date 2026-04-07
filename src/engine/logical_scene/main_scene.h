@@ -1,14 +1,17 @@
 ﻿#pragma once
 #include "i_logical_scene.h"
-#include "graphics/engine/logical_system/logical_2d_world_view.h"
-#include "graphics/engine/logical_system/logical_grid.h"
-#include "graphics/engine/logical_system/logical_hud_info.h"
+#include "engine/logical_system/logical_2d_world_view.h"
+#include "engine/logical_system/logical_grid.h"
+#include "engine/logical_system/logical_hud_info.h"
 
 namespace ray::graphics {
-
-#if RAY_GRAPHICS_ENABLE
 class window;
-class renderer;
+class pipeline_manager;
+};
+
+namespace ray::logical {
+
+using namespace ray::graphics;
 
 class main_scene : public i_logical_scene {
 public:
@@ -22,5 +25,4 @@ private:
         logical_grid grid_system;
 };
 
-#endif
 };

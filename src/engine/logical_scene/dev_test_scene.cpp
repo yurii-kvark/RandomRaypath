@@ -13,8 +13,8 @@
 
 using namespace ray;
 using namespace ray::graphics;
+using namespace ray::logical;
 
-#if RAY_GRAPHICS_ENABLE
 
 ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
         pipeline_handle<rainbow_rect_pipeline> rainbow_pipeline = pipe.create_pipeline<rainbow_rect_pipeline>(ray_pipeline_order::world_obj + 1);
@@ -312,5 +312,3 @@ void dev_test_scene::cleanup(window& win, pipeline_manager& pipe) {
 //         camera_transform.x += delta_move.x;
 //         camera_transform.y += delta_move.y;
 // }
-
-#endif

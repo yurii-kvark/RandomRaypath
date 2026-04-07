@@ -1,14 +1,17 @@
 ﻿#pragma once
 #include "config/client_renderer.h"
+#include "graphics/window/window.h"
 #include "utils/ray_error.h"
 
 
 namespace ray::graphics {
-
-#if RAY_GRAPHICS_ENABLE
-
 class window;
 class pipeline_manager;
+};
+
+namespace ray::logical {
+
+using namespace ray::graphics;
 
 class i_logical_scene {
 public:
@@ -25,7 +28,5 @@ public:
 protected:
         config::visual_style style;
 };
-
-#endif
 
 };

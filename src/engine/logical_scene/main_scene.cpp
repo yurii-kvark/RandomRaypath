@@ -5,9 +5,7 @@
 
 using namespace ray;
 using namespace ray::graphics;
-
-
-#if RAY_GRAPHICS_ENABLE
+using namespace ray::logical;
 
 
 ray_error main_scene::init(window& win, pipeline_manager& pipe) {
@@ -41,5 +39,3 @@ void main_scene::cleanup(window& win, pipeline_manager& pipe) {
         hud_info.destroy(win, pipe);
         grid_system.destroy(win, pipe);
 }
-
-#endif

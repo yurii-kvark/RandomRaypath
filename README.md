@@ -49,3 +49,9 @@ Known perf hits:
 * [renderer::draw_frame] Memory fence for graphical buffer waiting up to 1.4 ms sometimes, it's ok since this is graphical data update wait.
 * [logical_text_line::update_content] Trigger every glyph to update if text changed, up to 1 ms per frame for hud_info draw.
 * [object_2d_pipeline::update_object_memory] Pipeline iterates through every draw object to check if update need. Not critical for the engine purposes, but will make issues for a bigger quantity of draw objects.
+
+## Launch Flags:
+
+* **-headless** - server working without window launching
+* **-remote_control** - enable TCP client, that connecting to remote control server over custom JSON protocol. Server target: client_renderer.remote_control_addr in config. remote_control enables to control the client over JSON TCP, for executing remote input, screenshot, call tick etc.
+* **-tickless** - allowed to do tick only by external command.

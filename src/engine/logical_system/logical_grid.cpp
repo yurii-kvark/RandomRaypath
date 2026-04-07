@@ -5,9 +5,8 @@
 
 #include <optional>
 
-#if RAY_GRAPHICS_ENABLE
-
 using namespace ray;
+using namespace ray::logical;
 using namespace ray::graphics;
 
 
@@ -66,5 +65,3 @@ void logical_grid::destroy(window& win, pipeline_manager& pipe){
 pipeline_handle<object_2d_pipeline<>> logical_grid::get_pipeline(){
         return grid_pipeline_handle;
 }
-
-#endif

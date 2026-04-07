@@ -2,11 +2,10 @@
 
 #include "graphics/rhi/pipeline/pipeline_manager.h"
 
-
-#if RAY_GRAPHICS_ENABLE
-
 using namespace ray;
 using namespace ray::graphics;
+using namespace ray::logical;
+
 
 // TODO: optimize text update, stop rebuild everything each time
 void logical_text_line::update_content(std::string_view in_new_content) {
@@ -221,5 +220,3 @@ std::shared_ptr<logical_text_line> logical_text_line_manager::create_text_line(l
 
         return new_line;
 }
-
-#endif

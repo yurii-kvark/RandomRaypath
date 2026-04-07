@@ -3,11 +3,13 @@
 #include "graphics/rhi/pipeline/impl/solid_rect_pipeline.h"
 
 namespace ray::graphics {
-
-#if RAY_GRAPHICS_ENABLE
-
 class window;
 class pipeline_manager;
+};
+
+namespace ray::logical {
+
+using namespace graphics;
 
 class logical_hud_info {
 public:
@@ -42,6 +44,4 @@ private:
         double collecting_max_fps = 0.0;
         double collecting_min_fps = 0.0;
 };
-
-#endif
 };

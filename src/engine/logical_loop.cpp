@@ -1,4 +1,4 @@
-﻿#include "graphical_loop.h"
+﻿#include "logical_loop.h"
 
 #include "logical_scene/dev_test_scene.h"
 #include "graphics/window/window.h"
@@ -6,15 +6,13 @@
 #include "logical_scene/main_scene.h"
 #include "logical_scene/minecraft_scene.h"
 #include "utils/ray_profile.h"
-#include "utils/ray_visual_config.h"
 
 #include <memory>
 
 
 using namespace ray;
-using namespace ray::graphics;
+using namespace ray::logical;
 
-#if RAY_GRAPHICS_ENABLE
 
 std::unique_ptr<i_logical_scene> make_scene_by_name(std::string_view scene_class_name) {
         if (scene_class_name == "main") {
@@ -32,8 +30,8 @@ std::unique_ptr<i_logical_scene> make_scene_by_name(std::string_view scene_class
         return nullptr;
 }
 
-struct render_thread {
-        render_thread(config::client_renderer in_config)
+struct logical_thread {
+        logical_thread(config::client_renderer in_config)
                 : cfg(std::move(in_config)) {}
 
         void operator()(std::stop_token stop_t) const {
@@ -112,12 +110,12 @@ private:
 };
 
 
-async_graphical_loop::async_graphical_loop(config::client_renderer in_config)
-        : worker_t(render_thread {std::move(in_config)}) {
+async_logical_loop::async_logical_loop(config::client_renderer in_config)
+        : worker_t( logical_thread {std::move(in_config)}) {
 }
 
 
-async_graphical_loop::~async_graphical_loop(){
+async_logical_loop::~async_logical_loop() {
         signal_terminate();
         if (worker_t.joinable()) {
                 worker_t.join();
@@ -125,19 +123,18 @@ async_graphical_loop::~async_graphical_loop(){
 }
 
 
-bool async_graphical_loop::is_alive() const{
+bool async_logical_loop::is_alive() const {
         return worker_t.joinable();
 }
 
 
-void async_graphical_loop::signal_terminate() {
+void async_logical_loop::signal_terminate() {
         worker_t.request_stop();
 }
 
 
-void async_graphical_loop::wait_blocking(){
+void async_logical_loop::wait_blocking() {
         if (worker_t.joinable()) {
                 worker_t.join();
         }
 }
-#endif

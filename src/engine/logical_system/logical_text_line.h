@@ -3,16 +3,17 @@
 #include "graphics/rhi/pipeline/object_2d_pipeline.h"
 #include "graphics/rhi/pipeline/impl/glyph_pipeline.h"
 
+
 namespace ray::graphics {
-
-#if RAY_GRAPHICS_ENABLE
-
 class pipeline_manager;
+};
+
+namespace ray::logical {
 
 struct logical_text_line_args {
         std::string_view content_text;
         glm::u32 static_capacity = 16;
-        e_space_type space_basis = e_space_type::screen;
+        graphics::e_space_type space_basis = graphics::e_space_type::screen;
         glm::vec4 transform = glm::vec4(0.f, 0.f, 0.f, 50.f); // x_pos_px, y_pos_px, 0, y_size_px (pivot top left)
         glm::u32 z_order = 0;
         glm::vec4 text_color = glm::vec4(1);
@@ -28,15 +29,15 @@ public:
         void update_content(std::string_view in_new_content);
         void update_transform(glm::vec4 new_transform);
 
-        void init(const std::weak_ptr<glyph_font_data>& in_loader, const pipeline_handle<glyph_pipeline>& in_pipe, logical_text_line_args in_args);
+        void init(const std::weak_ptr<glyph_font_data>& in_loader, const graphics::pipeline_handle<graphics::glyph_pipeline>& in_pipe, logical_text_line_args in_args);
         void destroy();
 
 protected:
         glm::vec4 iterate_line_transform(const glyph_plane_mapping& in_plane, glm::f32 line_top_em, glm::f32& i_cursor_x_em);
 
         std::weak_ptr<glyph_font_data> data_loader;
-        pipeline_handle<glyph_pipeline> pipe {};
-        std::vector<draw_obj_handle_id> draw_obj_handles {};
+        graphics::pipeline_handle<graphics::glyph_pipeline> pipe {};
+        std::vector<graphics::draw_obj_handle_id> draw_obj_handles {};
         glm::vec4 pivot_transform {};
 };
 
@@ -47,17 +48,16 @@ class logical_text_line_manager {
 public:
         logical_text_line_manager() = default;
 
-        ray_error init(pipeline_manager& pipe, glm::u32 render_order);
-        void destroy(pipeline_manager& pipe);
+        ray_error init(graphics::pipeline_manager& pipe, glm::u32 render_order);
+        void destroy(graphics::pipeline_manager& pipe);
 
-        pipeline_handle<object_2d_pipeline<>> get_pipeline();
+        graphics::pipeline_handle<graphics::object_2d_pipeline<>> get_pipeline();
 
         logical_text_line_handler create_text_line(logical_text_line_args in_args);
 
 protected:
-        pipeline_handle<glyph_pipeline> text_pipeline_handle {};
+        graphics::pipeline_handle<graphics::glyph_pipeline> text_pipeline_handle {};
         std::shared_ptr<glyph_font_data> data_loader = nullptr;
 };
 
-#endif
 };

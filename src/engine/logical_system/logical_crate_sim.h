@@ -7,12 +7,13 @@
 #include <vector>
 
 namespace ray::graphics {
-
-#if RAY_GRAPHICS_ENABLE
-
 class window;
 class pipeline_manager;
+};
 
+namespace ray::logical {
+
+using namespace graphics;
 
 class logical_crate_sim {
 public:
@@ -20,15 +21,15 @@ public:
         void tick(glm::vec4 new_cam_transform, window& win, pipeline_manager& pipe);
         void destroy(pipeline_manager& pipe);
 
-        std::vector<pipeline_handle<object_2d_pipeline<>>> get_pipelines();
+        std::vector<graphics::pipeline_handle<graphics::object_2d_pipeline<>>> get_pipelines();
 
         void add_crate(glm::vec2 init_pos, glm::f32 size_px, char name_glyph, glm::vec4 background_color, glm::vec4 glyph_color);
 
 protected:
         struct crate_entry {
                 logical_text_line_handler text_line;
-                draw_obj_handle<solid_rect_pipeline> rect_background;
-                draw_obj_handle<solid_rect_pipeline> rect_outline;
+                graphics::draw_obj_handle<graphics::solid_rect_pipeline> rect_background;
+                graphics::draw_obj_handle<graphics::solid_rect_pipeline> rect_outline;
 
                 glm::vec4 phys_transform {}; // top_right, x (->), y (v), pos_xy_px, scale_xy_px
                 glm::vec4 original_back_color {};
@@ -56,7 +57,7 @@ protected:
 
 private:
         logical_text_line_manager text_line_manager {};
-        pipeline_handle<solid_rect_pipeline> rect_pipeline_handle {};
+        graphics::pipeline_handle<graphics::solid_rect_pipeline> rect_pipeline_handle {};
 
         std::vector<crate_entry> crate_sim_objs {};
         std::optional<glm::u32> focus_index = std::nullopt;
@@ -64,6 +65,4 @@ private:
         glm::vec2 init_mouse_pos;
         glm::vec2 init_crate_pos;
 };
-
-#endif
 };
