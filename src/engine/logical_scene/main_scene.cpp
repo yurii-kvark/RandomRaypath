@@ -9,12 +9,12 @@ using namespace ray::logical;
 
 
 ray_error main_scene::init(window& win, pipeline_manager& pipe) {
-        ray_error hud_error = hud_info.init(win, pipe, style.color_hud_info);
+        ray_error hud_error = hud_info.init(win, pipe, server_config.style.color_hud_info);
         if (hud_error) {
                 return hud_error;
         }
 
-        ray_error grid_error = grid_system.init(win, pipe, style.color_grid);
+        ray_error grid_error = grid_system.init(win, pipe, server_config.style.color_grid);
         if (grid_error) {
                 return grid_error;
         }

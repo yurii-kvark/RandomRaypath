@@ -18,7 +18,7 @@ public:
 
 #if RAY_GRAPHICS_ENABLE
 public:
-        window(const config::window_config& in_config);
+        window(const config::render_server_config& in_config);
         ~window();
 
         window(const window&) = delete;
@@ -45,7 +45,7 @@ private:
         void glfw_dealloc_cursors();
 
 private:
-        config::window_config used_config;
+        config::render_server_config used_config;
         std::shared_ptr<GLFWwindow> gl_win;
 
         glm::f64 mouse_wheel_delta_frame;

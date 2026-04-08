@@ -31,21 +31,21 @@ std::unique_ptr<i_logical_scene> make_scene_by_name(std::string_view scene_class
 }
 
 struct logical_thread {
-        logical_thread(config::client_renderer in_config)
+        logical_thread(config::render_server_config in_config)
                 : cfg(std::move(in_config)) {}
 
         void operator()(std::stop_token stop_t) const {
-                window win(cfg.window);
+                window win(cfg);
                 renderer rend(win.get_gl_window(), cfg.style);
 
-                std::unique_ptr<i_logical_scene> logic = make_scene_by_name(cfg.logical_scene);
+                std::unique_ptr<i_logical_scene> logic = make_scene_by_name(cfg.scene.logical_scene);
 
                 if (!logic) {
-                        ray_log(e_log_type::fatal, "Can't load scene by config name: {}", cfg.logical_scene);
+                        ray_log(e_log_type::fatal, "Can't load scene by config name: {}", cfg.scene.logical_scene);
                         return;
                 }
 
-                logic->setup_visual_style(cfg.style);
+                logic->setup_config(cfg);
 
                 ray_error init_scene_error = logic->init(win, rend.pipe);
 
@@ -67,7 +67,7 @@ struct logical_thread {
 #endif
         }
 
-        config::client_renderer cfg;
+        config::render_server_config cfg;
 
 private:
         static bool tick(window& win, renderer& rend, i_logical_scene& logic) {
@@ -110,8 +110,8 @@ private:
 };
 
 
-async_logical_loop::async_logical_loop(config::client_renderer in_config)
-        : worker_t( logical_thread {std::move(in_config)}) {
+async_logical_loop::async_logical_loop(config::app_config in_config)
+        : worker_t( logical_thread {std::move(in_config.server_config)}) {
 }
 
 

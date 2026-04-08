@@ -7,7 +7,7 @@
 
 
 
-int main() {
+int main(int argc, char** argv) {
 
         auto config_res = ray::config::app_config::load(std::filesystem::path {"../config/config.toml"});
 
@@ -16,7 +16,9 @@ int main() {
                 return 1;
         }
 
-        config_res->upgrade_with_args(); // pass args here
+        config_res->upgrade_with_args(argc, argv);
+
+        ray::ray_log(ray::e_log_type::info, "Composed config: \n{}\n------ end cfg -------\n", *config_res);
 
         ray::logical::async_logical_loop async_loop(*config_res);
         async_loop.wait_blocking();

@@ -39,7 +39,7 @@ struct glfw_runtime_init {
 };
 
 
-window::window(const config::window_config& in_config)
+window::window(const config::render_server_config& in_config)
         : used_config(in_config) {
 
         if (!used_config.graphics_window_enabled) {
@@ -49,11 +49,11 @@ window::window(const config::window_config& in_config)
         glfw_runtime_init {};
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_POSITION_X, used_config.window_position.x);
-        glfwWindowHint(GLFW_POSITION_Y, used_config.window_position.y);
+        glfwWindowHint(GLFW_POSITION_X, used_config.window.window_position.x);
+        glfwWindowHint(GLFW_POSITION_Y, used_config.window.window_position.y);
 
         GLFWmonitor* monitor_ptr = nullptr;
-        if (used_config.window_mode == config::e_window_mode::fullscreen) {
+        if (used_config.window.window_mode == config::e_window_mode::fullscreen) {
                 monitor_ptr = glfwGetPrimaryMonitor();
                 const GLFWvidmode* mode = glfwGetVideoMode(monitor_ptr);
 
@@ -62,13 +62,13 @@ window::window(const config::window_config& in_config)
                 glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
                 glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 
-                used_config.window_size.x = mode->width;
-                used_config.window_size.y = mode->height;
+                used_config.window.window_size.x = mode->width;
+                used_config.window.window_size.y = mode->height;
         }
 
         // BUG TODO: actually, it will work only in the same thread for multi-window.
         // to use it with multiple graphical loop, you need multi-window thread single-owner or single-thread loop multi-window implementation instead of async_graphical_loop
-        GLFWwindow* gl_win_ptr = glfwCreateWindow(used_config.window_size.x, used_config.window_size.y, "Random Raypath", monitor_ptr, nullptr);
+        GLFWwindow* gl_win_ptr = glfwCreateWindow(used_config.window.window_size.x, used_config.window.window_size.y, "Random Raypath", monitor_ptr, nullptr);
 
         if (!gl_win_ptr) {
                 ray_log(e_log_type::fatal, "glfwCreateWindow failed.\n");
@@ -151,7 +151,7 @@ bool window::get_mouse_button_right() const {
 
 
 glm::f64 window::get_mouse_wheel_delta() const {
-        return mouse_wheel_delta_frame * used_config.zoom_speed;
+        return mouse_wheel_delta_frame * used_config.scene.zoom_speed;
 }
 
 

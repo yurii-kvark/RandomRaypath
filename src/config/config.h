@@ -64,7 +64,7 @@ public:
         static const app_config default_renderer;
         static std::expected<app_config, std::string> load(std::filesystem::path target);
 
-        void upgrade_with_args();
+        void upgrade_with_args(int argc, char** argv);
 
         [[nodiscard]]
         std::string to_string() const;

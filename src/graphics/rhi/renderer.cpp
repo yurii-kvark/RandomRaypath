@@ -18,7 +18,7 @@ using namespace ray::graphics;
 // TODO: add vulkan debug module
 
 
-renderer::renderer(std::weak_ptr<GLFWwindow> basis_win, config::visual_style in_style)
+renderer::renderer(std::weak_ptr<GLFWwindow> basis_win, config::visual_style_config in_style)
         : gl_window(std::move(basis_win)), style(std::move(in_style)) {
 
         if (gl_window.expired()) {

@@ -15,8 +15,8 @@ using namespace ray::graphics;
 
 class i_logical_scene {
 public:
-        void setup_visual_style(config::visual_style in_style) {
-                style = std::move(in_style);
+        void setup_config(config::render_server_config in_server_config) {
+                server_config = std::move(in_server_config);
         }
 
         virtual ray_error init(window& win, pipeline_manager& pipe) = 0;
@@ -26,7 +26,7 @@ public:
         virtual ~i_logical_scene() = default;
 
 protected:
-        config::visual_style style;
+        config::render_server_config server_config;
 };
 
 };
