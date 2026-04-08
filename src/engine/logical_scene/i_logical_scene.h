@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "config/config.h"
 #include "graphics/window/window.h"
+#include "network/remote_control/remote_control.h"
 #include "utils/ray_error.h"
 
 
@@ -24,6 +25,8 @@ public:
         virtual void cleanup(window& win, pipeline_manager& pipe) = 0;
 
         virtual ~i_logical_scene() = default;
+
+        void inject_remote_control(const window& win, const renderer& rend, const network::remote_command_frame_set& this_frame_command);
 
 protected:
         config::render_server_config server_config;

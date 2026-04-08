@@ -1,39 +1,55 @@
 ﻿#pragma once
 #include "glm/fwd.hpp"
+#include "glm/vec4.hpp"
 #include "utils/ray_error.h"
 
 #include <queue>
+#include <stop_token>
 
 namespace ray::network {
 
-// enum class command_type {
-//         submit_tick = 0, // ticks_amount, by default do nothing, in -tickless mode all previous commands will be executed and perform one tick
-//         set_camera_position = 1, // x, y, zoom, in pixel, world
-//         set_mouse_position = 2, // in pixel, world
-//         set_mouse_left_button = 3, // bool
-//         set_mouse_right_button = 4, // bool
-//         add_mouse_scroll = 5, // scalar
-//         screenshot = 6,
-// };
-//
-// class tick_command_set {
-// public:
-//         glm::u32 pass_ticks_after = 0;
-//
-// };
-//
-// class tick_info_set {
-// public:
-//
-// };
-//
-// using command_flow = std::queue<remote_command>;
-//
-// class remote_control_client {
-//         void async_launch(std::string_view server_full_addr);
-//
-//         void receive_commands(command_flow& base_flow);
-//         void send_commands(const command_flow& );
-// };
+enum class remote_command_type {
+        none = 0,
+        pass_ticks_after = 0, // tick_amount excute after command
+        set_camera_position = 1, // x, y, zoom, in pixel, world
+        set_mouse_position = 2, // in pixel, world
+        set_mouse_left_button = 3, // bool
+        set_mouse_right_button = 4, // bool
+        add_mouse_scroll = 5, // scalar
+        screenshot = 6,
+        count
+};
+
+struct remote_command_entry {
+        bool enabled = false;
+        glm::vec4 value;
+};
+
+struct remote_command_frame_set {
+        glm::u32 net_id = 0; // id of command frame
+
+        std::array<remote_command_entry, (int)remote_command_type::count> command_map;
+};
+
+
+struct remote_answer_entry {
+        bool enabled = false;
+        std::string verbal_message;
+};
+
+struct remote_answer_frame_set {
+        glm::u32 net_id = 0;
+        std::array<remote_answer_entry, (int)remote_command_type::count> answer_map;
+};
+
+
+class remote_control_client {
+public:
+        void async_launch(std::string_view server_full_addr);
+        void wait_shutdown();
+
+        std::optional<remote_command_frame_set> receive_next_frame_command();
+        void send_answer(const remote_answer_frame_set& command_answer);
+};
 
 };

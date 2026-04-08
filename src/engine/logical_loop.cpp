@@ -5,6 +5,7 @@
 #include "graphics/rhi/renderer.h"
 #include "logical_scene/main_scene.h"
 #include "logical_scene/minecraft_scene.h"
+#include "network/remote_control/remote_control.h"
 #include "utils/ray_profile.h"
 
 #include <memory>
@@ -38,6 +39,16 @@ struct logical_thread {
                 window win(cfg);
                 renderer rend(win.get_gl_window(), cfg.style);
 
+                std::unique_ptr<network::remote_control_client> remote_client;
+
+                if (cfg.network.enable_remote_control) {
+                        remote_client = std::make_unique<network::remote_control_client>();
+                }
+
+                if (!!remote_client) {
+                        remote_client->async_launch(cfg.network.server_control_addr);
+                }
+
                 std::unique_ptr<i_logical_scene> logic = make_scene_by_name(cfg.scene.logical_scene);
 
                 if (!logic) {
@@ -54,7 +65,41 @@ struct logical_thread {
                         return;
                 }
 
+                std::queue<network::remote_command_frame_set> command_queue;
+                int pass_control_frames = 0;
+
                 while (!stop_t.stop_requested()) {
+                        if (!!remote_client) {
+                                RAY_PROFILE_SCOPE("remote_control", glm::vec3(0., 1., 1.));
+
+                                if (pass_control_frames > 0) {
+                                        pass_control_frames -= 1;
+                                } else {
+                                        std::optional<network::remote_command_frame_set> extracted_frame_command = remote_client->receive_next_frame_command();
+
+                                        if (extracted_frame_command.has_value()) {
+                                                command_queue.push(extracted_frame_command.value());
+                                        }
+
+                                        if (cfg.scene.tickless_mode && command_queue.empty()) {
+                                                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                                                continue;
+                                        }
+
+                                        if (!command_queue.empty()) {
+                                                const network::remote_command_frame_set& this_frame_command = command_queue.front();
+
+                                                const auto& pass_ticks_after = this_frame_command.command_map[(int)network::remote_command_type::pass_ticks_after];
+                                                if (pass_ticks_after.enabled) {
+                                                        pass_control_frames = std::round(pass_ticks_after.value.x);
+                                                }
+
+                                                logic->inject_remote_control(win, rend, this_frame_command);
+                                                command_queue.pop();
+                                        }
+                                }
+                        }
+
                         if (!tick(win, rend, *logic)) {
                                 break;
                         }
@@ -65,6 +110,10 @@ struct logical_thread {
 #if RAY_DEBUG_NO_OPT
                 rend.pipe.verify_pipeline_destruction();
 #endif
+
+                if (!!remote_client) {
+                        remote_client->wait_shutdown();
+                }
         }
 
         config::render_server_config cfg;
