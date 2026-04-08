@@ -26,7 +26,7 @@ public:
 
         virtual ~i_logical_scene() = default;
 
-        void inject_remote_control(const window& win, const renderer& rend, const network::remote_command_frame_set& this_frame_command);
+        network::remote_answer_frame_set inject_remote_control(const window& win, const renderer& rend, const network::remote_command_frame_set& this_frame_command);
 
 protected:
         config::render_server_config server_config;

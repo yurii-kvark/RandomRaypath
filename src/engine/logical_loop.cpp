@@ -94,7 +94,8 @@ struct logical_thread {
                                                         pass_control_frames = std::round(pass_ticks_after.value.x);
                                                 }
 
-                                                logic->inject_remote_control(win, rend, this_frame_command);
+                                                network::remote_answer_frame_set answer_set = logic->inject_remote_control(win, rend, this_frame_command);
+                                                remote_client->send_answer(answer_set);
                                                 command_queue.pop();
                                         }
                                 }
