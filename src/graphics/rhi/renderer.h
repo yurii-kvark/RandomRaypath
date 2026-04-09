@@ -4,6 +4,8 @@
 #include "graphics/graphic_libs.h"
 #include "glm/glm.hpp"
 #include "pipeline/pipeline_manager.h"
+#include "utils/ray_error.h"
+
 #include <memory>
 
 
@@ -26,6 +28,8 @@ public:
         bool draw_frame();
 
         pipeline_manager pipe;
+
+        ray_error execute_screenshot_save(const std::string& filepath);
 
 private:
         bool create();

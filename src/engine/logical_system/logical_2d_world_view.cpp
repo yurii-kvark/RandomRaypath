@@ -59,6 +59,11 @@ glm::vec4 logical_2d_world_view::get_camera_transform() const {
 }
 
 
+void logical_2d_world_view::set_camera_transform(glm::vec4 in_transform) {
+        camera_transform = in_transform;
+}
+
+
 void logical_2d_world_view::tick_camera_transform(window& win, const pipeline_manager& pipe) {
         glm::vec2 curr_mouse_pos = win.get_mouse_position();
         glm::f32 delta_zoom = win.get_mouse_wheel_delta();

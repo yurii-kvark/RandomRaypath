@@ -4,6 +4,7 @@
 #include "graphics/window/window.h"
 #include "graphics/rhi/renderer.h"
 #include "logical_scene/main_scene.h"
+#include "logical_scene/core/base_scene.h"
 #include "logical_scene/minecraft_scene.h"
 #include "network/remote_control/remote_control.h"
 #include "utils/ray_profile.h"
@@ -68,9 +69,14 @@ struct logical_thread {
                 std::queue<network::remote_command_frame_set> command_queue;
                 int pass_control_frames = 0;
 
+                std::optional<network::remote_command_frame_set> this_frame_command = {};
+                std::optional<network::remote_answer_frame_set> answer_set_pre = {};
+
                 while (!stop_t.stop_requested()) {
                         if (!!remote_client) {
                                 RAY_PROFILE_SCOPE("remote_control", glm::vec3(0., 1., 1.));
+
+                                win.clear_injected_input();
 
                                 if (pass_control_frames > 0) {
                                         pass_control_frames -= 1;
@@ -87,15 +93,19 @@ struct logical_thread {
                                         }
 
                                         if (!command_queue.empty()) {
-                                                const network::remote_command_frame_set& this_frame_command = command_queue.front();
+                                                this_frame_command = command_queue.front();
 
-                                                const auto& pass_ticks_after = this_frame_command.command_map[(int)network::remote_command_type::pass_ticks_after];
+                                                const auto& pass_ticks_after = this_frame_command->command_map[(int)network::remote_command_type::pass_ticks_after];
+                                                answer_set_pre = logic->inject_remote_control_pre(win, rend, *this_frame_command);
+
                                                 if (pass_ticks_after.enabled) {
-                                                        pass_control_frames = std::round(pass_ticks_after.value.x);
+                                                        pass_control_frames = (int)std::round(pass_ticks_after.value.x);
+
+                                                        auto& answer_pass_ticks = answer_set_pre->answer_map[(int)network::remote_command_type::pass_ticks_after];
+                                                        answer_pass_ticks.enabled = true;
+                                                        answer_pass_ticks.verbal_message = std::format("{}+1 frames will be executed", pass_control_frames);
                                                 }
 
-                                                network::remote_answer_frame_set answer_set = logic->inject_remote_control(win, rend, this_frame_command);
-                                                remote_client->send_answer(answer_set);
                                                 command_queue.pop();
                                         }
                                 }
@@ -103,6 +113,17 @@ struct logical_thread {
 
                         if (!tick(win, rend, *logic)) {
                                 break;
+                        }
+
+                        if (!!remote_client && this_frame_command.has_value()) {
+                                assert(answer_set_pre.has_value());
+
+                                network::remote_answer_frame_set answer_set = logic->inject_remote_control_post(win, rend, *answer_set_pre, *this_frame_command);
+
+                                remote_client->send_answer(answer_set);
+
+                                this_frame_command = {};
+                                answer_set_pre = {};
                         }
                 }
 

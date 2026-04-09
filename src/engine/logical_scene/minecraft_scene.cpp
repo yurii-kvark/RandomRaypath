@@ -10,14 +10,9 @@ using namespace ray::logical;
 
 
 ray_error minecraft_scene::init(window& win, pipeline_manager& pipe) {
-        ray_error hud_error = hud_info.init(win, pipe, server_config.style.color_hud_info);
-        if (hud_error) {
-                return hud_error;
-        }
-
-        ray_error grid_error = grid_system.init(win, pipe, server_config.style.color_grid);
-        if (grid_error) {
-                return grid_error;
+        ray_error init_error = base_scene::init(win, pipe);
+        if (init_error) {
+                return init_error;
         }
 
         ray_error crate_error = crate_sim.init(win, pipe);
@@ -25,7 +20,6 @@ ray_error minecraft_scene::init(window& win, pipeline_manager& pipe) {
                 return crate_error;
         }
 
-        world_processor.register_pipeline(grid_system.get_pipeline());
         world_processor.register_pipelines(crate_sim.get_pipelines());
 
         crate_sim.add_crate(glm::vec2(-112, -102), 70, 'M', glm::vec4(102.f, 153.f, 51.f, 255.f) / 255.f, glm::vec4(128.f, 93.f, 21.f, 255.f) / 255.f);
@@ -42,20 +36,20 @@ ray_error minecraft_scene::init(window& win, pipeline_manager& pipe) {
 }
 
 bool minecraft_scene::tick(window& win, pipeline_manager& pipe) {
-        world_processor.tick(win, pipe);
+        const bool is_success = base_scene::tick(win, pipe);
+        if (!is_success) {
+                return is_success;
+        }
 
         const glm::vec4 new_cam_transform = world_processor.get_camera_transform();
-        hud_info.update_camera_transform_info(new_cam_transform);
-
-        hud_info.tick(win, pipe);
         crate_sim.tick(new_cam_transform, win, pipe);
 
         return true;
 }
 
 
+
 void minecraft_scene::cleanup(window& win, pipeline_manager& pipe) {
-        hud_info.destroy(win, pipe);
-        grid_system.destroy(win, pipe);
+        base_scene::cleanup(win, pipe);
         crate_sim.destroy(pipe);
 }

@@ -16,7 +16,9 @@ enum class remote_command_type {
         set_mouse_left_button = 3, // bool
         set_mouse_right_button = 4, // bool
         add_mouse_scroll = 5, // scalar
-        screenshot = 6,
+        screenshot = 6, // screenshot of the last available frame, not frame of command
+        hud_info = 7,
+        debug_command = 8,
         count
 };
 
@@ -26,6 +28,7 @@ struct remote_command_entry {
 };
 
 struct remote_command_frame_set {
+        glm::u32 net_session_tag = 0;
         glm::u32 net_id = 0; // id of command frame
 
         std::array<remote_command_entry, (int)remote_command_type::count> command_map;
@@ -38,6 +41,7 @@ struct remote_answer_entry {
 };
 
 struct remote_answer_frame_set {
+        glm::u32 net_session_tag = 0;
         glm::u32 net_id = 0;
         std::array<remote_answer_entry, (int)remote_command_type::count> answer_map;
 };

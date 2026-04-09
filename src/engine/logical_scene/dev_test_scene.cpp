@@ -17,6 +17,11 @@ using namespace ray::logical;
 
 
 ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
+        ray_error init_error = base_scene::init(win, pipe);
+        if (init_error) {
+                return init_error;
+        }
+
         pipeline_handle<rainbow_rect_pipeline> rainbow_pipeline = pipe.create_pipeline<rainbow_rect_pipeline>(ray_pipeline_order::world_obj + 1);
         pipeline_handle<solid_rect_pipeline> rect_pipeline = pipe.create_pipeline<solid_rect_pipeline>(ray_pipeline_order::world_obj + 4);
         pipeline_handle<glyph_pipeline> text_pipeline = pipe.create_pipeline<glyph_pipeline>(ray_pipeline_order::world_obj + 3);
@@ -29,16 +34,6 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
         ray_error text_error = text_line_manager.init(pipe, ray_pipeline_order::world_obj + 10);
         if (text_error.has_value()) {
                 return text_error;
-        }
-
-        ray_error hud_error = hud_info.init(win, pipe, server_config.style.color_hud_info);
-        if (hud_error) {
-                return hud_error;
-        }
-
-        ray_error grid_error = visual_grid_system.init(win, pipe, server_config.style.color_grid);
-        if (grid_error) {
-                return grid_error;
         }
 
         ray_error crate_sim_error = crate_sim.init(win, pipe);
@@ -55,7 +50,6 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
         //std::vector<pipeline_handle<object_2d_pipeline<>>> a = hud_info.get_pipelines();
         //world_processor.register_pipelines(a);
 
-        world_processor.register_pipeline(visual_grid_system.get_pipeline());
         world_processor.register_pipeline(rainbow_pipeline);
         world_processor.register_pipeline(rect_pipeline);
         world_processor.register_pipeline(text_line_manager.get_pipeline());
@@ -237,14 +231,13 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
 
 
 bool dev_test_scene::tick(window& win, pipeline_manager& pipe) {
+        const bool is_success = base_scene::tick(win, pipe);
+        if (!is_success) {
+                return is_success;
+        }
 
-        world_processor.tick(win, pipe);
 
         const glm::vec4 new_cam_transform = world_processor.get_camera_transform();
-        hud_info.update_camera_transform_info(new_cam_transform);
-
-        hud_info.tick(win, pipe);
-
         crate_sim.tick(new_cam_transform, win, pipe);
 
         if (auto rect_1_data = rect_1.access_draw_obj_data()) {
@@ -264,9 +257,9 @@ bool dev_test_scene::tick(window& win, pipeline_manager& pipe) {
 
 
 void dev_test_scene::cleanup(window& win, pipeline_manager& pipe) {
+        base_scene::cleanup(win, pipe);
+
         text_line_manager.destroy(pipe);
-        hud_info.destroy(win, pipe);
-        visual_grid_system.destroy(win, pipe);
 
         for (auto p : lifetime_pipelines) {
                 pipe.destroy_pipeline(p);
@@ -274,41 +267,3 @@ void dev_test_scene::cleanup(window& win, pipeline_manager& pipe) {
 
         crate_sim.destroy(pipe);
 }
-
-
-// void dev_test_scene::tick_camera_movement(window& win, const pipeline_manager& pipe) {
-//         glm::vec2 curr_mouse_pos = win.get_mouse_position();
-//         glm::f32 delta_zoom = win.get_mouse_wheel_delta();
-//
-//         if (std::abs(delta_zoom) > 0.0001) {
-//                 glm::vec2 viewport_px = (glm::vec2)pipe.get_target_resolution();
-//                 glm::vec2 world_mouse_before = (curr_mouse_pos - viewport_px * 0.5f) * (1.0f / camera_transform.z);
-//
-//                 delta_zoom = std::exp(delta_zoom);
-//                 camera_transform.z *= delta_zoom;
-//                 camera_transform.z = std::clamp(camera_transform.z, 0.004f, 120.f);
-//
-//                 glm::vec2 world_mouse_after = (curr_mouse_pos - viewport_px * 0.5f) * (1.0f / camera_transform.z);
-//
-//                 glm::vec2 delta_zoom_move = world_mouse_before - world_mouse_after;
-//
-//                 camera_transform.x += delta_zoom_move.x;
-//                 camera_transform.y += delta_zoom_move.y;
-//         }
-//
-//         glm::vec2 delta_move = glm::vec2(0, 0);
-//         if (win.get_mouse_button_right()) {
-//                 if (base_move_position) {
-//                         delta_move = *base_move_position - curr_mouse_pos;
-//                 }
-//                 base_move_position = curr_mouse_pos;
-//         } else {
-//                 base_move_position = std::nullopt;
-//         }
-//
-//         delta_move /= camera_transform.z;
-//         delta_move *= 1;
-//
-//         camera_transform.x += delta_move.x;
-//         camera_transform.y += delta_move.y;
-// }

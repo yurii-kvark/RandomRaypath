@@ -22,6 +22,10 @@ public:
 
         void update_camera_transform_info(glm::vec4 new_cam);
 
+        std::string get_last_full_text() const;
+
+        int frame_counter = 0;
+
 private:
         logical_text_line_manager text_line_manager;
         logical_text_line_handler fps_text_line = nullptr;
@@ -36,12 +40,14 @@ private:
         glm::u64 last_time_ns = 0;
         glm::u64 last_delta_time_ns = 0;
 
-        int frame_counter = 0;
+
         double smoothed_fps = 0.0;
         double fps_delay_reset_sec = 0.0;
         double max_fps = 0.0;
         double min_fps = 0.0;
         double collecting_max_fps = 0.0;
         double collecting_min_fps = 0.0;
+
+        std::string last_full_text;
 };
 };

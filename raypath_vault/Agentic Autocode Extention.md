@@ -1,4 +1,6 @@
-
+TODO:
+* Disable hud
+* visualize cursor
 
 ## Agentic auto coding integration
 

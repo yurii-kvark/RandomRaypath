@@ -192,6 +192,12 @@ bool renderer::draw_frame() {
 }
 
 
+ray_error renderer::execute_screenshot_save(const std::string& filepath) {
+        // TODO: implement
+        return "Not Implemented";
+}
+
+
 bool renderer::create() {
         if (!create_surface()) {
                 return false;

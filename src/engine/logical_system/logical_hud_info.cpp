@@ -73,6 +73,7 @@ void logical_hud_info::tick(window& win, pipeline_manager& pipe) {
 
         // Take up to 0.7 ms of update time, but ok for ui debug text
         // Very inefficient update_content, that trigger full data update on every tick
+
         if (!!fps_text_line) {
                 std::chrono::duration<glm::u64, std::nano> ns_duration {last_delta_time_ns};
                 double sec_duration = std::chrono::duration_cast<std::chrono::duration<double>>(ns_duration).count();
@@ -111,6 +112,8 @@ void logical_hud_info::tick(window& win, pipeline_manager& pipe) {
 
                 const std::string frame_str = std::format("frame: {} | {:.2f} ms", frame_counter, sec_duration * 1000);
                 frame_text_line->update_content(frame_str);
+
+                last_full_text = std::format("{}\n{}\n{}\n{}\n", fps_str, cam_str, mouse_str, frame_str);
         }
 }
 
@@ -127,4 +130,9 @@ void logical_hud_info::destroy(window& win, pipeline_manager& pipe) {
 
 void logical_hud_info::update_camera_transform_info(glm::vec4 new_cam) {
         camera_transform = new_cam;
+}
+
+
+std::string logical_hud_info::get_last_full_text() const {
+        return last_full_text;
 }

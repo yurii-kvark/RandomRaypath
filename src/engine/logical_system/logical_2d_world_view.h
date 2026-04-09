@@ -22,6 +22,7 @@ public:
         void unregister_pipeline(const graphics::pipeline_handle<graphics::object_2d_pipeline<>>& pipe_to_unregister);
 
         glm::vec4 get_camera_transform() const;
+        void set_camera_transform(glm::vec4 in_transform);
 
 private:
         void tick_camera_transform(window& win, const pipeline_manager& pipe);

@@ -124,6 +124,9 @@ std::weak_ptr<GLFWwindow> window::get_gl_window() const {
 
 
 glm::vec2 window::get_mouse_position() const {
+        if (injected_mouse_position.has_value()) {
+                return *injected_mouse_position;
+        }
         double x_pos = 0, y_pos = 0;
         if (gl_win) {
                 glfwGetCursorPos(gl_win.get(), &x_pos, &y_pos);
@@ -133,6 +136,9 @@ glm::vec2 window::get_mouse_position() const {
 
 
 bool window::get_mouse_button_left() const {
+        if (injected_mouse_button_left.has_value()) {
+                return *injected_mouse_button_left;
+        }
         int state = GLFW_RELEASE;
         if (gl_win) {
                 state = glfwGetMouseButton(gl_win.get(), GLFW_MOUSE_BUTTON_LEFT);
@@ -142,6 +148,9 @@ bool window::get_mouse_button_left() const {
 
 
 bool window::get_mouse_button_right() const {
+        if (injected_mouse_button_right.has_value()) {
+                return *injected_mouse_button_right;
+        }
         int state = GLFW_RELEASE;
         if (gl_win) {
                 state = glfwGetMouseButton(gl_win.get(), GLFW_MOUSE_BUTTON_RIGHT);
@@ -151,7 +160,37 @@ bool window::get_mouse_button_right() const {
 
 
 glm::f64 window::get_mouse_wheel_delta() const {
-        return mouse_wheel_delta_frame * used_config.scene.zoom_speed;
+        return (mouse_wheel_delta_frame + injected_mouse_scroll_add) * used_config.scene.zoom_speed;
+}
+
+
+void window::inject_mouse_position(glm::vec2 pos) const {
+        injected_mouse_position = pos;
+}
+
+
+void window::inject_mouse_button_left(bool pressed) const {
+        injected_mouse_button_left = pressed;
+}
+
+
+void window::inject_mouse_button_right(bool pressed) const {
+        injected_mouse_button_right = pressed;
+}
+
+
+void window::inject_mouse_scroll_add(glm::f64 delta) const {
+        injected_mouse_scroll_add += delta;
+}
+
+void window::stop_injected_input() const {
+        injected_mouse_position.reset();
+        injected_mouse_button_left.reset();
+        injected_mouse_button_right.reset();
+}
+
+void window::clear_injected_input() const {
+        injected_mouse_scroll_add = 0.0;
 }
 
 
