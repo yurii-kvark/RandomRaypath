@@ -1,6 +1,9 @@
 TODO:
 * Disable hud
 * visualize cursor
+* headless mode
+* check remote control in tickless in head mode
+* fix timings and delta time 
 
 ## Agentic auto coding integration
 

@@ -118,6 +118,7 @@ target_compile_definitions(RayClientRenderer
 target_include_directories(RayClientRenderer
         PRIVATE
             ${CMAKE_SOURCE_DIR}/third_party/tomlplusplus/include
+            ${CMAKE_SOURCE_DIR}/third_party/glfw/deps
             ${CMAKE_SOURCE_DIR}/src)
 
 file(GLOB_RECURSE CORE_IMPL CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.cpp)

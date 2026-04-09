@@ -73,6 +73,8 @@ private:
         VkFence in_flight[g_app_driver::k_frames_in_flight]{};
         glm::u8 frame_submitted[g_app_driver::k_frames_in_flight] = {0};
         glm::u32 frame_index = 0;
+        glm::u32 last_image_index = 0;
+        bool screenshot_supported = false;
 };
 
 #endif
