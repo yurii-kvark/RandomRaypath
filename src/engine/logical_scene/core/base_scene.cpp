@@ -110,7 +110,7 @@ network::remote_answer_frame_set base_scene::inject_remote_control_post(window& 
                 case command_type::add_mouse_scroll:
                         break;
                 case command_type::screenshot: {
-                        const std::string screenshot_filepath = std::format("mcp_logs/screenshot/{}/net{}_frame{}", answer_set.net_session_tag, answer_set.net_id, hud_info.frame_counter);
+                        const std::string screenshot_filepath = std::format("mcp_logs/screenshot/session_{}/net{}_frame{}", answer_set.net_session_tag, answer_set.net_id, hud_info.frame_counter);
                         const ray_error screenshot_error = rend.execute_screenshot_save(screenshot_filepath);
 
                         if (screenshot_error.has_value()) {
