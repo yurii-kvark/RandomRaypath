@@ -17,7 +17,7 @@ namespace ray::graphics {
 // The goal is to achieve 2d editor crisp feeling.
 class renderer {
 public:
-        renderer(std::weak_ptr<GLFWwindow> basis_win, config::visual_style_config in_style);
+        renderer(std::weak_ptr<GLFWwindow> basis_win, const config::render_server_config& cfg);
         ~renderer();
 
         renderer(const renderer&) = delete;
@@ -42,6 +42,9 @@ private:
         bool create_swapchain();
         void destroy_swapchain();
 
+        bool create_offscreen_images();
+        void destroy_offscreen_images();
+
         bool create_commands();
         void destroy_commands();
 
@@ -55,6 +58,8 @@ private:
 private:
         std::weak_ptr<GLFWwindow> gl_window;
         config::visual_style_config style;
+        glm::uvec2 headless_size{900, 500};
+        std::vector<VkDeviceMemory> offscreen_image_memories;
 
         std::shared_ptr<g_app_driver::driver_handler> driver_lifetime;
         VkSurfaceKHR surface = VK_NULL_HANDLE;

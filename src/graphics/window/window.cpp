@@ -91,8 +91,13 @@ window::window(const config::render_server_config& in_config)
 bool window::draw_window(bool& out_valid_view) {
         out_valid_view = false;
 
+        if (!used_config.graphics_window_enabled) {
+                out_valid_view = true;
+                return true;
+        }
+
         if (!gl_win) {
-                return false;
+                return false; // window creation must have failed
         }
 
         if (glfwWindowShouldClose(gl_win.get())) {

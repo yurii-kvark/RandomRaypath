@@ -1,21 +1,20 @@
 TODO:
-* * fix screenshot
+* check remote control in tickless in head and headless mode
+* fix timings and delta time
+
 * visualize cursor. outer rect: outer_rect_color=red. content_color_idle/left/right_pressed= yellow, green, purple. Describe cursor.
 	* show_cursor = false # need for debug, in screen space
 	* cursor_size_px = 10, 10
 	* cursor_border_size_px = 2
 	* cursor_border_color = red #
 	* cursor_idle/left/right/both_pressed_color = red/green/yellow/purple
-	
-* headless mode
-* check remote control in tickless in head and headless mode
-* fix timings and delta time
 
-* logging in file.
+* logging in file. include log_id_rand_number.txt as random number in protocol. duplicate in log_last_default.txt.
 * Disable hud
 	* show_hud_info = false
 * expose debug command
-* add -config="mcp_controlled/config.toml", do not add other args
+* add shutdown command
+* add -config="mcp_controlled/config.toml", do not add other args,
 
 ## Agentic auto coding integration
 

@@ -1,7 +1,7 @@
 ﻿
 [render_server]
 enable = true
-graphics_window_enabled = true # -headless flag will force it to false
+graphics_window_enabled = false # -headless flag will force it to false. sreenshot is of the applayed command frame.
 
 [render_server.network]
 listening_port = 47039

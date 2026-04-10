@@ -38,7 +38,11 @@ struct logical_thread {
 
         void operator()(std::stop_token stop_t) const {
                 window win(cfg);
-                renderer rend(win.get_gl_window(), cfg.style);
+                renderer rend(win.get_gl_window(), cfg);
+
+                if (!cfg.graphics_window_enabled) {
+                        std::println("RAY INFO: Running in headless mode. No display window will be spawned.");
+                }
 
                 std::unique_ptr<network::remote_control_client> remote_client;
 

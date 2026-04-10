@@ -28,7 +28,7 @@ struct g_app_driver {
         g_app_driver& operator=(g_app_driver&&) = delete;
 
         // Explicit init, will block once everybody until done.
-        std::shared_ptr<driver_handler> init_driver_handler();
+        std::shared_ptr<driver_handler> init_driver_handler(bool headless = false);
 
         ~g_app_driver();
 
@@ -45,6 +45,8 @@ private:
         std::atomic<int> current_drivers_num = 0;
         std::atomic<bool> init_done = false;
         mutable std::mutex init_mtx;
+
+        bool headless_mode = false;
 
         void graphic_init();
         void graphic_init_surface(VkSurfaceKHR surface);
