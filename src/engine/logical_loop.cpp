@@ -74,7 +74,7 @@ struct logical_thread {
 
                 while (!stop_t.stop_requested()) {
                         if (!!remote_client) {
-                                RAY_PROFILE_SCOPE("remote_control", glm::vec3(0., 1., 1.));
+                                RAY_PROFILE_SCOPE("remote_control_pre", glm::vec3(0., 1., 1.));
 
                                 win.clear_injected_input();
 
@@ -116,6 +116,7 @@ struct logical_thread {
                         }
 
                         if (!!remote_client && this_frame_command.has_value()) {
+                                RAY_PROFILE_SCOPE("remote_control_post", glm::vec3(0., 1., 1.));
                                 assert(answer_set_pre.has_value());
 
                                 network::remote_answer_frame_set answer_set = logic->inject_remote_control_post(win, rend, *answer_set_pre, *this_frame_command);

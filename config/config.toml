@@ -5,7 +5,7 @@ graphics_window_enabled = true # -headless flag will force it to false
 
 [render_server.network]
 listening_port = 47039
-enable_remote_control = false # -remote_control will force it to true
+enable_remote_control = true # -remote_control will force it to true
 server_control_addr = "127.0.0.1:57039" # address of control server
 
 [render_server.window]
