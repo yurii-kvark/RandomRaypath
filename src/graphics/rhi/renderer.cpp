@@ -149,117 +149,21 @@ bool renderer::draw_frame() {
 
         // Screenshot capture: copy swapchain image to staging buffer while still app-owned
         if (screenshot_capture_requested) {
-                screenshot_capture_requested = false;
-                screenshot_data_ready = false;
-
-                VkDevice sc_device = g_app_driver::thread_safe().device;
-                VkPhysicalDevice sc_physical = g_app_driver::thread_safe().physical;
-
-                const VkDeviceSize needed_size = VkDeviceSize(swapchain_extent.width) * swapchain_extent.height * 4;
-
-                if (screenshot_staging_size < needed_size) {
-                        if (screenshot_staging_buf != VK_NULL_HANDLE) {
-                                vkDestroyBuffer(sc_device, screenshot_staging_buf, nullptr);
-                                vkFreeMemory(sc_device, screenshot_staging_mem, nullptr);
-                                screenshot_staging_buf = VK_NULL_HANDLE;
-                                screenshot_staging_mem = VK_NULL_HANDLE;
-                                screenshot_staging_size = 0;
-                        }
-
-                        VkBufferCreateInfo buf_ci{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-                        buf_ci.size = needed_size;
-                        buf_ci.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-                        buf_ci.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-                        if (vkCreateBuffer(sc_device, &buf_ci, nullptr, &screenshot_staging_buf) == VK_SUCCESS) {
-                                VkMemoryRequirements mem_req{};
-                                vkGetBufferMemoryRequirements(sc_device, screenshot_staging_buf, &mem_req);
-
-                                VkPhysicalDeviceMemoryProperties mem_props{};
-                                vkGetPhysicalDeviceMemoryProperties(sc_physical, &mem_props);
-
-                                glm::u32 mem_type_idx = UINT32_MAX;
-                                const VkMemoryPropertyFlags desired_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-                                for (glm::u32 mi = 0; mi < mem_props.memoryTypeCount; ++mi) {
-                                        if ((mem_req.memoryTypeBits & (1u << mi)) &&
-                                            (mem_props.memoryTypes[mi].propertyFlags & desired_flags) == desired_flags) {
-                                                mem_type_idx = mi;
-                                                break;
-                                        }
-                                }
-
-                                if (mem_type_idx != UINT32_MAX) {
-                                        VkMemoryAllocateInfo alloc_info{ VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
-                                        alloc_info.allocationSize = mem_req.size;
-                                        alloc_info.memoryTypeIndex = mem_type_idx;
-
-                                        if (vkAllocateMemory(sc_device, &alloc_info, nullptr, &screenshot_staging_mem) == VK_SUCCESS) {
-                                                vkBindBufferMemory(sc_device, screenshot_staging_buf, screenshot_staging_mem, 0);
-                                                screenshot_staging_size = needed_size;
-                                        } else {
-                                                vkDestroyBuffer(sc_device, screenshot_staging_buf, nullptr);
-                                                screenshot_staging_buf = VK_NULL_HANDLE;
-                                        }
-                                } else {
-                                        vkDestroyBuffer(sc_device, screenshot_staging_buf, nullptr);
-                                        screenshot_staging_buf = VK_NULL_HANDLE;
-                                }
-                        }
-                }
-
-                if (screenshot_staging_buf != VK_NULL_HANDLE) {
-                        // Transition: COLOR_ATTACHMENT_OPTIMAL -> TRANSFER_SRC_OPTIMAL
-                        VkImageMemoryBarrier2 barrier_to_src{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2 };
-                        barrier_to_src.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-                        barrier_to_src.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-                        barrier_to_src.dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
-                        barrier_to_src.dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
-                        barrier_to_src.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                        barrier_to_src.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-                        barrier_to_src.image = swapchain_images[imageIndex];
-                        barrier_to_src.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-
-                        VkDependencyInfo dep_to_src{ VK_STRUCTURE_TYPE_DEPENDENCY_INFO };
-                        dep_to_src.imageMemoryBarrierCount = 1;
-                        dep_to_src.pImageMemoryBarriers = &barrier_to_src;
-                        vkCmdPipelineBarrier2(command_buffer, &dep_to_src);
-
-                        VkBufferImageCopy copy_region{};
-                        copy_region.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-                        copy_region.imageExtent = { swapchain_extent.width, swapchain_extent.height, 1 };
-                        vkCmdCopyImageToBuffer(command_buffer, swapchain_images[imageIndex],
-                                               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                               screenshot_staging_buf, 1, &copy_region);
-
-                        // Transition back: TRANSFER_SRC_OPTIMAL -> COLOR_ATTACHMENT_OPTIMAL
-                        // (present barrier below will then transition COLOR_ATTACHMENT_OPTIMAL -> PRESENT_SRC_KHR)
-                        VkImageMemoryBarrier2 barrier_back{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2 };
-                        barrier_back.srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
-                        barrier_back.srcAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
-                        barrier_back.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-                        barrier_back.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-                        barrier_back.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-                        barrier_back.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                        barrier_back.image = swapchain_images[imageIndex];
-                        barrier_back.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-
-                        VkDependencyInfo dep_back{ VK_STRUCTURE_TYPE_DEPENDENCY_INFO };
-                        dep_back.imageMemoryBarrierCount = 1;
-                        dep_back.pImageMemoryBarriers = &barrier_back;
-                        vkCmdPipelineBarrier2(command_buffer, &dep_back);
-
-                        screenshot_captured_width = swapchain_extent.width;
-                        screenshot_captured_height = swapchain_extent.height;
-                        screenshot_data_ready = true;
-                }
+                tick_screenshot(imageIndex, command_buffer);
         }
 
         VkImageMemoryBarrier2 barrier_present{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2 };
-        barrier_present.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-        barrier_present.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+        barrier_present.srcStageMask = screenshot_data_ready
+                ? VK_PIPELINE_STAGE_2_TRANSFER_BIT
+                : VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+        barrier_present.srcAccessMask = screenshot_data_ready
+                ? VK_ACCESS_2_TRANSFER_READ_BIT
+                : VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
         barrier_present.dstStageMask = VK_PIPELINE_STAGE_2_NONE;
         barrier_present.dstAccessMask = VK_ACCESS_2_NONE;
-        barrier_present.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        barrier_present.oldLayout = screenshot_data_ready
+                ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+                : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         barrier_present.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
         barrier_present.image = swapchain_images[imageIndex];
         barrier_present.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -295,11 +199,103 @@ bool renderer::draw_frame() {
         present_info.pImageIndices = &imageIndex;
 
         vkQueuePresentKHR(present_queue, &present_info);
-        last_image_index = imageIndex;
 
         frame_index = (frame_index + 1) % g_app_driver::k_frames_in_flight;
 
         return true;
+}
+
+void renderer:: tick_screenshot(glm::u32 imageIndex, VkCommandBuffer& command_buffer) {
+        if (!screenshot_capture_requested) {
+                return;
+        }
+
+        screenshot_capture_requested = false;
+        screenshot_data_ready = false;
+
+        VkDevice sc_device = g_app_driver::thread_safe().device;
+        VkPhysicalDevice sc_physical = g_app_driver::thread_safe().physical;
+
+        const VkDeviceSize needed_size = VkDeviceSize(swapchain_extent.width) * swapchain_extent.height * 4;
+
+        if (screenshot_staging_size < needed_size) {
+                if (screenshot_staging_buf != VK_NULL_HANDLE) {
+                        vkDestroyBuffer(sc_device, screenshot_staging_buf, nullptr);
+                        vkFreeMemory(sc_device, screenshot_staging_mem, nullptr);
+                        screenshot_staging_buf = VK_NULL_HANDLE;
+                        screenshot_staging_mem = VK_NULL_HANDLE;
+                        screenshot_staging_size = 0;
+                }
+
+                VkBufferCreateInfo buf_ci{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+                buf_ci.size = needed_size;
+                buf_ci.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+                buf_ci.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+                if (vkCreateBuffer(sc_device, &buf_ci, nullptr, &screenshot_staging_buf) == VK_SUCCESS) {
+                        VkMemoryRequirements mem_req{};
+                        vkGetBufferMemoryRequirements(sc_device, screenshot_staging_buf, &mem_req);
+
+                        VkPhysicalDeviceMemoryProperties mem_props{};
+                        vkGetPhysicalDeviceMemoryProperties(sc_physical, &mem_props);
+
+                        glm::u32 mem_type_idx = UINT32_MAX;
+                        const VkMemoryPropertyFlags desired_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+                        for (glm::u32 mi = 0; mi < mem_props.memoryTypeCount; ++mi) {
+                                if ((mem_req.memoryTypeBits & (1u << mi)) &&
+                                    (mem_props.memoryTypes[mi].propertyFlags & desired_flags) == desired_flags) {
+                                        mem_type_idx = mi;
+                                        break;
+                                    }
+                        }
+
+                        if (mem_type_idx != UINT32_MAX) {
+                                VkMemoryAllocateInfo alloc_info{ VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
+                                alloc_info.allocationSize = mem_req.size;
+                                alloc_info.memoryTypeIndex = mem_type_idx;
+
+                                if (vkAllocateMemory(sc_device, &alloc_info, nullptr, &screenshot_staging_mem) == VK_SUCCESS) {
+                                        vkBindBufferMemory(sc_device, screenshot_staging_buf, screenshot_staging_mem, 0);
+                                        screenshot_staging_size = needed_size;
+                                } else {
+                                        vkDestroyBuffer(sc_device, screenshot_staging_buf, nullptr);
+                                        screenshot_staging_buf = VK_NULL_HANDLE;
+                                }
+                        } else {
+                                vkDestroyBuffer(sc_device, screenshot_staging_buf, nullptr);
+                                screenshot_staging_buf = VK_NULL_HANDLE;
+                        }
+                }
+        }
+
+        if (screenshot_staging_buf != VK_NULL_HANDLE) {
+                // Transition: COLOR_ATTACHMENT_OPTIMAL -> TRANSFER_SRC_OPTIMAL
+                VkImageMemoryBarrier2 barrier_to_src{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2 };
+                barrier_to_src.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+                barrier_to_src.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+                barrier_to_src.dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+                barrier_to_src.dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
+                barrier_to_src.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                barrier_to_src.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                barrier_to_src.image = swapchain_images[imageIndex];
+                barrier_to_src.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+                VkDependencyInfo dep_to_src{ VK_STRUCTURE_TYPE_DEPENDENCY_INFO };
+                dep_to_src.imageMemoryBarrierCount = 1;
+                dep_to_src.pImageMemoryBarriers = &barrier_to_src;
+                vkCmdPipelineBarrier2(command_buffer, &dep_to_src);
+
+                VkBufferImageCopy copy_region{};
+                copy_region.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+                copy_region.imageExtent = { swapchain_extent.width, swapchain_extent.height, 1 };
+                vkCmdCopyImageToBuffer(command_buffer, swapchain_images[imageIndex],
+                                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                       screenshot_staging_buf, 1, &copy_region);
+
+                screenshot_captured_width = swapchain_extent.width;
+                screenshot_captured_height = swapchain_extent.height;
+                screenshot_data_ready = true;
+        }
 }
 
 
@@ -548,12 +544,7 @@ bool renderer::create_swapchain() {
         }
         swapchain_create_info.compositeAlpha = alpha;
 
-        VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        screenshot_supported = (caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) != 0;
-        if (screenshot_supported) {
-                usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        }
-        swapchain_create_info.imageUsage = usage;
+        swapchain_create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
         if (vkCreateSwapchainKHR(device, &swapchain_create_info, nullptr, &swapchain) != VK_SUCCESS) {
                 ray_log(e_log_type::fatal, "renderer: vkCreateSwapchainKHR failed");

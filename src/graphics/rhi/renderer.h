@@ -50,6 +50,8 @@ private:
 
         void recreate_swapchain();
 
+        void tick_screenshot(glm::u32 imageIndex, VkCommandBuffer& command_buffer);
+
 private:
         std::weak_ptr<GLFWwindow> gl_window;
         config::visual_style_config style;
@@ -74,8 +76,6 @@ private:
         VkFence in_flight[g_app_driver::k_frames_in_flight]{};
         glm::u8 frame_submitted[g_app_driver::k_frames_in_flight] = {0};
         glm::u32 frame_index = 0;
-        glm::u32 last_image_index = 0;
-        bool screenshot_supported = false;
 
         // Screenshot pre-present capture
         bool screenshot_capture_requested = false;
