@@ -1,10 +1,21 @@
 TODO:
-*  visualize cursor
+* * fix screenshot
+* visualize cursor. outer rect: outer_rect_color=red. content_color_idle/left/right_pressed= yellow, green, purple. Describe cursor.
+	* show_cursor = false # need for debug, in screen space
+	* cursor_size_px = 10, 10
+	* cursor_border_size_px = 2
+	* cursor_border_color = red #
+	* cursor_idle/left/right/both_pressed_color = red/green/yellow/purple
+	
 * headless mode
-* check remote control in tickless in head mode
-* fix timings and delta time 
+* check remote control in tickless in head and headless mode
+* fix timings and delta time
+
+* logging in file.
 * Disable hud
-* fix screenshot
+	* show_hud_info = false
+* expose debug command
+* add -config="mcp_controlled/config.toml", do not add other args
 
 ## Agentic auto coding integration
 

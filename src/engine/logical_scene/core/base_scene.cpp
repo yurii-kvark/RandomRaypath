@@ -70,7 +70,9 @@ network::remote_answer_frame_set base_scene::inject_remote_control_pre(
                         mark_ok(type, std::format("mouse scroll added: {}", cmd.value.x));
                         break;
                 }
-                case command_type::screenshot: // proccess in post
+                case command_type::screenshot:
+                        rend.request_screenshot();
+                        break;
                 case command_type::hud_info:
 
                 case command_type::pass_ticks_after: // handles on tick level

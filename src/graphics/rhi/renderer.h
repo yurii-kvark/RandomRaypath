@@ -30,6 +30,7 @@ public:
         pipeline_manager pipe;
 
         ray_error execute_screenshot_save_png(const std::string& filepath);
+        void request_screenshot();
 
 private:
         bool create();
@@ -75,6 +76,15 @@ private:
         glm::u32 frame_index = 0;
         glm::u32 last_image_index = 0;
         bool screenshot_supported = false;
+
+        // Screenshot pre-present capture
+        bool screenshot_capture_requested = false;
+        bool screenshot_data_ready = false;
+        VkBuffer screenshot_staging_buf = VK_NULL_HANDLE;
+        VkDeviceMemory screenshot_staging_mem = VK_NULL_HANDLE;
+        VkDeviceSize screenshot_staging_size = 0;
+        glm::u32 screenshot_captured_width = 0;
+        glm::u32 screenshot_captured_height = 0;
 };
 
 #endif
