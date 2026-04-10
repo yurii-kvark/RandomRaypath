@@ -29,7 +29,7 @@ public:
 
         pipeline_manager pipe;
 
-        ray_error execute_screenshot_save(const std::string& filepath);
+        ray_error execute_screenshot_save_png(const std::string& filepath);
 
 private:
         bool create();

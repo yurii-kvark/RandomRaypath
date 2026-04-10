@@ -196,13 +196,16 @@ bool renderer::draw_frame() {
 }
 
 
-ray_error renderer::execute_screenshot_save(const std::string& filepath) {
+ray_error renderer::execute_screenshot_save_png(const std::string& filepath) {
         if (!swapchain || swapchain_images.empty()) {
                 return "screenshot: swapchain not ready";
         }
         if (!screenshot_supported) {
                 return "screenshot: swapchain images do not support VK_IMAGE_USAGE_TRANSFER_SRC_BIT";
         }
+
+        std::filesystem::path p(filepath);
+        std::filesystem::create_directories(p.parent_path());
 
         VkDevice device = g_app_driver::thread_safe().device;
         VkPhysicalDevice physical = g_app_driver::thread_safe().physical;

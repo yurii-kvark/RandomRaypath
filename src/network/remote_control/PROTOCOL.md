@@ -35,14 +35,15 @@ Order is by tcp income.
 
 ## Command Name Index
 
-| Index | Name                    |
-|-------|-------------------------|
-| 0     | pass_ticks_after        |
-| 1     | set_camera_position     |
-| 2     | set_mouse_position      |
-| 3     | set_mouse_left_button   |
-| 4     | set_mouse_right_button  |
-| 5     | add_mouse_scroll        |
-| 6     | screenshot              |
-| 7     | hud_info                |
-| 8     | debug_command           |
+| Index | Name                   |
+|-------|------------------------|
+| 0     | none                   |
+| 1     | pass_ticks_after       |
+| 2     | set_camera_position    |
+| 3     | set_mouse_position     |
+| 4     | set_mouse_left_button  |
+| 5     | set_mouse_right_button |
+| 6     | add_mouse_scroll       |
+| 7     | screenshot             |
+| 8     | hud_info               |
+| 9     | debug_command          |

@@ -124,6 +124,13 @@ remote_command_frame_set remote_control_client::command_frame_from_json(const st
         return frame;
 }
 
+static void replace_all_str(std::string& str, const std::string& from, const std::string& to) {
+        size_t start_pos = 0;
+        while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+                str.replace(start_pos, from.length(), to);
+                start_pos += to.length(); // Move past the last replacement
+        }
+}
 
 std::string remote_control_client::answer_frame_to_json(const remote_answer_frame_set& in_answer) {
         json_ans_msg_t msg{};
@@ -149,6 +156,8 @@ std::string remote_control_client::answer_frame_to_json(const remote_answer_fram
                 return "{}";
         }
 
+        replace_all_str(*result, "\n", " <> ");
+        replace_all_str(*result, "\\n", " <> ");
         return std::move(result).value();
 }
 
@@ -214,7 +223,6 @@ void remote_control_client::send_answer(const remote_answer_frame_set& command_a
         outgoing_queue.push(command_answer);
 }
 
-
 void remote_control_client::network_loop(std::stop_token stop, std::string host, std::string port) {
         using namespace asio;
         using namespace std::chrono_literals;
@@ -278,6 +286,8 @@ void remote_control_client::network_loop(std::stop_token stop, std::string host,
                         socket.close(ignored);
                 });
 
+                io.restart();
+
                 // read
                 co_spawn(io,
                         [&]() -> awaitable<void> {
@@ -336,7 +346,6 @@ void remote_control_client::network_loop(std::stop_token stop, std::string host,
                                                         continue;
                                                 }
 
-                                                std::erase(json, '\n');
                                                 json.push_back('\n');
 
                                                 auto [write_ec, bytes] = co_await async_write(
