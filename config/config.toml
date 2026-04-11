@@ -14,7 +14,7 @@ window_position = [800, 400] #in pixels [pos_x, pos_y] size_x, size_y]
 window_size = [900, 500] # in pixels [pos_x, pos_y] size_x, size_y]
 
 [render_server.scene]
-tickless_mode = true # -tickless will force it to true
+tickless_mode = false # -tickless will force it to true
 zoom_speed = 0.1
 logical_scene = "minecraft" # main / dev_test / minecraft
 

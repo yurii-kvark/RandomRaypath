@@ -77,12 +77,13 @@ struct logical_thread {
                 std::optional<network::remote_answer_frame_set> answer_set_pre = {};
 
                 while (!stop_t.stop_requested()) {
-                        bool pause_mode = false;
+                        bool pause_mode = cfg.scene.tickless_mode; // tickless mode will tick only by remote_client command
 
                         if (!!remote_client) {
                                 RAY_PROFILE_SCOPE("remote_control_pre", glm::vec3(0., 1., 1.));
 
                                 win.clear_injected_input();
+                                pause_mode = false;
 
                                 if (pass_control_frames > 0) {
                                         pass_control_frames -= 1;
