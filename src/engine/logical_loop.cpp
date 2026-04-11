@@ -77,6 +77,8 @@ struct logical_thread {
                 std::optional<network::remote_answer_frame_set> answer_set_pre = {};
 
                 while (!stop_t.stop_requested()) {
+                        bool pause_mode = false;
+
                         if (!!remote_client) {
                                 RAY_PROFILE_SCOPE("remote_control_pre", glm::vec3(0., 1., 1.));
 
@@ -92,8 +94,9 @@ struct logical_thread {
                                         }
 
                                         if (cfg.scene.tickless_mode && command_queue.empty()) {
-                                                std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                                                continue;
+                                                RAY_PROFILE_SCOPE("wait_payload-remote_control_pre", glm::vec3(1., 0.5, 0.5));
+                                                std::this_thread::sleep_for(std::chrono::milliseconds(20)); // some payload for waiting
+                                                pause_mode = true;
                                         }
 
                                         if (!command_queue.empty()) {
@@ -115,8 +118,12 @@ struct logical_thread {
                                 }
                         }
 
-                        if (!tick(win, rend, *logic)) {
+                        if (!tick(win, rend, *logic, pause_mode)) {
                                 break;
+                        }
+
+                        if (pause_mode) {
+                                continue;
                         }
 
                         if (!!remote_client && this_frame_command.has_value()) {
@@ -146,7 +153,7 @@ struct logical_thread {
         config::render_server_config cfg;
 
 private:
-        static bool tick(window& win, renderer& rend, i_logical_scene& logic) {
+        static bool tick(window& win, renderer& rend, i_logical_scene& logic, bool pause_mode) {
                 RAY_PROFILE_FRAME();
 
                 {
@@ -163,7 +170,7 @@ private:
                         }
                 }
 
-                {
+                if (!pause_mode) {
                         RAY_PROFILE_SCOPE("logic_tick", glm::vec3(0, 1, 0.));
 
                         const bool logic_success = logic.tick(win, rend.pipe);
@@ -172,7 +179,7 @@ private:
                         }
                 }
 
-                {
+                if (!pause_mode) {
                         RAY_PROFILE_SCOPE("draw_frame", ray_colors::orange);
 
                         const bool render_success = rend.draw_frame();

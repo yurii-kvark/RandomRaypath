@@ -1,10 +1,10 @@
 ﻿
 [render_server]
-enable = true
-graphics_window_enabled = false # -headless flag will force it to false. sreenshot is of the applayed command frame.
+enable = true # TODO
+graphics_window_enabled = true # -headless flag will force it to false. sreenshot is of the applayed command frame.
 
 [render_server.network]
-listening_port = 47039
+listening_port = 47039 # computational server port TODO
 enable_remote_control = true # -remote_control will force it to true
 server_control_addr = "127.0.0.1:5039" # address of control server
 
@@ -14,7 +14,7 @@ window_position = [800, 400] #in pixels [pos_x, pos_y] size_x, size_y]
 window_size = [900, 500] # in pixels [pos_x, pos_y] size_x, size_y]
 
 [render_server.scene]
-tickless_mode = false # -tickless will force it to true
+tickless_mode = true # -tickless will force it to true
 zoom_speed = 0.1
 logical_scene = "minecraft" # main / dev_test / minecraft
 
