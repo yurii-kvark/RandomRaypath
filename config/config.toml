@@ -5,7 +5,7 @@ graphics_window_enabled = true # -headless flag will force it to false. sreensho
 
 [render_server.network]
 listening_port = 47039 # computational server port TODO
-enable_remote_control = true # -remote_control will force it to true
+enable_remote_control = false # -remote_control will force it to true
 server_control_addr = "127.0.0.1:5039" # address of control server
 
 [render_server.window]
@@ -15,7 +15,7 @@ window_size = [900, 500] # in pixels [pos_x, pos_y] size_x, size_y]
 
 [render_server.scene]
 tickless_mode = false # -tickless will force it to true
-fixed_delta_time_ms = -1 # -1 to use actual delta time
+fixed_delta_time_ms = -1 # -1 to use actual delta time, or force delta time in logic
 zoom_speed = 0.1
 logical_scene = "minecraft" # main / dev_test / minecraft
 
@@ -25,7 +25,7 @@ color_background = [0.005, 0.005, 0.005, 1.0]
 color_hud_info = [0.0, 1.0, 0.0, 1.0]
 color_grid = [0.03, 0.02, 0.04, 1.0]
 
-
+#TODO
 [compute_client]
 enable = true # if render_server.eanble, will be instantiated in-process
 server_addr = "127.0.0.1:47039"

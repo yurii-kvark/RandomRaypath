@@ -37,7 +37,7 @@ struct logical_thread {
         logical_thread(config::render_server_config in_config)
                 : cfg(std::move(in_config)) {}
 
-        void operator()(std::stop_token stop_t) const {
+        void operator()(std::stop_token stop_t) {
                 window win(cfg);
                 renderer rend(win.get_gl_window(), cfg);
 
@@ -154,8 +154,11 @@ struct logical_thread {
 
         config::render_server_config cfg;
 
+        glm::u64 last_wall_time_ns = 0;
+        glm::u64 artificial_time_ns = 0;
+
 private:
-        bool tick(window& win, renderer& rend, i_logical_scene& logic, bool pause_mode) const {
+        bool tick(window& win, renderer& rend, i_logical_scene& logic, bool pause_mode) {
                 RAY_PROFILE_FRAME();
 
                 {
@@ -175,11 +178,28 @@ private:
                 if (!pause_mode) {
                         RAY_PROFILE_SCOPE("logic_tick", glm::vec3(0, 1, 0.));
 
-                        float actual_delta_time_ms = 0.16;
+                        const glm::u64 now = now_ticks_ns();
+
+                        const glm::u64 measured_delta_ns = (last_wall_time_ns == 0)
+                                ? 16'000'000ULL
+                                : (now - last_wall_time_ns);
+                        last_wall_time_ns = now;
+
+                        const glm::u64 delta_ns = (cfg.scene.fixed_delta_time_ms > 0)
+                                ? static_cast<glm::u64>(cfg.scene.fixed_delta_time_ms * 1'000'000.0f)
+                                : measured_delta_ns;
+
+                        glm::u64 global_time_ns;
+                        if (cfg.scene.tickless_mode) {
+                                artificial_time_ns += delta_ns;
+                                global_time_ns = artificial_time_ns;
+                        } else {
+                                global_time_ns = now;
+                        }
 
                         tick_time_info tick_time;
-                        tick_time.global_time_ns = now_ticks_ns();
-                        tick_time.delta_time_ns = (cfg.scene.fixed_delta_time_ms <= 0 ? actual_delta_time_ms : cfg.scene.fixed_delta_time_ms) * 1'000'000;
+                        tick_time.global_time_ns = global_time_ns;
+                        tick_time.delta_time_ns = delta_ns;
 
                         const bool logic_success = logic.tick(tick_time, win, rend.pipe);
                         if (!logic_success) {

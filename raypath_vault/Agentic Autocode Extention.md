@@ -1,7 +1,11 @@
 TODO:
-* fix timings and delta time
 
-tickless-head produce not responding
+* add -config="mcp_controlled/config.toml", do not add other args,
+* add shutdown command
+* expose debug command
+* Disable hud
+	* show_hud_info = false
+* logging in file. include log_id_rand_number.txt as random number in protocol. duplicate in log_last_default.txt.
 
 * visualize cursor. outer rect: outer_rect_color=red. content_color_idle/left/right_pressed= yellow, green, purple. Describe cursor.
 	* show_cursor = false # need for debug, in screen space
@@ -10,12 +14,6 @@ tickless-head produce not responding
 	* cursor_border_color = red #
 	* cursor_idle/left/right/both_pressed_color = red/green/yellow/purple
 
-* logging in file. include log_id_rand_number.txt as random number in protocol. duplicate in log_last_default.txt.
-* Disable hud
-	* show_hud_info = false
-* expose debug command
-* add shutdown command
-* add -config="mcp_controlled/config.toml", do not add other args,
 
 ## Agentic auto coding integration
 
