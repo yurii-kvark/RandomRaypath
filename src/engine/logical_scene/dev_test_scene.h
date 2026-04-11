@@ -23,7 +23,7 @@ using namespace ray::graphics;
 class dev_test_scene : public base_scene {
 public:
         virtual ray_error init(window& win, pipeline_manager& pipe) override;
-        virtual bool tick(window& win, pipeline_manager& pipe) override;
+        virtual bool tick(const tick_time_info& tick_time, window& win, pipeline_manager& pipe) override;
         virtual void cleanup(window& win, pipeline_manager& pipe) override;
 public:
         logical_crate_sim crate_sim;

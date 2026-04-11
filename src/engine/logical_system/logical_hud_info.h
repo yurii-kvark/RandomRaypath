@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "logical_text_line.h"
+#include "engine/logical_scene/core/i_logical_scene.h"
 #include "graphics/rhi/pipeline/impl/solid_rect_pipeline.h"
 
 namespace ray::graphics {
@@ -17,7 +18,7 @@ public:
         static constexpr double fps_maxmin_delay_sec = 1;
 
         ray_error init(window& win, pipeline_manager& pipe, glm::vec4 text_color);
-        void tick(window& win, pipeline_manager& pipe);
+        void tick(const tick_time_info& tick_time, window& win, pipeline_manager& pipe);
         void destroy(window& win, pipeline_manager& pipe);
 
         void update_camera_transform_info(glm::vec4 new_cam);
@@ -37,8 +38,6 @@ private:
         draw_obj_handle<solid_rect_pipeline> background_fps_obj;
 
         std::optional<glm::vec4> camera_transform;
-        glm::u64 last_time_ns = 0;
-        glm::u64 last_delta_time_ns = 0;
 
 
         double smoothed_fps = 0.0;

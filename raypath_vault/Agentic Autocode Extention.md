@@ -1,5 +1,4 @@
 TODO:
-* check remote control in tickless in head and headless mode
 * fix timings and delta time
 
 tickless-head produce not responding

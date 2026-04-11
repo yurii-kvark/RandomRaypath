@@ -35,8 +35,8 @@ ray_error minecraft_scene::init(window& win, pipeline_manager& pipe) {
         return {};
 }
 
-bool minecraft_scene::tick(window& win, pipeline_manager& pipe) {
-        const bool is_success = base_scene::tick(win, pipe);
+bool minecraft_scene::tick(const tick_time_info& tick_time, window& win, pipeline_manager& pipe) {
+        const bool is_success = base_scene::tick(tick_time, win, pipe);
         if (!is_success) {
                 return is_success;
         }

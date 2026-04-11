@@ -16,7 +16,7 @@ using namespace ray::graphics;
 class base_scene : public i_logical_scene {
 public:
         virtual ray_error init(window& win, pipeline_manager& pipe) override;
-        virtual bool tick(window& win, pipeline_manager& pipe) override;
+        virtual bool tick(const tick_time_info& tick_time, window& win, pipeline_manager& pipe) override;
         virtual void cleanup(window& win, pipeline_manager& pipe) override;
 
         virtual network::remote_answer_frame_set inject_remote_control_pre(window& win, renderer& rend, const network::remote_command_frame_set& this_frame_command) override;

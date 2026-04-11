@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "engine/logical_scene/core/i_logical_scene.h"
 #include "graphics/rhi/pipeline/object_2d_pipeline.h"
 #include "graphics/rhi/pipeline/pipeline.h"
 
@@ -14,7 +15,7 @@ using namespace graphics;
 // handling camera and timing
 class logical_2d_world_view {
 public:
-        void tick(window& win, pipeline_manager& rend);
+        void tick(const tick_time_info& tick_time, window& win, pipeline_manager& rend);
 
         // will be auto cleared
         void register_pipeline(const graphics::pipeline_handle<graphics::object_2d_pipeline<>>& pipe_to_register);

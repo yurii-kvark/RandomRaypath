@@ -230,8 +230,9 @@ ray_error dev_test_scene::init(window& win, pipeline_manager& pipe) {
 }
 
 
-bool dev_test_scene::tick(window& win, pipeline_manager& pipe) {
-        const bool is_success = base_scene::tick(win, pipe);
+bool dev_test_scene::tick(const tick_time_info& tick_time, window& win, pipeline_manager& pipe) {
+        const bool is_success = base_scene::tick(tick_time, win, pipe);
+
         if (!is_success) {
                 return is_success;
         }

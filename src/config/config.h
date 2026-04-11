@@ -42,6 +42,7 @@ struct render_server_config {
 
         struct {
                 bool tickless_mode = false; // -tickless will force it to true
+                float fixed_delta_time_ms = -1;
                 float zoom_speed = 0.1;
                 std::string logical_scene = "dev_test"; // main / dev_test / minecraft
         } scene;

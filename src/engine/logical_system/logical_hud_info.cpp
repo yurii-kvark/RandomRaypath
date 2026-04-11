@@ -64,10 +64,8 @@ ray_error logical_hud_info::init(window& win, pipeline_manager& pipe, glm::vec4 
         return {};
 }
 
-void logical_hud_info::tick(window& win, pipeline_manager& pipe) {
-        glm::u64 curr_time_ns = now_ticks_ns();
-        last_delta_time_ns = curr_time_ns - last_time_ns;
-        last_time_ns = curr_time_ns;
+void logical_hud_info::tick(const tick_time_info& tick_time, window& win, pipeline_manager& pipe) {
+        glm::u64 last_delta_time_ns = tick_time.delta_time_ns;
 
         frame_counter += 1;
 

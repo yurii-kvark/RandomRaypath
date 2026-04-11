@@ -10,11 +10,11 @@ using namespace ray;
 using namespace ray::logical;
 using namespace ray::graphics;
 
-void logical_2d_world_view::tick(window& win, pipeline_manager& pipe) {
+void logical_2d_world_view::tick(const tick_time_info& tick_time, window& win, pipeline_manager& pipe) {
 
         tick_camera_transform(win, pipe);
 
-        const glm::u64 last_time_ns = now_ticks_ns();
+        const glm::u64 last_time_ns = tick_time.global_time_ns;
         const glm::u32 last_time_ms = static_cast<glm::u32>(last_time_ns / 1'000'000);
         bool need_cleanup = false;
 

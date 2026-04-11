@@ -154,13 +154,13 @@ ray_error base_scene::init(window& win, pipeline_manager& pipe) {
         return {};
 }
 
-bool base_scene::tick(window& win, pipeline_manager& pipe) {
-        world_processor.tick(win, pipe);
+bool base_scene::tick(const tick_time_info& tick_time, window& win, pipeline_manager& pipe) {
+        world_processor.tick(tick_time, win, pipe);
 
         const glm::vec4 new_cam_transform = world_processor.get_camera_transform();
         hud_info.update_camera_transform_info(new_cam_transform);
 
-        hud_info.tick(win, pipe);
+        hud_info.tick(tick_time, win, pipe);
         return true;
 }
 

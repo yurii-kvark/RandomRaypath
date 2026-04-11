@@ -8,6 +8,7 @@
 #include "logical_scene/minecraft_scene.h"
 #include "network/remote_control/remote_control.h"
 #include "utils/ray_profile.h"
+#include "utils/ray_time.h"
 
 #include <memory>
 
@@ -154,7 +155,7 @@ struct logical_thread {
         config::render_server_config cfg;
 
 private:
-        static bool tick(window& win, renderer& rend, i_logical_scene& logic, bool pause_mode) {
+        bool tick(window& win, renderer& rend, i_logical_scene& logic, bool pause_mode) const {
                 RAY_PROFILE_FRAME();
 
                 {
@@ -174,7 +175,13 @@ private:
                 if (!pause_mode) {
                         RAY_PROFILE_SCOPE("logic_tick", glm::vec3(0, 1, 0.));
 
-                        const bool logic_success = logic.tick(win, rend.pipe);
+                        float actual_delta_time_ms = 0.16;
+
+                        tick_time_info tick_time;
+                        tick_time.global_time_ns = now_ticks_ns();
+                        tick_time.delta_time_ns = (cfg.scene.fixed_delta_time_ms <= 0 ? actual_delta_time_ms : cfg.scene.fixed_delta_time_ms) * 1'000'000;
+
+                        const bool logic_success = logic.tick(tick_time, win, rend.pipe);
                         if (!logic_success) {
                                 return false;
                         }
