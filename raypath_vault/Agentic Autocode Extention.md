@@ -5,7 +5,8 @@ TODO:
 * expose debug command
 * Disable hud
 	* show_hud_info = false
-* logging in file. include log_id_rand_number.txt as random number in protocol. duplicate in log_last_default.txt.
+	
+* logging in file. default.txt, and command for duplicating log
 
 * visualize cursor. outer rect: outer_rect_color=red. content_color_idle/left/right_pressed= yellow, green, purple. Describe cursor.
 	* show_cursor = false # need for debug, in screen space

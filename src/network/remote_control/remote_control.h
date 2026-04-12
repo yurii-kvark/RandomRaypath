@@ -15,15 +15,17 @@ namespace ray::network {
 
 enum class remote_command_type {
         none = 0,
-        pass_ticks_after = 1, // tick_amount execute after command
-        set_camera_position = 2, // x, y, zoom, in pixel, world
-        set_mouse_position = 3, // in pixel, world
-        set_mouse_left_button = 4, // bool
-        set_mouse_right_button = 5, // bool
-        add_mouse_scroll = 6, // scalar
-        screenshot = 7, // screenshot of the last available frame, not frame of command
-        hud_info = 8,
-        debug_command = 9,
+        pass_ticks_after = 1, // [tick_amount] execute after command
+        set_camera_position = 2, // [x, y, zoom] in pixel, world
+        set_mouse_position = 3, // [x, y] in pixel, world
+        set_mouse_left_button = 4, // [x > 0] bool
+        set_mouse_right_button = 5, // [x > 0] bool
+        add_mouse_scroll = 6, // [scalar]
+        screenshot = 7, // [disable_compress], screenshot of the last available frame, not frame of command
+        hud_info = 8, // nothing
+        debug_command = 9, // [x, y, z, w] args
+        // shutdown = 10, TODO:
+        // do_session_log = 11, TODO: duplicates default.log in session_xxx.log
         count // = 10
 };
 

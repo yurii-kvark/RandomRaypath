@@ -329,7 +329,7 @@ void renderer::request_screenshot() {
 }
 
 
-ray_error renderer::execute_screenshot_save_png(const std::string& filepath) {
+ray_error renderer::execute_screenshot_save_png(const std::string& filepath, bool disable_compress) {
         if (!screenshot_data_ready) {
                 return "screenshot: no captured data (call request_screenshot() before draw_frame)";
         }
@@ -367,6 +367,7 @@ ray_error renderer::execute_screenshot_save_png(const std::string& filepath) {
                 }
         }
 
+        stbi_write_png_compression_level = disable_compress ? 0 : 8;
         const int write_ok = stbi_write_png(filepath.c_str(),
                 static_cast<int>(width), static_cast<int>(height),
                 4, pixels, static_cast<int>(width * 4));

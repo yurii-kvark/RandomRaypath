@@ -112,8 +112,10 @@ network::remote_answer_frame_set base_scene::inject_remote_control_post(window& 
                 case command_type::add_mouse_scroll:
                         break;
                 case command_type::screenshot: {
+                        const bool disable_compress = (int)std::round(cmd.value.x) != 0;
+
                         const std::string screenshot_filepath = std::format("../mcp_logs/screenshot/session_{}/net{}_frame{}.png", answer_set.net_session_tag, answer_set.net_id, hud_info.frame_counter);
-                        const ray_error screenshot_error = rend.execute_screenshot_save_png(screenshot_filepath);
+                        const ray_error screenshot_error = rend.execute_screenshot_save_png(screenshot_filepath, disable_compress);
 
                         if (screenshot_error.has_value()) {
                                 mark_ok(type, std::format("Can't take screenshot, error: {}", *screenshot_error));
