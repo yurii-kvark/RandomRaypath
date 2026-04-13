@@ -50,6 +50,11 @@ Known perf hits:
 * [logical_text_line::update_content] Trigger every glyph to update if text changed, up to 1 ms per frame for hud_info draw.
 * [object_2d_pipeline::update_object_memory] Pipeline iterates through every draw object to check if update need. Not critical for the engine purposes, but will make issues for a bigger quantity of draw objects.
 
+
+## MCP server support (autocode): 
+application has remote_control build-in client, that can be used for agentic testing.
+
+
 ## Launch Flags:
 
 * **-headless** - server working without window launching
