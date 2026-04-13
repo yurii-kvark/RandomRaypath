@@ -1,7 +1,5 @@
 TODO:
 
-* add -config="mcp_controlled/config.toml", do not add other args,
-	
 * logging in file. default.txt, and command for duplicating log
 
 * visualize cursor. outer rect: outer_rect_color=red. content_color_idle/left/right_pressed= yellow, green, purple. Describe cursor.

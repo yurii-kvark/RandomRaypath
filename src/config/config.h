@@ -27,6 +27,7 @@ enum class e_window_mode : glm::i8 {
 struct render_server_config {
         bool enable = true;
         bool graphics_window_enabled = true; // -headless flag will force it to false
+        bool log_in_file = false;
 
         struct {
                 int listening_port = 00000;

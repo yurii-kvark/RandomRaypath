@@ -119,7 +119,10 @@ std::expected<app_config, std::string> app_config::load_file(std::filesystem::pa
                 if (const auto p = toml_rs->get_as<bool>("graphics_window_enabled")) {
                         cnf.server_config.graphics_window_enabled = p->get();
                 }
-
+                if (const auto p = toml_rs->get_as<bool>("log_in_file")) {
+                        cnf.server_config.log_in_file = p->get();
+                }
+                
                 if (const auto* toml_net = toml_rs->get_as<toml::table>("network")) {
                         if (const auto p = toml_net->get_as<int64_t>("listening_port")) {
                                 cnf.server_config.network.listening_port = static_cast<int>(p->get());
@@ -248,6 +251,7 @@ std::string app_config::to_string() const {
         "[render_server]\n"
         "enable = {}\n"
         "graphics_window_enabled = {}\n\n"
+        "log_in_file = {}\n"
         "[render_server.network]\n"
         "listening_port = {}\n"
         "enable_remote_control = {}\n"
@@ -273,6 +277,7 @@ std::string app_config::to_string() const {
         "thread_limit = {}\n",
         server_config.enable ? "true" : "false",
         server_config.graphics_window_enabled ? "true" : "false",
+        server_config.log_in_file ? "true" : "false",
         server_config.network.listening_port,
         server_config.network.enable_remote_control ? "true" : "false",
         server_config.network.server_control_addr,
