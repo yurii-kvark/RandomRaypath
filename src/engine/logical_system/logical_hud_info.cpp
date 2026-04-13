@@ -14,7 +14,7 @@ using namespace ray::logical;
 using namespace ray::graphics;
 
 ray_error logical_hud_info::init(window& win, pipeline_manager& pipe, config::render_server_config cfg) {
-        if (!cfg.scene.enable_hud_info) {
+        if (!cfg.scene.show_hud_info) {
                 return {};
         }
 

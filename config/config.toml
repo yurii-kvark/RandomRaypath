@@ -17,7 +17,7 @@ window_size = [900, 500] # in pixels [pos_x, pos_y] size_x, size_y]
 tickless_mode = false # -tickless will force it to true
 fixed_delta_time_ms = -1.0 # -1 to use actual delta time, or force delta time in logic
 zoom_speed = 0.1
-enable_hud_info = true
+show_hud_info = true
 size_text_hud_info = 10.0
 logical_scene = "minecraft" # main / dev_test / minecraft
 

@@ -155,8 +155,8 @@ std::expected<app_config, std::string> app_config::load(std::filesystem::path ta
                         if (const auto p = toml_scene->get_as<double>("zoom_speed")) {
                                 cnf.server_config.scene.zoom_speed = static_cast<glm::f32>(p->get());
                         }
-                        if (const auto p = toml_scene->get_as<bool>("enable_hud_info")) {
-                                cnf.server_config.scene.enable_hud_info = p->get();
+                        if (const auto p = toml_scene->get_as<bool>("show_hud_info")) {
+                                cnf.server_config.scene.show_hud_info = p->get();
                         }
                         if (const auto p = toml_scene->get_as<double>("size_text_hud_info")) {
                                 cnf.server_config.scene.size_text_hud_info = static_cast<glm::f32>(p->get());
@@ -232,7 +232,7 @@ std::string app_config::to_string() const {
         "[render_server.scene]\n"
         "tickless_mode = {}\n"
         "fixed_delta_time_ms = {}\n"
-        "enable_hud_info = {}\n"
+        "show_hud_info = {}\n"
         "size_text_hud_info = {}\n"
         "zoom_speed = {}\n"
         "logical_scene = \"{}\"\n\n"
@@ -255,7 +255,7 @@ std::string app_config::to_string() const {
         server_config.scene.tickless_mode ? "true" : "false",
         server_config.scene.fixed_delta_time_ms,
         server_config.scene.zoom_speed,
-        server_config.scene.enable_hud_info ? "true" : "false",
+        server_config.scene.show_hud_info ? "true" : "false",
         server_config.scene.size_text_hud_info,
         server_config.scene.logical_scene,
         color_to_toml_arr(server_config.style.color_background),

@@ -1,8 +1,6 @@
 TODO:
 
 * add -config="mcp_controlled/config.toml", do not add other args,
-* Disable hud
-	* show_hud_info = false
 	
 * logging in file. default.txt, and command for duplicating log
 
