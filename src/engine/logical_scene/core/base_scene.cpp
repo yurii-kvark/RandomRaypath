@@ -46,9 +46,15 @@ network::remote_answer_frame_set base_scene::inject_remote_control_pre(
                         break;
                 }
                 case command_type::set_mouse_position: {
-                        win.inject_mouse_position(glm::vec2(cmd.value.x, cmd.value.y));
+                        glm::vec4 cam_vec = world_processor.get_camera_transform();
+                        glm::vec2 viewport_px = (glm::vec2)rend.pipe.get_target_resolution();
+                        glm::vec2 world_mouse = glm::vec2(cmd.value.x, cmd.value.y);
+                        glm::vec2 screen_mouse_pos = (world_mouse - glm::vec2 {cam_vec.x, cam_vec.y}) * cam_vec.z;
+                        glm::vec2 screen_mouse = screen_mouse_pos + viewport_px * 0.5f;
+
+                        win.inject_mouse_position(screen_mouse);
                         const glm::vec2 applyed_pos = win.get_mouse_position();
-                        mark_ok(type, std::format("mouse position injected: in {}:{} - out {}:{}", cmd.value.x, cmd.value.y, applyed_pos.x, applyed_pos.y));
+                        mark_ok(type, std::format("mouse position injected: in world {}:{} - out window {}:{}", cmd.value.x, cmd.value.y, applyed_pos.x, applyed_pos.y));
                         break;
                 }
                 case command_type::set_mouse_left_button: {

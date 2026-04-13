@@ -6,7 +6,7 @@ log_in_file = false
 
 [render_server.network]
 listening_port = 47039 # computational server port TODO
-enable_remote_control = false # -remote_control will force it to true
+enable_remote_control = true # -remote_control will force it to true
 server_control_addr = "127.0.0.1:5039" # address of control server
 
 [render_server.window]
