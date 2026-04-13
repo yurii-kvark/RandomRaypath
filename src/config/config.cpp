@@ -43,7 +43,7 @@ const app_config app_config::default_renderer = {
         },
 };
 
-std::expected<app_config, std::string> app_config::load(std::filesystem::path target) {
+std::expected<app_config, std::string> app_config::load_file(std::filesystem::path target) {
         toml::parse_result toml_result = toml::parse_file(target.string());
 
         if (toml_result.failed()) {
@@ -197,6 +197,33 @@ std::expected<app_config, std::string> app_config::load(std::filesystem::path ta
         }
 
         return cnf;
+}
+
+std::expected<app_config, std::string> app_config::load_file_from_args(int argc, char **argv) {
+        constexpr std::string_view prefix = "-config=";
+        std::string path = "default.toml";
+
+        for (int i = 1; i < argc; ++i) {
+                const std::string_view arg{argv[i]};
+                if (arg.starts_with(prefix)) {
+                        auto value = arg.substr(prefix.size());
+                        // Strip surrounding quotes if present
+                        if (value.size() >= 2 && value.front() == '"' && value.back() == '"') {
+                                value = value.substr(1, value.size() - 2);
+                        }
+                        path = std::string{value};
+                        break;
+                }
+        }
+
+        path = std::format("../config/{}", path);
+
+        std::error_code ec;
+        if (!std::filesystem::exists(path, ec) || ec) {
+                return std::unexpected("Config file not found: " + path + " -> " + ec.message());
+        }
+
+        return load_file(path);
 }
 
 void app_config::upgrade_with_args(int argc, char** argv) {

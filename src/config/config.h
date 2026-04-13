@@ -65,7 +65,8 @@ public:
 
 public:
         static const app_config default_renderer;
-        static std::expected<app_config, std::string> load(std::filesystem::path target);
+        static std::expected<app_config, std::string> load_file(std::filesystem::path target);
+        static std::expected<app_config, std::string> load_file_from_args(int argc, char** argv);
 
         void upgrade_with_args(int argc, char** argv);
 
