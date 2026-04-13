@@ -17,7 +17,7 @@ public:
         static constexpr double fps_smooth_sec = 0.5;
         static constexpr double fps_maxmin_delay_sec = 1;
 
-        ray_error init(window& win, pipeline_manager& pipe, glm::vec4 text_color);
+        ray_error init(window& win, pipeline_manager& pipe, config::render_server_config cfg);
         void tick(const tick_time_info& tick_time, window& win, pipeline_manager& pipe);
         void destroy(window& win, pipeline_manager& pipe);
 

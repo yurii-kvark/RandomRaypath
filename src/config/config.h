@@ -45,6 +45,8 @@ struct render_server_config {
                 float fixed_delta_time_ms = -1;
                 float zoom_speed = 0.1;
                 std::string logical_scene = "dev_test"; // main / dev_test / minecraft
+                bool enable_hud_info = false;
+                float size_text_hud_info = 10.0;
         } scene;
 
         visual_style_config style;

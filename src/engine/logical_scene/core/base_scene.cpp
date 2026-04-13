@@ -142,7 +142,7 @@ network::remote_answer_frame_set base_scene::inject_remote_control_post(window& 
 
 
 ray_error base_scene::init(window& win, pipeline_manager& pipe) {
-        ray_error hud_error = hud_info.init(win, pipe, server_config.style.color_hud_info);
+        ray_error hud_error = hud_info.init(win, pipe, server_config);
         if (hud_error) {
                 return hud_error;
         }
