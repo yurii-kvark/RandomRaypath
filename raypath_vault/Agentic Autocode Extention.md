@@ -1,22 +1,3 @@
-TODO:
-
-* visualize cursor. outer rect: outer_rect_color=red. content_color_idle/left/right_pressed= yellow, green, purple. Describe cursor.
-	* show_cursor = false # need for debug, in screen space
-	* cursor_size_px = 10, 10
-	* cursor_border_size_px = 2
-	* cursor_border_color = red #
-	* cursor_idle/left/right/both_pressed_color = red/green/yellow/purple
-
-use cpp-generalist
-create logical_system of logical_cursor_visualize.
-add logical_cursor_visualize into base scene and setup it.
-
-in configs render_server add: scene.show_cursor = bool, scene.cursor_size_px = (float, float), scene.cursor_border_size_px = float, visual_style.cursor_border_color = (color), visual_style.cursor_idle/left/right/both_pressed_color.
-
-cursor is 2 overlayed rectangle. outer is border background is constant visual_style.cursor_border_color. inside color is dependent from mouse button state.
-
-
-
 
 ## Agentic auto coding integration
 
@@ -61,10 +42,3 @@ Project compilation, run and test is performing by MPC server.
 * Creating screenshots with entry debug description
 * add window input
 * Close application
-
-#### New launch flags
-* **headless** - client working without window launching
-* **remote_control** - allows MCP to control the client, do input, screenshot, call tick  etc.
-* **tickless** - allowed to do tick only by external command.
-* **tickless_delta_time** - in tickless mode will not include waiting for the command.
-* **static_delta_time** - use external artificial delta time instead of real one.
