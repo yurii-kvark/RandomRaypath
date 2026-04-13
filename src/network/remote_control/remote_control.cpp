@@ -89,6 +89,8 @@ static constexpr std::array<std::pair<remote_command_type, const char*>, static_
         { remote_command_type::screenshot,           "screenshot" },
         { remote_command_type::hud_info,             "hud_info" },
         { remote_command_type::debug_command,        "debug_command" },
+        { remote_command_type::shutdown,        "shutdown" },
+        { remote_command_type::session_log_rename,        "session_log_rename" },
 }};
 
 
