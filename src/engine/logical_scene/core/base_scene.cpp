@@ -153,6 +153,11 @@ ray_error base_scene::init(window& win, pipeline_manager& pipe) {
                 return hud_error;
         }
 
+        ray_error cursor_error = cursor_system.init(win, pipe, server_config);
+        if (cursor_error) {
+                return cursor_error;
+        }
+
         ray_error grid_error = grid_system.init(win, pipe, server_config.style.color_grid);
         if (grid_error) {
                 return grid_error;
@@ -174,12 +179,14 @@ bool base_scene::tick(const tick_time_info& tick_time, window& win, pipeline_man
         hud_info.update_camera_transform_info(new_cam_transform);
 
         hud_info.tick(tick_time, win, pipe);
+        cursor_system.tick(win, pipe);
         return true;
 }
 
 
 
 void base_scene::cleanup(window& win, pipeline_manager& pipe) {
+        cursor_system.destroy(win, pipe);
         hud_info.destroy(win, pipe);
         grid_system.destroy(win, pipe);
 }

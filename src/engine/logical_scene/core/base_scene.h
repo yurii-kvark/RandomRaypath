@@ -3,6 +3,7 @@
 #include "engine/logical_system/logical_2d_world_view.h"
 #include "engine/logical_system/logical_grid.h"
 #include "engine/logical_system/logical_hud_info.h"
+#include "engine/logical_system/logical_cursor_visualize.h"
 
 namespace ray::graphics {
 class window;
@@ -26,6 +27,7 @@ protected:
         logical_2d_world_view world_processor;
         logical_hud_info hud_info;
         logical_grid grid_system;
+        logical_cursor_visualize cursor_system;
 
 private:
         bool shutdown_command = false;

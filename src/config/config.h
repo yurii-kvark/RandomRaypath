@@ -13,6 +13,11 @@ struct visual_style_config {
         glm::vec4 color_background = glm::vec4(0);
         glm::vec4 color_hud_info = glm::vec4(0);
         glm::vec4 color_grid = glm::vec4(0);
+        glm::vec4 cursor_border_color = glm::vec4(0);
+        glm::vec4 cursor_idle_color = glm::vec4(0);
+        glm::vec4 cursor_left_pressed_color = glm::vec4(0);
+        glm::vec4 cursor_right_pressed_color = glm::vec4(0);
+        glm::vec4 cursor_both_pressed_color = glm::vec4(0);
 
         static const visual_style_config default_style;
 };
@@ -48,6 +53,9 @@ struct render_server_config {
                 std::string logical_scene = "dev_test"; // main / dev_test / minecraft
                 bool show_hud_info = true;
                 float size_text_hud_info = 10.0;
+                bool show_cursor = true;
+                glm::i32vec2 cursor_size_px = {14.f, 14.f};
+                float cursor_border_size_px = 2.f;
         } scene;
 
         visual_style_config style;

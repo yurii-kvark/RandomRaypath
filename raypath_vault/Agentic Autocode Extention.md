@@ -7,6 +7,16 @@ TODO:
 	* cursor_border_color = red #
 	* cursor_idle/left/right/both_pressed_color = red/green/yellow/purple
 
+use cpp-generalist
+create logical_system of logical_cursor_visualize.
+add logical_cursor_visualize into base scene and setup it.
+
+in configs render_server add: scene.show_cursor = bool, scene.cursor_size_px = (float, float), scene.cursor_border_size_px = float, visual_style.cursor_border_color = (color), visual_style.cursor_idle/left/right/both_pressed_color.
+
+cursor is 2 overlayed rectangle. outer is border background is constant visual_style.cursor_border_color. inside color is dependent from mouse button state.
+
+
+
 
 ## Agentic auto coding integration
 

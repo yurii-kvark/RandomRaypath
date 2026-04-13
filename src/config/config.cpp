@@ -12,7 +12,12 @@ using namespace ray::config;
 const visual_style_config visual_style_config::default_style = {
         .color_background = glm::vec4(0.005f, 0.005f, 0.005f, 1.f),
         .color_hud_info = glm::vec4(0.f, 1.f, 0.f, 1.f),
-        .color_grid = glm::vec4(0.03f, 0.02f, 0.04f, 1.f)
+        .color_grid = glm::vec4(0.03f, 0.02f, 0.04f, 1.f),
+        .cursor_border_color = glm::vec4(0.8f, 0.8f, 0.8f, 1.f),
+        .cursor_idle_color = glm::vec4(1.f, 1.f, 1.f, 0.6f),
+        .cursor_left_pressed_color = glm::vec4(0.3f, 0.7f, 1.f, 0.9f),
+        .cursor_right_pressed_color = glm::vec4(1.f, 0.4f, 0.2f, 0.9f),
+        .cursor_both_pressed_color = glm::vec4(0.8f, 0.3f, 1.f, 0.9f)
 };
 
 const app_config app_config::default_renderer = {
@@ -170,8 +175,15 @@ std::expected<app_config, std::string> app_config::load_file(std::filesystem::pa
                                 return std::unexpected("Can't parse render_server.scene.logical_scene");
                         }
 
-                        bool enable_hud_info = false;
-                        float size_text_hud_info = 10.0;
+                        if (const auto p = toml_scene->get_as<bool>("show_cursor")) {
+                                cnf.server_config.scene.show_cursor = p->get();
+                        }
+                        if (auto err = read_vec2i(toml_scene, "render_server.scene", "cursor_size_px", cnf.server_config.scene.cursor_size_px)) {
+                                return std::unexpected(*err);
+                        }
+                        if (const auto p = toml_scene->get_as<double>("cursor_border_size_px")) {
+                                cnf.server_config.scene.cursor_border_size_px = static_cast<glm::f32>(p->get());
+                        }
                 }
 
                 if (const auto* toml_style = toml_rs->get_as<toml::table>("visual_style")) {
@@ -182,6 +194,21 @@ std::expected<app_config, std::string> app_config::load_file(std::filesystem::pa
                                 return std::unexpected(*err);
                         }
                         if (auto err = read_color(toml_style, "render_server.visual_style", "color_grid", cnf.server_config.style.color_grid)) {
+                                return std::unexpected(*err);
+                        }
+                        if (auto err = read_color(toml_style, "render_server.visual_style", "cursor_border_color", cnf.server_config.style.cursor_border_color)) {
+                                return std::unexpected(*err);
+                        }
+                        if (auto err = read_color(toml_style, "render_server.visual_style", "cursor_idle_color", cnf.server_config.style.cursor_idle_color)) {
+                                return std::unexpected(*err);
+                        }
+                        if (auto err = read_color(toml_style, "render_server.visual_style", "cursor_left_pressed_color", cnf.server_config.style.cursor_left_pressed_color)) {
+                                return std::unexpected(*err);
+                        }
+                        if (auto err = read_color(toml_style, "render_server.visual_style", "cursor_right_pressed_color", cnf.server_config.style.cursor_right_pressed_color)) {
+                                return std::unexpected(*err);
+                        }
+                        if (auto err = read_color(toml_style, "render_server.visual_style", "cursor_both_pressed_color", cnf.server_config.style.cursor_both_pressed_color)) {
                                 return std::unexpected(*err);
                         }
                 }
@@ -266,11 +293,19 @@ std::string app_config::to_string() const {
         "show_hud_info = {}\n"
         "size_text_hud_info = {}\n"
         "zoom_speed = {}\n"
-        "logical_scene = \"{}\"\n\n"
+        "logical_scene = \"{}\"\n"
+        "show_cursor = {}\n"
+        "cursor_size_px = [{}, {}]\n"
+        "cursor_border_size_px = {}\n\n"
         "[render_server.visual_style]\n"
         "color_background = {}\n"
         "color_hud_info = {}\n"
-        "color_grid = {}\n\n"
+        "color_grid = {}\n"
+        "cursor_border_color = {}\n"
+        "cursor_idle_color = {}\n"
+        "cursor_left_pressed_color = {}\n"
+        "cursor_right_pressed_color = {}\n"
+        "cursor_both_pressed_color = {}\n\n"
         "[compute_client]\n"
         "enable = {}\n"
         "server_addr = \"{}\"\n"
@@ -290,9 +325,17 @@ std::string app_config::to_string() const {
         server_config.scene.show_hud_info ? "true" : "false",
         server_config.scene.size_text_hud_info,
         server_config.scene.logical_scene,
+        server_config.scene.show_cursor ? "true" : "false",
+        server_config.scene.cursor_size_px.x, server_config.scene.cursor_size_px.y,
+        server_config.scene.cursor_border_size_px,
         color_to_toml_arr(server_config.style.color_background),
         color_to_toml_arr(server_config.style.color_hud_info),
         color_to_toml_arr(server_config.style.color_grid),
+        color_to_toml_arr(server_config.style.cursor_border_color),
+        color_to_toml_arr(server_config.style.cursor_idle_color),
+        color_to_toml_arr(server_config.style.cursor_left_pressed_color),
+        color_to_toml_arr(server_config.style.cursor_right_pressed_color),
+        color_to_toml_arr(server_config.style.cursor_both_pressed_color),
         compute_config.enable ? "true" : "false",
         compute_config.server_addr,
         compute_config.thread_limit);
