@@ -1,8 +1,6 @@
 TODO:
 
 * add -config="mcp_controlled/config.toml", do not add other args,
-* add shutdown command
-* expose debug command
 * Disable hud
 	* show_hud_info = false
 	

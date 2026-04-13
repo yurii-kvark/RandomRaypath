@@ -23,7 +23,7 @@ enum class remote_command_type {
         add_mouse_scroll = 6, // [scalar]
         screenshot = 7, // [disable_compress > 0], screenshot of the last available frame, not frame of command
         hud_info = 8, // nothing
-        debug_command = 9, // [x, y, z, w] args
+        debug_command = 9, // [x, y, z, w] args, could be some debug code, just log info log by default
         shutdown = 10,
         // do_session_log = 11, TODO: duplicates default.log in session_xxx.log
         count // = 10

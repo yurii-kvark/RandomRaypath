@@ -78,6 +78,10 @@ network::remote_answer_frame_set base_scene::inject_remote_control_pre(
                         mark_ok(type, std::format("shutdown received."));
                         ray_log(e_log_type::info, "remote_control shutdown command received.");
                         break;
+                case command_type::debug_command:
+                        // cmd.value, could be some debug code
+                        ray_log(e_log_type::info, "remote_control debug command received: x = {}, y = {}, z = {}, w = {}.", cmd.value.x, cmd.value.y, cmd.value.z, cmd.value.w);
+                        break;
                 default:
                         break;
                 }
@@ -106,12 +110,6 @@ network::remote_answer_frame_set base_scene::inject_remote_control_post(window& 
 
                 const command_type type = static_cast<command_type>(i);
                 switch (type) {
-                case command_type::set_camera_position:  // process in pre
-                case command_type::set_mouse_position:
-                case command_type::set_mouse_left_button:
-                case command_type::set_mouse_right_button:
-                case command_type::add_mouse_scroll:
-                        break;
                 case command_type::screenshot: {
                         const bool disable_compress = cmd.value.x > 0.1;
 
@@ -130,7 +128,9 @@ network::remote_answer_frame_set base_scene::inject_remote_control_post(window& 
                         mark_ok(type, std::format("this tick full hud_info: {}", last_full_text));
                         break;
                 }
-                case command_type::pass_ticks_after: // handles on tick level
+                case command_type::debug_command:
+                        // cmd.value, could be some debug code
+                        break;
                 case command_type::count:
                 default:
                         break;
