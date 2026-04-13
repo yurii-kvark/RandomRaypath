@@ -52,14 +52,14 @@ network::remote_answer_frame_set base_scene::inject_remote_control_pre(
                         break;
                 }
                 case command_type::set_mouse_left_button: {
-                        const bool input_left = (int)std::round(cmd.value.x) != 0;
+                        const bool input_left = cmd.value.x > 0.1;
                         win.inject_mouse_button_left(input_left);
                         const bool output_left = win.get_mouse_button_left();
                         mark_ok(type, std::format("left mouse button injected: in {}, out {}", input_left, output_left));
                         break;
                 }
                 case command_type::set_mouse_right_button: {
-                        const bool input_right = (int)std::round(cmd.value.x) != 0;
+                        const bool input_right = cmd.value.x > 0.1;
                         win.inject_mouse_button_right(input_right);
                         const bool output_right = win.get_mouse_button_left();
                         mark_ok(type, std::format("right mouse button injected: in {}, out {}", input_right, output_right));
@@ -73,10 +73,11 @@ network::remote_answer_frame_set base_scene::inject_remote_control_pre(
                 case command_type::screenshot:
                         rend.request_screenshot();
                         break;
-                case command_type::hud_info:
-
-                case command_type::pass_ticks_after: // handles on tick level
-                case command_type::count:
+                case command_type::shutdown:
+                        shutdown_command = true;
+                        mark_ok(type, std::format("shutdown received."));
+                        ray_log(e_log_type::info, "remote_control shutdown command received.");
+                        break;
                 default:
                         break;
                 }
@@ -112,7 +113,7 @@ network::remote_answer_frame_set base_scene::inject_remote_control_post(window& 
                 case command_type::add_mouse_scroll:
                         break;
                 case command_type::screenshot: {
-                        const bool disable_compress = (int)std::round(cmd.value.x) != 0;
+                        const bool disable_compress = cmd.value.x > 0.1;
 
                         const std::string screenshot_filepath = std::format("../mcp_logs/screenshot/session_{}/net{}_frame{}.png", answer_set.net_session_tag, answer_set.net_id, hud_info.frame_counter);
                         const ray_error screenshot_error = rend.execute_screenshot_save_png(screenshot_filepath, disable_compress);
@@ -157,6 +158,10 @@ ray_error base_scene::init(window& win, pipeline_manager& pipe) {
 }
 
 bool base_scene::tick(const tick_time_info& tick_time, window& win, pipeline_manager& pipe) {
+        if (shutdown_command) {
+                return false;
+        }
+
         world_processor.tick(tick_time, win, pipe);
 
         const glm::vec4 new_cam_transform = world_processor.get_camera_transform();

@@ -77,7 +77,9 @@ struct logical_thread {
                 std::optional<network::remote_command_frame_set> this_frame_command = {};
                 std::optional<network::remote_answer_frame_set> answer_set_pre = {};
 
-                while (!stop_t.stop_requested()) {
+                bool tick_running = true;
+
+                while (!stop_t.stop_requested() && tick_running) {
                         bool pause_mode = cfg.scene.tickless_mode; // tickless mode will tick only by remote_client command
 
                         if (!!remote_client) {
@@ -120,9 +122,7 @@ struct logical_thread {
                                 }
                         }
 
-                        if (!tick(win, rend, *logic, pause_mode)) {
-                                break;
-                        }
+                        tick_running = tick(win, rend, *logic, pause_mode);
 
                         if (pause_mode) {
                                 continue;

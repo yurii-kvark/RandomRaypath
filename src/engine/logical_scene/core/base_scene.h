@@ -26,6 +26,9 @@ protected:
         logical_2d_world_view world_processor;
         logical_hud_info hud_info;
         logical_grid grid_system;
+
+private:
+        bool shutdown_command = false;
 };
 
 };

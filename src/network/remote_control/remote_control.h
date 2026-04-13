@@ -21,10 +21,10 @@ enum class remote_command_type {
         set_mouse_left_button = 4, // [x > 0] bool
         set_mouse_right_button = 5, // [x > 0] bool
         add_mouse_scroll = 6, // [scalar]
-        screenshot = 7, // [disable_compress], screenshot of the last available frame, not frame of command
+        screenshot = 7, // [disable_compress > 0], screenshot of the last available frame, not frame of command
         hud_info = 8, // nothing
         debug_command = 9, // [x, y, z, w] args
-        // shutdown = 10, TODO:
+        shutdown = 10,
         // do_session_log = 11, TODO: duplicates default.log in session_xxx.log
         count // = 10
 };
