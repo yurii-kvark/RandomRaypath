@@ -18,7 +18,8 @@ COMMAND_NAMES = {
     7: "screenshot",
     8: "hud_info",
     9: "debug_command",
-    10: "shutdown"
+    10: "shutdown",
+    11: "session_log_rename"
 }
 
 LAST_SESSION_TAG = random.randint(10, 10000) * 10000

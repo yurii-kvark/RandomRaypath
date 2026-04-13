@@ -16,15 +16,23 @@ namespace ray {
         struct log_file_state {
                 std::atomic<bool> enabled{false};
                 std::mutex mtx;
+                std::string log_file{"../mcp_logs/default.log"};
         };
         inline log_file_state g_log_file_state;
 
         inline void ray_log_init(bool enable) {
+                std::lock_guard lock{g_log_file_state.mtx};
                 g_log_file_state.enabled.store(enable, std::memory_order_relaxed);
         }
 
         inline void ray_log_rename(std::string_view new_log_file) { // session_0012.log
-                // implement
+                std::lock_guard lock{g_log_file_state.mtx};
+                const std::string new_path = "../mcp_logs/" + std::string(new_log_file);
+                if (g_log_file_state.log_file != new_path) {
+                        std::error_code ec;
+                        std::filesystem::rename(g_log_file_state.log_file, new_path, ec);
+                        g_log_file_state.log_file = new_path;
+                }
         }
 
         template<typename... Args>
@@ -38,7 +46,7 @@ namespace ray {
                         std::lock_guard lock{g_log_file_state.mtx};
                         std::error_code ec;
                         std::filesystem::create_directories("../mcp_logs/", ec);
-                        std::ofstream ofs("../mcp_logs/default.log", std::ios::app);
+                        std::ofstream ofs(g_log_file_state.log_file, std::ios::app);
 
                         if (type == e_log_type::fatal) {
                                 ofs << naming[static_cast<uint8_t>(type)] << message << "\n stacktrace:" << std::stacktrace::current() << '\n';
