@@ -17,6 +17,7 @@ int main(int argc, char** argv) {
         }
 
         config_res->upgrade_with_args(argc, argv);
+        ray::ray_log_init(config_res->server_config.log_in_file);
 
         ray::ray_log(ray::e_log_type::info, "Composed config: \n{}\n------ end cfg -------\n", *config_res);
 

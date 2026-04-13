@@ -122,7 +122,7 @@ std::expected<app_config, std::string> app_config::load_file(std::filesystem::pa
                 if (const auto p = toml_rs->get_as<bool>("log_in_file")) {
                         cnf.server_config.log_in_file = p->get();
                 }
-                
+
                 if (const auto* toml_net = toml_rs->get_as<toml::table>("network")) {
                         if (const auto p = toml_net->get_as<int64_t>("listening_port")) {
                                 cnf.server_config.network.listening_port = static_cast<int>(p->get());

@@ -25,8 +25,8 @@ enum class remote_command_type {
         hud_info = 8, // nothing
         debug_command = 9, // [x, y, z, w] args, could be some debug code, just log info log by default
         shutdown = 10,
-        // do_session_log = 11, TODO: duplicates default.log in session_xxx.log
-        count // = 10
+        session_log_rename = 11, // rename default.log to session_3129_net120.log
+        count
 };
 
 struct remote_command_entry {
