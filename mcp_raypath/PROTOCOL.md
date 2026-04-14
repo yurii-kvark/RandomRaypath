@@ -35,16 +35,20 @@ Order is by tcp income.
 
 ## Command Name Index
 
-| Index | Name                    |
-|-------|-------------------------|
-| 0     | none                    |
-| 1     | pass_ticks_after        |
-| 2     | set_camera_position     |
-| 3     | set_mouse_position      |
-| 4     | set_mouse_left_button   |
-| 5     | set_mouse_right_button  |
-| 6     | add_mouse_scroll        |
-| 7     | screenshot              |
-| 8     | hud_info                |
-| 9     | debug_command           |
-| 10    | shutdown                |
+actual at: project_root/scr/network/remote_control.h in remote_command_type enum. code copy:
+
+    enum class remote_command_type {
+        none = 0,  
+        pass_ticks_after = 1, // [tick_amount] execute after command
+        set_camera_position = 2, // [x, y, zoom] in pixel, world
+        set_mouse_position = 3, // [x, y] in pixel, world
+        set_mouse_left_button = 4, // [x > 0] bool
+        set_mouse_right_button = 5, // [x > 0] bool
+        add_mouse_scroll = 6, // [scalar]
+        screenshot = 7, // [disable_compress > 0], screenshot of the last available frame, not frame of command
+        hud_info = 8, // nothing
+        debug_command = 9, // [x, y, z, w] args, could be some debug code, just log info log by default
+        shutdown = 10,
+        session_log_rename = 11, // rename default.log to session_3129_net120.log
+        count
+    };
