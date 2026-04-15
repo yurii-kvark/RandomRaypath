@@ -6,8 +6,22 @@ import logging
 import sys
 from pathlib import Path
 
+from typing import Literal, TypedDict
+
 from fastmcp import FastMCP
 from fastmcp.utilities.types import Image
+
+
+class BuildResult(TypedDict):
+    message: str
+    success: bool
+
+
+class FcommandResponse(TypedDict):
+    net_id: int
+    status: Literal["ok", "timeout", "disconnected"]
+    answer: str   # JSON payload; empty string on non-ok status
+    has_more: bool
 
 log_dir = Path("logs")
 log_dir.mkdir(exist_ok=True)
@@ -44,7 +58,8 @@ class RaypathMCPServer:
 
         Basic usage is:
         --
-        (message_launch, success_launch) = blocking_build_and_launch_application()
+        launch: BuildResult = blocking_build_and_launch_application()
+        # launch["success"], launch["message"]
 
         fcommand_A()
         fcommand_B()
@@ -59,13 +74,14 @@ class RaypathMCPServer:
         fcommand_K()
         netId_3 = fcommand_commit_set()
 
-        (res_netId_1, responce_1, next_existed_1) = blocking_wait_next_fcommand_response();
-        (res_netId_2, responce_2, next_existed_2) = blocking_wait_next_fcommand_response();
-        (res_netId_3, responce_3, next_existed_3) = blocking_wait_next_fcommand_response(); # this will fully complete the last frame_command_set before shutdown
+        r1: FcommandResponse = blocking_wait_next_fcommand_response()
+        r2: FcommandResponse = blocking_wait_next_fcommand_response()
+        r3: FcommandResponse = blocking_wait_next_fcommand_response()  # completes last set before shutdown
 
-        # next_existed_1 == true, next_existed_2 == true, next_existed_3 == false, so you can iterate until commits out
-        # res_netId_1 == netId_1, res_netId_2 == netId_2, res_netId_3 == netId_3, so you can confirm a response source
-        # message_launch to use if anything with the build
+        # r1["has_more"] == True, r2["has_more"] == True, r3["has_more"] == False  → iterate until has_more is False
+        # r1["net_id"] == netId_1, ...                                              → confirm response source
+        # r1["status"] == "ok" | "timeout" | "disconnected"                        → abort on non-ok
+        # launch["message"] to use if anything with the build
         # get_session_id() to understand if application is still alive
 
         blocking_shutdown_application()
@@ -159,27 +175,28 @@ class RaypathMCPServer:
     async def run(self) -> None:
         await self.mcp.run_stdio_async()
 
-    def blocking_build_application(self, timeout_sec: int = 20) -> tuple[str, bool]:
+    async def blocking_build_application(self, timeout_sec: int = 20) -> BuildResult:
         """ Usual build.
-            Return: (message, success) """
+            Return: BuildResult with fields: message, success """
+        # return await asyncio.to_thread(_impl, timeout_sec)
         pass
 
-    def blocking_full_rebuild_application(self, timeout_sec: int = 20) -> tuple[str, bool]:
+    async def blocking_full_rebuild_application(self, timeout_sec: int = 20) -> BuildResult:
         """ Full clean and rebuild.
-            Return: (message, success) """
+            Return: BuildResult with fields: message, success """
+        # return await asyncio.to_thread(_impl, timeout_sec)
         pass
 
-    def blocking_build_and_launch_application(self, timeout_sec: int = 20) -> tuple[str, bool]:
+    async def blocking_build_and_launch_application(self, timeout_sec: int = 20) -> BuildResult:
         """ The usual way of launch.
             Will be shutdown automatically if launch_application, or build_application called.
             Will be built automatically.
             session_id of the application. Will use it for logs and screenshot.
-            get_session_id is now valid
-            Return: (message, success)
-            """
+            get_session_id is now valid.
+            Return: BuildResult with fields: message, success """
         pass
 
-    def blocking_shutdown_application(self, timeout_sec: int = 10) -> None:
+    async def blocking_shutdown_application(self, timeout_sec: int = 10) -> None:
         """ Shutdown application.
             Shutdown is queued as a frame command — it executes after all previously
             committed frame_command_sets complete. Blocks until the app exits or
@@ -187,6 +204,7 @@ class RaypathMCPServer:
 
         # _fcommand_shutdown()
         # fcommand_commit_set()
+        # await asyncio.to_thread(_impl, timeout_sec)
 
         pass
 
@@ -199,10 +217,15 @@ class RaypathMCPServer:
         """ Returns True if the application process is currently running and connected. """
         pass
 
-    def blocking_wait_next_fcommand_response(self, timeout_sec: int = 10) -> tuple[int, str, bool]:
-        """ Will block and wait until frame_command_set_net_id is received.
-            return: (netId, JSON frame answer, is remaining waiting commands (need to launch get response one more time))
-            Call once per fcommand_commit_set, in commit order. """
+    async def blocking_wait_next_fcommand_response(self, timeout_sec: int = 10) -> FcommandResponse:
+        """ Wait for the next committed frame_command_set to be processed and return its answer.
+            Call once per fcommand_commit_set, in commit order.
+            Return: FcommandResponse with fields:
+              net_id    — matches the netId returned by fcommand_commit_set
+              status    — "ok" | "timeout" | "disconnected"
+              answer    — JSON payload from the app; empty string on non-ok status
+              has_more  — True if further committed sets are still pending; iterate until False """
+        # return await asyncio.to_thread(_impl, timeout_sec)
         pass
 
     def fcommand_commit_set(self) -> int:
