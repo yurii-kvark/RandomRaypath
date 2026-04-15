@@ -47,8 +47,10 @@ class RaypathMCPServer:
 
         Interacting with the server should be done exclusively.
 
+        frame_command/fcommand is entry of frame_command_set map. Each command has a single slot.
         session_id - unique id of the launched control application
         net_id - unique id of the frame_command_set
+
         Application build and launching, then it must be shut down manually.
 
         Remote_control is done by frame_command_set queue.
@@ -110,6 +112,8 @@ class RaypathMCPServer:
         self.mcp.tool(tags={"app"},                        annotations=_ro)(self.is_application_running)
         self.mcp.tool(tags={"remote_control", "blocking"}, annotations=_rw)(self.blocking_wait_next_fcommand_response)
         self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_commit_set)
+        self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_discard_frame_set)
+        self.mcp.tool(tags={"remote_control"},             annotations=_ro)(self.fcommand_pending_frame_set_count)
         self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_pass_ticks_after)
         self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_set_camera_position)
         self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_set_mouse_position)
@@ -124,7 +128,7 @@ class RaypathMCPServer:
     def _register_resources(self) -> None:
 
         @self.mcp.resource(
-            uri="app://mcp_logs/screenshot/session_{session_id}/{net_id}_frame_x.png",
+            uri="app://mcp_logs/screenshot/session_{session_id}/{net_id}_frame_any.png",
             tags={"app"},
             mime_type="image/png", # mime types does not work in inspector
             annotations={
@@ -136,7 +140,7 @@ class RaypathMCPServer:
             pass
 
         @self.mcp.resource(
-            uri="app://mcp_logs/session_{session_id}_net_x.log-last{last_lines}",
+            uri="app://mcp_logs/session_{session_id}_net_any.log-last{last_lines}",
             tags={"app"},
             mime_type="text/plain",
             annotations={
@@ -232,6 +236,17 @@ class RaypathMCPServer:
         """ After this command the frame_command_set will be sent and executed in a single frame request.
             Next frame_command_set will be executed in queue.
             return: netId of command frame"""
+        pass
+
+    def fcommand_discard_frame_set(self) -> None:
+        """ Drop all currently staged fcommands without sending.
+            Use to recover from a mistake before calling fcommand_commit_set. """
+        pass
+
+    def fcommand_pending_frame_set_count(self) -> int:
+        """ Returns the number of committed frame_command_sets that have not yet been
+            harvested via blocking_wait_next_fcommand_response.
+            Use to verify queue depth before committing more sets or before shutdown. """
         pass
 
     def fcommand_pass_ticks_after(self, ticks_execute_after: int) -> None:
