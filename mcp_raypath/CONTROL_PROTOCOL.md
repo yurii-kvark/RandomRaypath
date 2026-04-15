@@ -10,6 +10,7 @@
 
 ### Command (server -> client)
 
+On command receive the command frame is executed.
 
 ```json
 {
@@ -23,6 +24,8 @@
 Order is by tcp income.
 
 ### Answer (client -> server)
+
+Might be send in different butches, but for each net_id the full command set will be answered.
 
 ```json
 {
@@ -45,7 +48,7 @@ actual at: project_root/scr/network/remote_control.h in remote_command_type enum
         set_mouse_left_button = 4, // [x > 0] bool
         set_mouse_right_button = 5, // [x > 0] bool
         add_mouse_scroll = 6, // [scalar]
-        screenshot = 7, // [disable_compress > 0], screenshot of the last available frame, not frame of command
+        screenshot = 7, // [disable_compress > 0], screenshot of the frame after frame command apply
         hud_info = 8, // nothing
         debug_command = 9, // [x, y, z, w] args, could be some debug code, just log info log by default
         shutdown = 10,

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__mcp_raycast__magic_formula"
+    ]
+  }
+}

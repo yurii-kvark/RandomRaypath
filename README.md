@@ -50,13 +50,38 @@ Known perf hits:
 * [logical_text_line::update_content] Trigger every glyph to update if text changed, up to 1 ms per frame for hud_info draw.
 * [object_2d_pipeline::update_object_memory] Pipeline iterates through every draw object to check if update need. Not critical for the engine purposes, but will make issues for a bigger quantity of draw objects.
 
-
-## MCP server support (autocode): 
-application has remote_control build-in client, that can be used for agentic testing.
-
-
 ## Launch Flags:
+
+Use -config="default.toml" to define the launch mode.
 
 * **-headless** - server working without window launching
 * **-remote_control** - enable TCP client, that connecting to remote control server over custom JSON protocol. Server target: client_renderer.remote_control_addr in config. remote_control enables to control the client over JSON TCP, for executing remote input, screenshot, call tick etc.
 * **-tickless** - allowed to do tick only by external command.
+
+## MCP, remote_control and Autocoding:
+
+### MCP Python server:
+It allows ai-agents to build, launch and control remotely for autocoding purpose with automatic feedback loop.
+mcp_raypath folder is a python subproject that orchestrate the application and granting api for the agents.
+
+    # to run mcp inspector: (inside mcp_raycast)
+    # npx @modelcontextprotocol/inspector python main.py
+    # 
+    # to launch claude mcp:
+    # claude mcp add mcp_raycast --transport stdio -- python {project_root}\\mcp_raypath\\main.py
+
+### Remote Control integration
+MCP server launches the application under confg/mcp_control.toml config that includes:
+* headless
+* remote_control
+* tickless_mode
+* fixed_tick (logical 16 ms)
+* visible_cursor
+* disabled hud_info
+
+With remote_control enabled the application launches standalone TCP client and trying to connect by server_control_addr.
+It communicates with the python server by JSON protocol, described in mcp_raypath/CONTROL_PROTOCOL.md.
+
+### Autocode Loop
+
+In this setup the agent after the code changes, able to build, control in runtime: add input, make screenshot, and ensure the task is practically done. 
