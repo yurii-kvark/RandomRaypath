@@ -8,7 +8,6 @@ from pathlib import Path
 
 from fastmcp import FastMCP
 from fastmcp.utilities.types import Image
-from fastmcp.tools import tool
 
 log_dir = Path("logs")
 log_dir.mkdir(exist_ok=True)
@@ -35,7 +34,7 @@ class RaypathMCPServer:
         Interacting with the server should be done exclusively.
 
         session_id - unique id of the launched control application
-        nte_id - unique id of the frame_command_set_set
+        net_id - unique id of the frame_command_set
         Application build and launching, then it must be shut down manually.
 
         Remote_control is done by frame_command_set queue.
@@ -50,19 +49,19 @@ class RaypathMCPServer:
         fcommand_A()
         fcommand_B()
         fcommand_C()
-        netId_1 = fcommand_commit_frame()
+        netId_1 = fcommand_commit_set()
         fcommand_C()
         fcommand_D()
         fcommand_A()
-        netId_2 = fcommand_commit_frame()
+        netId_2 = fcommand_commit_set()
         fcommand_M()
         fcommand_L()
         fcommand_K()
-        netId_3 = fcommand_commit_frame()
+        netId_3 = fcommand_commit_set()
 
-        (res_netId_1, responce_1, next_existed_1) = blocking_wait_next_frame_command_set_response();
-        (res_netId_2, responce_2, next_existed_2) = blocking_wait_next_frame_command_set_response();
-        (res_netId_3, responce_3, next_existed_3) = blocking_wait_next_frame_command_set_response(); # this will fully complete the last frame_command_set before shutdown
+        (res_netId_1, responce_1, next_existed_1) = blocking_wait_next_fcommand_response();
+        (res_netId_2, responce_2, next_existed_2) = blocking_wait_next_fcommand_response();
+        (res_netId_3, responce_3, next_existed_3) = blocking_wait_next_fcommand_response(); # this will fully complete the last frame_command_set before shutdown
 
         # next_existed_1 == true, next_existed_2 == true, next_existed_3 == false, so you can iterate until commits out
         # res_netId_1 == netId_1, res_netId_2 == netId_2, res_netId_3 == netId_3, so you can confirm a response source
@@ -81,26 +80,30 @@ class RaypathMCPServer:
         self.log.info("[mcp print] launched RaypathMCPServer")
 
     def _register_tools(self) -> None:
-        self.mcp.tool() (self.console_print)
-        self.mcp.tool() (self.magic_formula)
+        _ro = {"readOnlyHint": True,  "destructiveHint": False}
+        _rw = {"readOnlyHint": False, "destructiveHint": False}
 
-        self.mcp.tool() (self.blocking_build_application)
-        self.mcp.tool() (self.blocking_full_rebuild_application)
-        self.mcp.tool() (self.blocking_build_and_launch_application)
-        self.mcp.tool() (self.blocking_shutdown_application)
-        self.mcp.tool() (self.get_session_id)
-        self.mcp.tool() (self.blocking_wait_next_frame_command_set_response)
-        self.mcp.tool() (self.fcommand_commit_frame)
-        self.mcp.tool() (self.fcommand_pass_ticks_after)
-        self.mcp.tool() (self.fcommand_set_camera_position)
-        self.mcp.tool() (self.fcommand_set_mouse_position)
-        self.mcp.tool() (self.fcommand_set_mouse_left_button)
-        self.mcp.tool() (self.fcommand_set_mouse_right_button)
-        self.mcp.tool() (self.fcommand_add_mouse_scroll)
-        self.mcp.tool() (self.fcommand_screenshot)
-        self.mcp.tool() (self.fcommand_hud_info)
-        self.mcp.tool() (self.fcommand_debug_command)
-        self.mcp.tool() (self.fcommand_session_log_rename)
+        self.mcp.tool(tags={"test"},                       annotations=_ro)(self.console_print)
+        self.mcp.tool(tags={"test"},                       annotations=_ro)(self.magic_formula)
+
+        self.mcp.tool(tags={"app", "blocking"},            annotations=_rw)(self.blocking_build_application)
+        self.mcp.tool(tags={"app", "blocking"},            annotations=_rw)(self.blocking_full_rebuild_application)
+        self.mcp.tool(tags={"app", "blocking"},            annotations=_rw)(self.blocking_build_and_launch_application)
+        self.mcp.tool(tags={"app", "blocking"},            annotations=_rw)(self.blocking_shutdown_application)
+        self.mcp.tool(tags={"app"},                        annotations=_ro)(self.get_session_id)
+        self.mcp.tool(tags={"app"},                        annotations=_ro)(self.is_application_running)
+        self.mcp.tool(tags={"remote_control", "blocking"}, annotations=_rw)(self.blocking_wait_next_fcommand_response)
+        self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_commit_set)
+        self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_pass_ticks_after)
+        self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_set_camera_position)
+        self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_set_mouse_position)
+        self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_set_mouse_left_button)
+        self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_set_mouse_right_button)
+        self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_add_mouse_scroll)
+        self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_screenshot)
+        self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_hud_info)
+        self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_debug_command)
+        self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_session_log_rename)
 
     def _register_resources(self) -> None:
 
@@ -144,64 +147,29 @@ class RaypathMCPServer:
             """ Get the current application config. """
             pass
 
-    @tool(
-        tags={"test"},
-        annotations={
-            "readOnlyHint": True,
-            "destructiveHint": False
-        }
-    )
     def console_print(self, text: str) -> str:
         """ Print something to server console."""
         self.log.info("[mcp print] %s", text)
         return f"printed: {text}"
 
-    @tool(
-        tags={"test"},
-        annotations={
-            "readOnlyHint": True,
-            "destructiveHint": False
-        }
-    )
     def magic_formula(self, a: float, b: float) -> float:
         """ Test magic formula."""
-        return a * b / a + b
+        return a * b / (a + b)
 
     async def run(self) -> None:
         await self.mcp.run_stdio_async()
 
-    @tool(
-        tags={"app", "blocking"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
-    def blocking_build_application(self, timeout_sec: int = 20)-> (str, bool):
+    def blocking_build_application(self, timeout_sec: int = 20) -> tuple[str, bool]:
         """ Usual build.
             Return: (message, success) """
         pass
 
-    @tool(
-        tags={"app", "blocking"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
-    def blocking_full_rebuild_application(self, timeout_sec: int = 20) -> (str, bool):
-        """ Full clean and rebulid.
+    def blocking_full_rebuild_application(self, timeout_sec: int = 20) -> tuple[str, bool]:
+        """ Full clean and rebuild.
             Return: (message, success) """
         pass
 
-    @tool(
-        tags={"app", "blocking"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
-    def blocking_build_and_launch_application(self, timeout_sec: int = 20) -> (str, bool):
+    def blocking_build_and_launch_application(self, timeout_sec: int = 20) -> tuple[str, bool]:
         """ The usual way of launch.
             Will be shutdown automatically if launch_application, or build_application called.
             Will be built automatically.
@@ -211,88 +179,47 @@ class RaypathMCPServer:
             """
         pass
 
-    @tool(
-        tags={"app", "blocking"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
     def blocking_shutdown_application(self, timeout_sec: int = 10) -> None:
-        """ Shutdown application."""
+        """ Shutdown application.
+            Shutdown is queued as a frame command — it executes after all previously
+            committed frame_command_sets complete. Blocks until the app exits or
+            timeout_sec elapses. """
 
         # _fcommand_shutdown()
-        # fcommand_commit_frame()
+        # fcommand_commit_set()
 
         pass
 
-    @tool(
-        tags={"app"},
-        annotations={
-            "readOnlyHint": True,
-            "destructiveHint": False
-        }
-    )
     def get_session_id(self) -> int:
-        """ Will use it for logs and screenshot."""
+        """ Returns the current app_session_id. Used for log and screenshot resource URIs.
+            Valid only after a successful blocking_build_and_launch_application call. """
         pass
 
-    @tool(
-        tags={"remote_control", "blocking"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
-    def blocking_wait_next_fcommand_response(self, timeout_sec: int = 10) -> (int, str, bool):
+    def is_application_running(self) -> bool:
+        """ Returns True if the application process is currently running and connected. """
+        pass
+
+    def blocking_wait_next_fcommand_response(self, timeout_sec: int = 10) -> tuple[int, str, bool]:
         """ Will block and wait until frame_command_set_net_id is received.
-            return: (netId, JSON frame answer, is remaining waiting commands (need to launch get response one more time)) """
+            return: (netId, JSON frame answer, is remaining waiting commands (need to launch get response one more time))
+            Call once per fcommand_commit_set, in commit order. """
         pass
 
-    @tool(
-        tags={"remote_control"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
     def fcommand_commit_set(self) -> int:
-        """ After this command the frame_command_set will be send and executed and a single frame request.
-            Next frame_command_set will be executed in queue. will send set of recieved commands to blocking_wait_next_frame_command_set_response
+        """ After this command the frame_command_set will be sent and executed in a single frame request.
+            Next frame_command_set will be executed in queue.
             return: netId of command frame"""
         pass
 
-    @tool(
-        tags={"remote_control"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
     def fcommand_pass_ticks_after(self, ticks_execute_after: int) -> None:
-        """ After main command frame executed ticks_execute_after additional frames will be played.
-            This makes sense only in -tickless mode"""
+        """ After main command frame executed ticks_execute_after additional frames will be played."""
         pass
 
-    @tool(
-        tags={"remote_control"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
     def fcommand_set_camera_position(self, x_world_position_px: float, y_world_position_px: float, zoom_position: float) -> None:
         """ Set the center of the camera in a world space.
             zoom_position - Bigger number = bigger zoom in. """
         pass
 
-    @tool(
-        tags={"remote_control"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
     def fcommand_set_mouse_position(self, x_world_position_px: float, y_world_position_px: float) -> None:
         """ Moves the cursor.
             render_server.scene.show_cursor if true then visible.
@@ -301,82 +228,33 @@ class RaypathMCPServer:
             color config at the start of the application log."""
         pass
 
-    @tool(
-        tags={"remote_control"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
     def fcommand_set_mouse_left_button(self, new_button_state: bool) -> None:
         """ Setup mouse left button to the new_button_state. """
         pass
 
-    @tool(
-        tags={"remote_control"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
     def fcommand_set_mouse_right_button(self, new_button_state: bool) -> None:
         """ Setup mouse right button to the new_button_state. """
         pass
 
-    @tool(
-        tags={"remote_control"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
     def fcommand_add_mouse_scroll(self, add_scroll_delta: float) -> None:
         """ Add hardware input level scroll of mouse. """
         pass
 
-    @tool(
-        tags={"remote_control"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
     def fcommand_screenshot(self, disable_compress: bool = False) -> None:
         """ Create screenshot after the frame_command_set apply and save it as .png in {project_root}/mcp_logs/screenshot/.. folder.
           disable_compress: if more precise image required.
           In response, it will return screenshot path."""
         pass
 
-    @tool(
-        tags={"remote_control"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
     def fcommand_hud_info(self) -> None:
         """ Get overall frame info. """
         pass
 
-    @tool(
-        tags={"remote_control"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
     def fcommand_debug_command(self, x: float, y: float, z: float, w: float) -> None:
         """ Reserved command for development.
             just log info log by default. """
         pass
 
-    @tool(
-        tags={"remote_control"},
-        annotations={
-            "readOnlyHint": False,
-            "destructiveHint": False
-        }
-    )
     def fcommand_session_log_rename(self) -> None:
         """ Redirects log name into session number format.
             Need for saving logs between sessions and bake-in log names in prompts.
@@ -384,7 +262,7 @@ class RaypathMCPServer:
             In response, it will return new log name."""
         pass
 
-    def  _fcommand_shutdown(self):
+    def _fcommand_shutdown(self):
         pass
 
 
