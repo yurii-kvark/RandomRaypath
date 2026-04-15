@@ -30,15 +30,17 @@ logging.basicConfig(
 class RaypathMCPServer:
     """ MCP server exposing raypath tools.
         The testing api consists of 2 components:
-        application launch and frame_command dealing.
+        application launch and frame_command_set dealing.
 
         Interacting with the server should be done exclusively.
 
+        session_id - unique id of the launched control application
+        nte_id - unique id of the frame_command_set_set
         Application build and launching, then it must be shut down manually.
 
-        Remote_control is done by frame_command queue.
-        Each frame_command has set of fcommand that will be executed in a same frame.
-        After frame_command is commited it putted in a queue and will be executed in a single frame.
+        Remote_control is done by frame_command_set queue.
+        Each frame_command_set has set of fcommand that will be executed in a same frame.
+        After frame_command_set is commited it putted in a queue and will be executed in a single frame.
         After execution, the application sends answers back and it can be harvested.
 
         Basic usage is:
@@ -58,9 +60,9 @@ class RaypathMCPServer:
         fcommand_K()
         netId_3 = fcommand_commit_frame()
 
-        (res_netId_1, responce_1, next_existed_1) = blocking_wait_next_frame_command_response();
-        (res_netId_2, responce_2, next_existed_2) = blocking_wait_next_frame_command_response();
-        (res_netId_3, responce_3, next_existed_3) = blocking_wait_next_frame_command_response(); # this will fully complete the last frame_command before shutdown
+        (res_netId_1, responce_1, next_existed_1) = blocking_wait_next_frame_command_set_response();
+        (res_netId_2, responce_2, next_existed_2) = blocking_wait_next_frame_command_set_response();
+        (res_netId_3, responce_3, next_existed_3) = blocking_wait_next_frame_command_set_response(); # this will fully complete the last frame_command_set before shutdown
 
         # next_existed_1 == true, next_existed_2 == true, next_existed_3 == false, so you can iterate until commits out
         # res_netId_1 == netId_1, res_netId_2 == netId_2, res_netId_3 == netId_3, so you can confirm a response source
@@ -87,7 +89,7 @@ class RaypathMCPServer:
         self.mcp.tool() (self.blocking_build_and_launch_application)
         self.mcp.tool() (self.blocking_shutdown_application)
         self.mcp.tool() (self.get_session_id)
-        self.mcp.tool() (self.blocking_wait_next_frame_command_response)
+        self.mcp.tool() (self.blocking_wait_next_frame_command_set_response)
         self.mcp.tool() (self.fcommand_commit_frame)
         self.mcp.tool() (self.fcommand_pass_ticks_after)
         self.mcp.tool() (self.fcommand_set_camera_position)
@@ -103,7 +105,7 @@ class RaypathMCPServer:
     def _register_resources(self) -> None:
 
         @self.mcp.resource(
-            uri="app://mcp_logs/screenshot/session_{session_id}/{net_id}_frameX.png",
+            uri="app://mcp_logs/screenshot/session_{session_id}/{net_id}_frame_x.png",
             tags={"app"},
             mime_type="image/png", # mime types does not work in inspector
             annotations={
@@ -115,7 +117,7 @@ class RaypathMCPServer:
             pass
 
         @self.mcp.resource(
-            uri="app://mcp_logs/session_{session_id}_netY.log-last{last_lines}",
+            uri="app://mcp_logs/session_{session_id}_net_x.log-last{last_lines}",
             tags={"app"},
             mime_type="text/plain",
             annotations={
@@ -242,8 +244,8 @@ class RaypathMCPServer:
             "destructiveHint": False
         }
     )
-    def blocking_wait_next_frame_command_response(self, timeout_sec: int = 10) -> (int, str, bool):
-        """ Will block and wait until frame_command_net_id is received.
+    def blocking_wait_next_frame_command_set_response(self, timeout_sec: int = 10) -> (int, str, bool):
+        """ Will block and wait until frame_command_set_net_id is received.
             return: (netId, JSON frame answer, is remaining waiting commands (need to launch get response one more time)) """
         pass
 
@@ -256,7 +258,7 @@ class RaypathMCPServer:
     )
     def fcommand_commit_frame(self) -> int:
         """ After this fcommand the command_frame will be saved and executed.
-            frame_commands are filling in a single request until commit.
+            frame_command_sets are filling in a single request until commit.
             Next command frame will be executed in queue.
             return: netId of command frame"""
         pass
@@ -341,7 +343,7 @@ class RaypathMCPServer:
         }
     )
     def fcommand_screenshot(self, disable_compress: bool = False) -> None:
-        """ Create screenshot after the frame_command apply and save it as .png in {project_root}/mcp_logs/screenshot/.. folder.
+        """ Create screenshot after the frame_command_set apply and save it as .png in {project_root}/mcp_logs/screenshot/.. folder.
           disable_compress: if more precise image required.
           In response, it will return screenshot path."""
         pass
