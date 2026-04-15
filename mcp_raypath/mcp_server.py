@@ -36,9 +36,6 @@ logging.basicConfig(
     ]
 )
 
-    # to run mcp inspector:
-    # npx @modelcontextprotocol/inspector python main.py
-    # claude mcp add mcp_raycast --transport stdio -- python {project_root}\\mcp_raypath\\main.py
 
 class RaypathMCPServer:
     """ MCP server exposing raypath tools.
@@ -101,7 +98,7 @@ class RaypathMCPServer:
         _ro = {"readOnlyHint": True,  "destructiveHint": False}
         _rw = {"readOnlyHint": False, "destructiveHint": False}
 
-        self.mcp.tool(tags={"test"},                       annotations=_ro)(self.console_print)
+        self.mcp.tool(tags={"test"},                       annotations=_ro)(self.magic_print)
         self.mcp.tool(tags={"test"},                       annotations=_ro)(self.magic_formula)
 
         self.mcp.tool(tags={"app", "blocking"},            annotations=_rw)(self.blocking_build_application)
@@ -140,7 +137,7 @@ class RaypathMCPServer:
             pass
 
         @self.mcp.resource(
-            uri="app://mcp_logs/session_{session_id}_net_any.log-last{last_lines}",
+            uri="app://mcp_logs/session_{session_id}_net_any.log-last_{last_lines}",
             tags={"app"},
             mime_type="text/plain",
             annotations={
@@ -167,7 +164,7 @@ class RaypathMCPServer:
             """ Get the current application config. """
             pass
 
-    def console_print(self, text: str) -> str:
+    def magic_print(self, text: str) -> str:
         """ Print something to server console."""
         self.log.info("[mcp print] %s", text)
         return f"printed: {text}"
@@ -243,7 +240,7 @@ class RaypathMCPServer:
             Use to recover from a mistake before calling fcommand_commit_set. """
         pass
 
-    def fcommand_pending_frame_set_count(self) -> int:
+    def fcommand_committed_queue_depth(self) -> int:
         """ Returns the number of committed frame_command_sets that have not yet been
             harvested via blocking_wait_next_fcommand_response.
             Use to verify queue depth before committing more sets or before shutdown. """
