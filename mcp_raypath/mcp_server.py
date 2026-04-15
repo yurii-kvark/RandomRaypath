@@ -39,7 +39,7 @@ class RaypathMCPServer:
         Application build and launching, then it must be shut down manually.
 
         Remote_control is done by frame_command_set queue.
-        Each frame_command_set has set of fcommand that will be executed in a same frame.
+        Each frame_command_set has fixed set of fcommand that will be executed in a same frame.
         After frame_command_set is commited it putted in a queue and will be executed in a single frame.
         After execution, the application sends answers back and it can be harvested.
 
@@ -244,7 +244,7 @@ class RaypathMCPServer:
             "destructiveHint": False
         }
     )
-    def blocking_wait_next_frame_command_set_response(self, timeout_sec: int = 10) -> (int, str, bool):
+    def blocking_wait_next_fcommand_response(self, timeout_sec: int = 10) -> (int, str, bool):
         """ Will block and wait until frame_command_set_net_id is received.
             return: (netId, JSON frame answer, is remaining waiting commands (need to launch get response one more time)) """
         pass
@@ -256,10 +256,9 @@ class RaypathMCPServer:
             "destructiveHint": False
         }
     )
-    def fcommand_commit_frame(self) -> int:
-        """ After this fcommand the command_frame will be saved and executed.
-            frame_command_sets are filling in a single request until commit.
-            Next command frame will be executed in queue.
+    def fcommand_commit_set(self) -> int:
+        """ After this command the frame_command_set will be send and executed and a single frame request.
+            Next frame_command_set will be executed in queue. will send set of recieved commands to blocking_wait_next_frame_command_set_response
             return: netId of command frame"""
         pass
 
