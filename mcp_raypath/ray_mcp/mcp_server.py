@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import sys
-from pathlib import Path
-
 from typing import Literal, TypedDict
 
+from ray_mcp import app_logging
 from fastmcp import FastMCP
 from fastmcp.utilities.types import Image
+
+app_logging.setup()
 
 
 class BuildResult(TypedDict):
@@ -22,19 +22,6 @@ class FcommandResponse(TypedDict):
     status: Literal["ok", "timeout", "disconnected"]
     answer: str   # JSON payload; empty string on non-ok status
     has_more: bool
-
-log_dir = Path("logs")
-log_dir.mkdir(exist_ok=True)
-
-# todo: move logging in another file
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stderr),
-        logging.FileHandler(log_dir / "mcp_server.log", mode="a", encoding="utf-8")
-    ]
-)
 
 
 class RaypathMCPServer:
@@ -110,7 +97,7 @@ class RaypathMCPServer:
         self.mcp.tool(tags={"remote_control", "blocking"}, annotations=_rw)(self.blocking_wait_next_fcommand_response)
         self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_commit_set)
         self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_discard_frame_set)
-        self.mcp.tool(tags={"remote_control"},             annotations=_ro)(self.fcommand_pending_frame_set_count)
+        self.mcp.tool(tags={"remote_control"},             annotations=_ro)(self.fcommand_committed_queue_depth)
         self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_pass_ticks_after)
         self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_set_camera_position)
         self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_set_mouse_position)
@@ -216,7 +203,7 @@ class RaypathMCPServer:
 
     def is_application_running(self) -> bool:
         """ Returns True if the application process is currently running and connected. """
-        pass
+        return self.get_session_id() != -1
 
     async def blocking_wait_next_fcommand_response(self, timeout_sec: int = 10) -> FcommandResponse:
         """ Wait for the next committed frame_command_set to be processed and return its answer.

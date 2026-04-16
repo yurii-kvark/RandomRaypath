@@ -261,7 +261,7 @@ void remote_control_client::network_loop(std::stop_token stop, std::string host,
                         });
 
                 while (!stop.stop_requested() && !connect_done) {
-                        io.run_one_for(200ms);
+                        io.run_one_for(100ms);
                 }
 
                 if (!connect_done) {
