@@ -207,6 +207,11 @@ class RemoteControlServer:
         """True if the C++ application is currently connected."""
         return self._client is not None
 
+    @property
+    def session_tag(self) -> int:
+        """Current session tag; increments on each new client connection."""
+        return self._session_tag
+
     # -------------------------------------------------------------------------
     # Internal — connection handling
     # -------------------------------------------------------------------------

@@ -32,7 +32,9 @@ CMake options:
 * RAY_GPU_PROFILE_IMPL=("tracy") - GPU profiler implementation
 
 Debug build:
-* cmake --build cmake-build-debug -G Ninja -DRAY_DEBUG_NO_OPT=1 -DGLSLANG_VALIDATOR="{VulkanSDK_Path}/Bin/glslangValidator.exe"
+* cmake --build cmake-build-debug -G Ninja -DRAY_DEBUG_NO_OPT=1 -DGLSLANG_VALIDATOR="{VULKAN_SDK}/Bin/glslangValidator.exe"
+
+VULKAN_SDK env variables path needed or GLSLANG_VALIDATOR explicitly.
 
 Release Package build:
 * cmake --build cmake-build-package -G Ninja -DRAY_DEBUG_NO_OPT=0 -DRAY_ENABLE_PACKAGING=1 -DGLSLANG_VALIDATOR="{VulkanSDK_Path}/Bin/glslangValidator.exe"

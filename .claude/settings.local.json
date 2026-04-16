@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "mcp__mcp_raycast__magic_formula"
+      "mcp__mcp_raycast__magic_formula",
+      "Read(//mnt/c/dev/purecpp/**)",
+      "Bash(ls cmake-build-debug/*.exe)"
     ]
   }
 }

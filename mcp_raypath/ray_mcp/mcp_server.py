@@ -3,6 +3,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
+import subprocess
+import sys
+from pathlib import Path
 from typing import Literal, TypedDict
 
 from ray_mcp import app_logging
@@ -78,8 +82,11 @@ class RaypathMCPServer:
         self.log = logging.getLogger(name)
         self.mcp = FastMCP(name)
         self._remote = RemoteControlServer()
+        self._app_process: subprocess.Popen | None = None
+        self._project_root: Path = Path(__file__).resolve().parent.parent.parent
         self._register_tools()
         self._register_resources()
+        self.log.info(f"[mcp print] _project_root {self._project_root}")
         self.log.info("[mcp print] launched RaypathMCPServer")
 
     def _register_tools(self) -> None:
@@ -167,17 +174,66 @@ class RaypathMCPServer:
             self.mcp.run_stdio_async(),
         )
 
+    async def _run_build(self, clean: bool, timeout_sec: int) -> BuildResult:
+
+        if self._app_process is not None:
+            try:
+                self._app_process.kill()
+                await asyncio.to_thread(self._app_process.wait)
+            except OSError:
+                pass
+            self._app_process = None
+
+        vulkan_sdk = os.environ.get("VULKAN_SDK", "")
+        glslang = f"{vulkan_sdk}/Bin/glslangValidator.exe" if vulkan_sdk else "glslangValidator"
+        build_dir = str(self._project_root / "cmake-build-debug")
+
+        configure_cmd = [
+            "cmake", "-B", build_dir, "-G", "Ninja",
+            "-DRAY_DEBUG_NO_OPT=1",
+            f"-DGLSLANG_VALIDATOR={glslang}",
+        ]
+        build_cmd = ["cmake", "--build", build_dir]
+        if clean:
+            build_cmd.append("--clean-first")
+
+        cwd = str(self._project_root)
+        log_path = self._project_root / "mcp_logs" / "mcp_build_log" / "build.log"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+
+        def _read_log() -> str:
+            try:
+                return log_path.read_text(encoding="utf-8")
+            except OSError:
+                return ""
+
+        def _impl() -> BuildResult:
+            try:
+                with open(log_path, "w", encoding="utf-8") as lf:
+                    r = subprocess.run(configure_cmd, cwd=cwd, stdout=lf, stderr=lf, timeout=timeout_sec)
+                    if r.returncode != 0:
+                        lf.flush()
+                        return {"message": _read_log(), "success": False}
+                    r = subprocess.run(build_cmd, cwd=cwd, stdout=lf, stderr=lf, timeout=timeout_sec)
+                return {"message": _read_log(), "success": r.returncode == 0}
+            except subprocess.TimeoutExpired:
+                return {"message": "build timed out\n" + _read_log(), "success": False}
+            except OSError as exc:
+                return {"message": str(exc), "success": False}
+
+        return await asyncio.to_thread(_impl)
+
     async def blocking_build_application(self, timeout_sec: int = 20) -> BuildResult:
         """ Usual build.
             Return: BuildResult with fields: message, success """
         # return await asyncio.to_thread(_impl, timeout_sec)
-        pass
+        return await self._run_build(clean=False, timeout_sec=timeout_sec)
 
     async def blocking_full_rebuild_application(self, timeout_sec: int = 20) -> BuildResult:
         """ Full clean and rebuild.
             Return: BuildResult with fields: message, success """
         # return await asyncio.to_thread(_impl, timeout_sec)
-        pass
+        return await self._run_build(clean=True, timeout_sec=timeout_sec)
 
     async def blocking_build_and_launch_application(self, timeout_sec: int = 20) -> BuildResult:
         """ The usual way of launch.
@@ -186,7 +242,28 @@ class RaypathMCPServer:
             session_id of the application. Will use it for logs and screenshot.
             get_session_id is now valid.
             Return: BuildResult with fields: message, success """
-        pass
+
+        result = await self._run_build(clean=False, timeout_sec=timeout_sec)
+        if not result["success"]:
+            return result
+
+        exe_name = "RayClientRenderer.exe" if sys.platform == "win32" else "RayClientRenderer"
+        exe = str(self._project_root / "cmake-build-debug" / exe_name)
+        cwd = str(self._project_root)
+        try:
+            self._app_process = await asyncio.to_thread(
+                lambda: subprocess.Popen([exe, "-config=mcp_control.toml"], cwd=cwd)
+            )
+        except Exception as exc:
+            return {"message": f"launch failed: {exc}", "success": False}
+
+        deadline = asyncio.get_event_loop().time() + timeout_sec
+        while not self._remote.is_client_connected():
+            if asyncio.get_event_loop().time() >= deadline:
+                return {"message": "launched but app did not connect in time", "success": False}
+            await asyncio.sleep(0.2)
+
+        return {"message": "ok", "success": True}
 
     async def blocking_shutdown_application(self, timeout_sec: int = 10) -> None:
         """ Shutdown application.
@@ -194,16 +271,22 @@ class RaypathMCPServer:
             committed frame_command_sets complete. Blocks until the app exits or
             timeout_sec elapses. """
 
-        # _fcommand_shutdown()
-        # fcommand_commit_set()
-        # await asyncio.to_thread(_impl, timeout_sec)
+        self._fcommand_shutdown()
+        await self.fcommand_commit_set()
 
-        pass
+        if self._app_process is not None:
+            def _wait() -> None:
+                try:
+                    self._app_process.wait(timeout=timeout_sec)
+                except subprocess.TimeoutExpired:
+                    self._app_process.kill()
+            await asyncio.to_thread(_wait)
+            self._app_process = None
 
     def get_session_id(self) -> int:
         """ Returns the current app_session_id. Used for log and screenshot resource URIs.
             Valid only after a successful blocking_build_and_launch_application call. """
-        return self._remote._session_tag
+        return self._remote.session_tag
 
     def is_application_running(self) -> bool:
         """ Returns True if the application process is currently running and connected. """
