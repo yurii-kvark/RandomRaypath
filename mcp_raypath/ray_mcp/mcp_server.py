@@ -6,6 +6,7 @@ import logging
 from typing import Literal, TypedDict
 
 from ray_mcp import app_logging
+from ray_mcp.remote_control_server import RemoteControlServer
 from fastmcp import FastMCP
 from fastmcp.utilities.types import Image
 
@@ -22,7 +23,6 @@ class FcommandResponse(TypedDict):
     status: Literal["ok", "timeout", "disconnected"]
     answer: str   # JSON payload; empty string on non-ok status
     has_more: bool
-
 
 class RaypathMCPServer:
     """ MCP server exposing raypath tools.
@@ -77,6 +77,7 @@ class RaypathMCPServer:
     def __init__(self, name: str = "mcp_raypath") -> None:
         self.log = logging.getLogger(name)
         self.mcp = FastMCP(name)
+        self._remote = RemoteControlServer()
         self._register_tools()
         self._register_resources()
         self.log.info("[mcp print] launched RaypathMCPServer")
@@ -161,7 +162,10 @@ class RaypathMCPServer:
         return a * b / (a + b)
 
     async def run(self) -> None:
-        await self.mcp.run_stdio_async()
+        await asyncio.gather(
+            self._remote.start(),
+            self.mcp.run_stdio_async(),
+        )
 
     async def blocking_build_application(self, timeout_sec: int = 20) -> BuildResult:
         """ Usual build.
@@ -199,11 +203,11 @@ class RaypathMCPServer:
     def get_session_id(self) -> int:
         """ Returns the current app_session_id. Used for log and screenshot resource URIs.
             Valid only after a successful blocking_build_and_launch_application call. """
-        pass
+        return self._remote._session_tag
 
     def is_application_running(self) -> bool:
         """ Returns True if the application process is currently running and connected. """
-        return self.get_session_id() != -1
+        return self._remote.is_client_connected()
 
     async def blocking_wait_next_fcommand_response(self, timeout_sec: int = 10) -> FcommandResponse:
         """ Wait for the next committed frame_command_set to be processed and return its answer.
@@ -213,34 +217,43 @@ class RaypathMCPServer:
               status    — "ok" | "timeout" | "disconnected"
               answer    — JSON payload from the app; empty string on non-ok status
               has_more  — True if further committed sets are still pending; iterate until False """
-        # return await asyncio.to_thread(_impl, timeout_sec)
-        pass
+        record = await self._remote.receive_next_answer(timeout_sec)
+        if record is not None:
+            return FcommandResponse(
+                net_id=record.net_id,
+                status="ok",
+                answer=record.raw_json,
+                has_more=self._remote.pending_answer_count() > 0,
+            )
+        if self._remote.is_client_connected():
+            return FcommandResponse(net_id=-1, status="timeout", answer="", has_more=False)
+        return FcommandResponse(net_id=-1, status="disconnected", answer="", has_more=False)
 
-    def fcommand_commit_set(self) -> int:
+    async def fcommand_commit_set(self) -> int:
         """ After this command the frame_command_set will be sent and executed in a single frame request.
             Next frame_command_set will be executed in queue.
             return: netId of command frame"""
-        pass
+        return await self._remote.commit_set()
 
     def fcommand_discard_frame_set(self) -> None:
         """ Drop all currently staged fcommands without sending.
             Use to recover from a mistake before calling fcommand_commit_set. """
-        pass
+        self._remote.discard_staged()
 
     def fcommand_committed_queue_depth(self) -> int:
         """ Returns the number of committed frame_command_sets that have not yet been
             harvested via blocking_wait_next_fcommand_response.
             Use to verify queue depth before committing more sets or before shutdown. """
-        pass
+        return self._remote.pending_answer_count()
 
     def fcommand_pass_ticks_after(self, ticks_execute_after: int) -> None:
         """ After main command frame executed ticks_execute_after additional frames will be played."""
-        pass
+        self._remote.add_command("pass_ticks_after", [float(ticks_execute_after)])
 
     def fcommand_set_camera_position(self, x_world_position_px: float, y_world_position_px: float, zoom_position: float) -> None:
         """ Set the center of the camera in a world space.
             zoom_position - Bigger number = bigger zoom in. """
-        pass
+        self._remote.add_command("set_camera_position", [x_world_position_px, y_world_position_px, zoom_position])
 
     def fcommand_set_mouse_position(self, x_world_position_px: float, y_world_position_px: float) -> None:
         """ Moves the cursor.
@@ -248,44 +261,44 @@ class RaypathMCPServer:
             It's a rectangle with a border and pivot at top-left.
             On mouse button press it changes fill color.
             color config at the start of the application log."""
-        pass
+        self._remote.add_command("set_mouse_position", [x_world_position_px, y_world_position_px])
 
     def fcommand_set_mouse_left_button(self, new_button_state: bool) -> None:
         """ Setup mouse left button to the new_button_state. """
-        pass
+        self._remote.add_command("set_mouse_left_button", [1.0 if new_button_state else 0.0])
 
     def fcommand_set_mouse_right_button(self, new_button_state: bool) -> None:
         """ Setup mouse right button to the new_button_state. """
-        pass
+        self._remote.add_command("set_mouse_right_button", [1.0 if new_button_state else 0.0])
 
     def fcommand_add_mouse_scroll(self, add_scroll_delta: float) -> None:
         """ Add hardware input level scroll of mouse. """
-        pass
+        self._remote.add_command("add_mouse_scroll", [add_scroll_delta])
 
     def fcommand_screenshot(self, disable_compress: bool = False) -> None:
         """ Create screenshot after the frame_command_set apply and save it as .png in {project_root}/mcp_logs/screenshot/.. folder.
           disable_compress: if more precise image required.
           In response, it will return screenshot path."""
-        pass
+        self._remote.add_command("screenshot", [1.0 if disable_compress else 0.0])
 
     def fcommand_hud_info(self) -> None:
         """ Get overall frame info. """
-        pass
+        self._remote.add_command("hud_info", [])
 
     def fcommand_debug_command(self, x: float, y: float, z: float, w: float) -> None:
         """ Reserved command for development.
             just log info log by default. """
-        pass
+        self._remote.add_command("debug_command", [x, y, z, w])
 
     def fcommand_session_log_rename(self) -> None:
         """ Redirects log name into session number format.
             Need for saving logs between sessions and bake-in log names in prompts.
             By default log name is mcp_logs/default.log.
             In response, it will return new log name."""
-        pass
+        self._remote.add_command("session_log_rename", [])
 
     def _fcommand_shutdown(self):
-        pass
+        self._remote.add_command("shutdown", [])
 
 
 def mcp_blocking_run() -> None:
