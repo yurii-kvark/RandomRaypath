@@ -89,7 +89,6 @@ class RaypathMCPServer:
         self._app_process: subprocess.Popen | None = None
         self._project_root: Path = RAY_PROJECT_ROOT
         self._register_tools()
-        self._register_resources()
         self.log.info("[mcp print] launched RaypathMCPServer")
 
     def _register_tools(self) -> None:
@@ -98,6 +97,10 @@ class RaypathMCPServer:
 
         self.mcp.tool(tags={"test"},                       annotations=_ro)(self.magic_print)
         self.mcp.tool(tags={"test"},                       annotations=_ro)(self.magic_formula)
+
+        self.mcp.tool(tags={"app", "resource_path"},       annotations=_ro)(self.get_screenshot_png_path)
+        self.mcp.tool(tags={"app", "resource_path"},       annotations=_ro)(self.get_app_log_path)
+        self.mcp.tool(tags={"app", "resource_path"},       annotations=_ro)(self.get_config_toml_path)
 
         self.mcp.tool(tags={"app", "blocking"},            annotations=_rw)(self.blocking_build_application)
         self.mcp.tool(tags={"app", "blocking"},            annotations=_rw)(self.blocking_full_rebuild_application)
@@ -120,47 +123,11 @@ class RaypathMCPServer:
         self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_debug_command)
         self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_session_log_rename)
 
-    def _register_resources(self) -> None:
-        # TODO instead of resource create tool function for getting exact pathe for the resource on disk.
-        @self.mcp.resource(
-            uri="app://mcp_logs/screenshot/session_{session_id}/{net_id}_frame_any.png",
-            tags={"app"},
-            mime_type="image/png", # mime types does not work in inspector
-            annotations={
-                "readOnlyHint": True
-            }
+    async def run(self) -> None:
+        await asyncio.gather(
+            self._remote.start(),
+            self.mcp.run_stdio_async(),
         )
-        async def get_screenshot_png(session_id: int, net_id: int) -> Image:
-            """ Get PNG image of the frame screenshot. """
-            pass
-
-        @self.mcp.resource(
-            uri="app://mcp_logs/session_{session_id}_net_any.log-last_{last_lines}",
-            tags={"app"},
-            mime_type="text/plain",
-            annotations={
-                "readOnlyHint": True
-            }
-        )
-        async def get_log(session_id: int = -1, last_lines: int = -1) -> str:
-            """
-            :param session_id: log of the session or -1 to get the current one.
-            :param last_lines: amount of last lines to send, -1 to send everything.
-            :return: application log content
-            """
-            pass
-
-        @self.mcp.resource(
-            uri="app://config/current.toml",
-            tags={"app"},
-            mime_type="application/toml",
-            annotations={
-                "readOnlyHint": True
-            }
-        )
-        async def get_config_toml() -> str:
-            """ Get the current application config. """
-            pass
 
     def magic_print(self, text: str) -> str:
         """ Print something to server console."""
@@ -171,11 +138,39 @@ class RaypathMCPServer:
         """ Test magic formula."""
         return a * b / (a + b)
 
-    async def run(self) -> None:
-        await asyncio.gather(
-            self._remote.start(),
-            self.mcp.run_stdio_async(),
-        )
+    def get_screenshot_png_path(self, session_id: int, net_id: int) -> str:
+        """ Get screenshot path by session and net id request"""
+
+        screenshot_dir = self._project_root / "mcp_logs" / "screenshot" / f"session_{session_id}"
+        pattern = f"net_{net_id}_frame_*.png"
+        matches = sorted(screenshot_dir.glob(pattern))
+        if matches:
+            return str(matches[0])
+        return f"no screenshot with session_id: {session_id}, net_id: {net_id}"
+
+    def get_app_log_path(self, session_id: int = -1) -> str:
+        """ By default logs are using default.log file . Use fcommand_session_log_rename to form session log.
+            :param: session_id -1 means it will give path to the current log. """
+
+        try_to_search_session = session_id
+
+        if session_id == -1:
+            try_to_search_session = self.get_session_id()
+
+        log_dir = self._project_root / "mcp_logs"
+        pattern = f"session_{try_to_search_session}_net_*.log"
+        matches = sorted(log_dir.glob(pattern))
+        if matches:
+            return str(matches[0])
+
+        if session_id == -1:
+            return str(log_dir / "default.log")
+
+        return f"no log by this session: {session_id}"
+
+    def get_config_toml_path(self) -> str:
+        """ Config Path application is currently using. """
+        return str(self._project_root / "config" / APP_CONFIG_NAME)
 
     async def _run_build(self, clean: bool, timeout_sec: int) -> BuildResult:
 
