@@ -22,15 +22,19 @@ ray_error ph_crates_scene::init(window& win, pipeline_manager& pipe) {
 
         world_processor.register_pipelines(crate_sim.get_pipelines());
 
-        crate_sim.add_crate(glm::vec2(-112, -102), 70, 'M', glm::vec4(102.f, 153.f, 51.f, 255.f) / 255.f, glm::vec4(128.f, 93.f, 21.f, 255.f) / 255.f);
-        crate_sim.add_crate(glm::vec2(-30, -82), 50, 'i', glm::vec4(144.f, 191.f, 96.f, 255.f) / 255.f, glm::vec4(18.f, 54.f, 82.f, 255.f) / 255.f);
-        crate_sim.add_crate(glm::vec2(32, -82), 50, 'n', glm::vec4(67.f, 115.f, 51.f, 19.f) / 255.f, glm::vec4(212.f, 178.f, 106.f, 255.f) / 255.f);
-        crate_sim.add_crate(glm::vec2(94, -82), 50, 'e', glm::vec4(192.f, 230.f, 153.f, 255.f) / 255.f, glm::vec4(41.f, 79.f, 109.f, 255.f) / 255.f);
-        crate_sim.add_crate(glm::vec2(-140, 0), 50, 'c', glm::vec4(36.f, 96.f, 104.f, 255.f) / 255.f, glm::vec4(134.f, 161.f, 54.f, 255.f) / 255.f);
-        crate_sim.add_crate(glm::vec2(-80, 0), 50, 'r', glm::vec4(105.f, 150.f, 156.f, 255.f) / 255.f, glm::vec4(176.f, 202.f, 101.f, 255.f) / 255.f);
-        crate_sim.add_crate(glm::vec2(-20, 10), 40, 'a', glm::vec4(66.f, 122.f, 130.f, 255.f) / 255.f, glm::vec4(95.f, 121.f, 20.f, 255.f) / 255.f);
-        crate_sim.add_crate(glm::vec2(30, -10), 60, 'f', glm::vec4(36.f, 96.f, 104.f, 255.f) / 255.f, glm::vec4(134.f, 161.f, 54.f, 255.f) / 255.f);
-        crate_sim.add_crate(glm::vec2(100, 0), 50, 't', glm::vec4(66.f, 122.f, 130.f, 255.f) / 255.f, glm::vec4(95.f, 121.f, 20.f, 255.f) / 255.f);
+        crate_sim.add_crate(glm::vec2(-180, -55), 50, 'r', glm::vec4(102.f, 153.f, 51.f, 255.f) / 255.f, glm::vec4(128.f, 93.f, 21.f, 255.f) / 255.f);
+        crate_sim.add_crate(glm::vec2(-120, -55), 50, 'a', glm::vec4(144.f, 191.f, 96.f, 255.f) / 255.f, glm::vec4(18.f, 54.f, 82.f, 255.f) / 255.f);
+        crate_sim.add_crate(glm::vec2(-60, -55), 50, 'y', glm::vec4(67.f, 115.f, 51.f, 19.f) / 255.f, glm::vec4(212.f, 178.f, 106.f, 255.f) / 255.f);
+        crate_sim.add_crate(glm::vec2(0, -55), 50, 'p', glm::vec4(192.f, 230.f, 153.f, 255.f) / 255.f, glm::vec4(41.f, 79.f, 109.f, 255.f) / 255.f);
+        crate_sim.add_crate(glm::vec2(60, -55), 50, 'a', glm::vec4(36.f, 96.f, 104.f, 255.f) / 255.f, glm::vec4(134.f, 161.f, 54.f, 255.f) / 255.f);
+        crate_sim.add_crate(glm::vec2(120, -55), 50, 't', glm::vec4(192.f, 230.f, 153.f, 255.f) / 255.f, glm::vec4(41.f, 79.f, 109.f, 255.f) / 255.f);
+        crate_sim.add_crate(glm::vec2(180, -55), 50, 'h', glm::vec4(36.f, 96.f, 104.f, 255.f) / 255.f, glm::vec4(134.f, 161.f, 54.f, 255.f) / 255.f);
+        crate_sim.add_crate(glm::vec2(-180, 10), 50, 'c', glm::vec4(105.f, 150.f, 156.f, 255.f) / 255.f, glm::vec4(176.f, 202.f, 101.f, 255.f) / 255.f);
+        crate_sim.add_crate(glm::vec2(-120, 10), 50, 'r', glm::vec4(66.f, 122.f, 130.f, 255.f) / 255.f, glm::vec4(95.f, 121.f, 20.f, 255.f) / 255.f);
+        crate_sim.add_crate(glm::vec2(-60, 10), 50, 'a', glm::vec4(36.f, 96.f, 104.f, 255.f) / 255.f, glm::vec4(134.f, 161.f, 54.f, 255.f) / 255.f);
+        crate_sim.add_crate(glm::vec2(0, 10), 50, 't', glm::vec4(66.f, 122.f, 130.f, 255.f) / 255.f, glm::vec4(95.f, 121.f, 20.f, 255.f) / 255.f);
+        crate_sim.add_crate(glm::vec2(60, 10), 50, 'e', glm::vec4(36.f, 96.f, 104.f, 255.f) / 255.f, glm::vec4(134.f, 161.f, 54.f, 255.f) / 255.f);
+        crate_sim.add_crate(glm::vec2(120, 10), 50, 's', glm::vec4(66.f, 122.f, 130.f, 255.f) / 255.f, glm::vec4(95.f, 121.f, 20.f, 255.f) / 255.f);
 
         return {};
 }
