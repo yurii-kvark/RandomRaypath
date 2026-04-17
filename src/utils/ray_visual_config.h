@@ -45,6 +45,7 @@ public:
         static constexpr glm::u32 world_obj = 1000;
         static constexpr glm::u32 grid = 100;
         static constexpr glm::u32 hud_info = 100500;
+        static constexpr glm::u32 cursor = 200000;
 };
 
 #endif

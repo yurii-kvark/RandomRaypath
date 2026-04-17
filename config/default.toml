@@ -1,0 +1,43 @@
+﻿
+[render_server]
+enable = true # TODO
+graphics_window_enabled = true # -headless flag will force it to false. sreenshot is of the applayed command frame.
+log_in_file = false
+
+[render_server.network]
+listening_port = 47039 # computational server port TODO
+enable_remote_control = false # -remote_control will force it to true
+server_control_addr = "127.0.0.1:5039" # address of control server
+
+[render_server.window]
+window_mode = 0 # 0 - windowed, 1 - fullscreen
+window_position = [800, 400] #in pixels [pos_x, pos_y] size_x, size_y]
+window_size = [900, 500] # in pixels [pos_x, pos_y] size_x, size_y]
+
+[render_server.scene]
+tickless_mode = false # -tickless will force it to true
+fixed_delta_time_ms = -1.0 # -1 to use actual delta time, or force delta time in logic
+zoom_speed = 0.1
+show_hud_info = true
+size_text_hud_info = 10.0
+show_cursor = false
+cursor_size_px = [16, 16]
+cursor_border_size_px = 3.0
+logical_scene = "ph_crates" # main / dev_test / ph_crates
+
+# color - RGBA 0..1 float32
+[render_server.visual_style]
+color_background = [0.005, 0.005, 0.005, 1.0]
+color_hud_info = [0.0, 1.0, 0.0, 1.0]
+color_grid = [0.03, 0.02, 0.04, 1.0]
+cursor_border_color = [1.0, 0.0, 0.0, 1.0]
+cursor_idle_color = [0.0, 1.0, 0.0, 1.0]
+cursor_left_pressed_color = [1.0, 1.0, 0.0, 1.0]
+cursor_right_pressed_color = [0.0, 1.0, 1.0, 1.0]
+cursor_both_pressed_color = [1.0, 0.0, 1.0, 1.0]
+
+#TODO
+[compute_client]
+enable = true # if render_server.eanble, will be instantiated in-process
+server_addr = "127.0.0.1:47039"
+thread_limit = 4 # -1 to enable optimal full

@@ -1,0 +1,1 @@
+- [Remote Control Protocol](project_remote_control_protocol.md) — TCP newline-delimited JSON protocol: command/answer structure, command name index, session/id counters

@@ -2,6 +2,9 @@
 
 #include "g_app_driver.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 #include <print>
 #include <vector>
 #include <cstring>
@@ -18,15 +21,13 @@ using namespace ray::graphics;
 // TODO: add vulkan debug module
 
 
-renderer::renderer(std::weak_ptr<GLFWwindow> basis_win, config::visual_style in_style)
-        : gl_window(std::move(basis_win)), style(std::move(in_style)) {
+renderer::renderer(std::weak_ptr<GLFWwindow> basis_win, const config::render_server_config& cfg)
+        : gl_window(std::move(basis_win)), style(cfg.style),
+          headless_size(glm::uvec2(cfg.window.window_size)) {
 
-        if (gl_window.expired()) {
-                ray_log(e_log_type::fatal, "renderer: basis_win == nullptr");
-                return;
-        }
+        const bool headless = gl_window.expired();
 
-        driver_lifetime = g_app_driver::thread_safe().init_driver_handler();
+        driver_lifetime = g_app_driver::thread_safe().init_driver_handler(headless);
 
         if (!driver_lifetime) {
                 ray_log(e_log_type::fatal, "error renderer: can't create driver.");
@@ -48,7 +49,11 @@ renderer::~renderer() {
 
 
 bool renderer::draw_frame() {
-        if (!swapchain) {
+        const bool headless = gl_window.expired();
+        if (!headless && !swapchain) {
+                return false;
+        }
+        if (swapchain_images.empty()) {
                 return false;
         }
 
@@ -60,23 +65,34 @@ bool renderer::draw_frame() {
                 return false;
         }
 
-        if (frame_submitted[frame_index]) {
-                RAY_PROFILE_SCOPE("g_mem_fence_miss", ray_colors::red);
+        glm::u32 imageIndex = 0;
 
-                // Performance hit (up to 1.2 ms), but no matter for graphic sync.
-                vkWaitForFences(device, 1, &in_flight[frame_index], VK_TRUE, UINT64_MAX);
-        }
+        if (!headless) {
+                if (frame_submitted[frame_index]) {
+                        RAY_PROFILE_SCOPE("g_mem_fence_miss", ray_colors::red);
 
-        vkResetFences(device, 1, &in_flight[frame_index]);
-        frame_submitted[frame_index] = false;
-
-        uint32_t imageIndex = 0;
-        VkResult acquire = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, image_available[frame_index], VK_NULL_HANDLE, &imageIndex);
-        if (acquire != VK_SUCCESS) {
-                if (acquire == VK_ERROR_OUT_OF_DATE_KHR) {
-                        recreate_swapchain();
+                        // Performance hit (up to 1.2 ms), but no matter for graphic sync.
+                        vkWaitForFences(device, 1, &in_flight[frame_index], VK_TRUE, UINT64_MAX);
                 }
-                return true;
+
+                vkResetFences(device, 1, &in_flight[frame_index]);
+                frame_submitted[frame_index] = false;
+
+                VkResult acquire = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, image_available[frame_index], VK_NULL_HANDLE, &imageIndex);
+                if (acquire != VK_SUCCESS) {
+                        if (acquire == VK_ERROR_OUT_OF_DATE_KHR) {
+                                recreate_swapchain();
+                        }
+                        return true;
+                }
+        } else {
+                // Headless: use frame_index as image index, wait for fence for pacing
+                if (frame_submitted[frame_index]) {
+                        vkWaitForFences(device, 1, &in_flight[frame_index], VK_TRUE, UINT64_MAX);
+                }
+                vkResetFences(device, 1, &in_flight[frame_index]);
+                frame_submitted[frame_index] = false;
+                imageIndex = frame_index;
         }
 
         VkCommandBuffer command_buffer = cmd[frame_index];
@@ -144,51 +160,225 @@ bool renderer::draw_frame() {
 
         vkCmdEndRendering(command_buffer);
 
-        VkImageMemoryBarrier2 barrier_present{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2 };
-        barrier_present.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-        barrier_present.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-        barrier_present.dstStageMask = VK_PIPELINE_STAGE_2_NONE;
-        barrier_present.dstAccessMask = VK_ACCESS_2_NONE;
-        barrier_present.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        barrier_present.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-        barrier_present.image = swapchain_images[imageIndex];
-        barrier_present.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        barrier_present.subresourceRange.levelCount = 1;
-        barrier_present.subresourceRange.layerCount = 1;
+        // Screenshot capture: copy swapchain image to staging buffer while still app-owned
+        if (screenshot_capture_requested) {
+                tick_screenshot(imageIndex, command_buffer);
+        }
 
-        VkDependencyInfo dep2{ VK_STRUCTURE_TYPE_DEPENDENCY_INFO };
-        dep2.imageMemoryBarrierCount = 1;
-        dep2.pImageMemoryBarriers = &barrier_present;
-        vkCmdPipelineBarrier2(command_buffer, &dep2);
+        if (!headless) {
+                VkImageMemoryBarrier2 barrier_present{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2 };
+                barrier_present.srcStageMask = screenshot_data_ready
+                        ? VK_PIPELINE_STAGE_2_TRANSFER_BIT
+                        : VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+                barrier_present.srcAccessMask = screenshot_data_ready
+                        ? VK_ACCESS_2_TRANSFER_READ_BIT
+                        : VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+                barrier_present.dstStageMask = VK_PIPELINE_STAGE_2_NONE;
+                barrier_present.dstAccessMask = VK_ACCESS_2_NONE;
+                barrier_present.oldLayout = screenshot_data_ready
+                        ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+                        : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                barrier_present.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+                barrier_present.image = swapchain_images[imageIndex];
+                barrier_present.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                barrier_present.subresourceRange.levelCount = 1;
+                barrier_present.subresourceRange.layerCount = 1;
+
+                VkDependencyInfo dep2{ VK_STRUCTURE_TYPE_DEPENDENCY_INFO };
+                dep2.imageMemoryBarrierCount = 1;
+                dep2.pImageMemoryBarriers = &barrier_present;
+                vkCmdPipelineBarrier2(command_buffer, &dep2);
+        }
 
         vkEndCommandBuffer(command_buffer);
 
-        VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        if (!headless) {
+                VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-        VkSubmitInfo submmit_info{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
-        submmit_info.waitSemaphoreCount = 1;
-        submmit_info.pWaitSemaphores = &image_available[frame_index];
-        submmit_info.pWaitDstStageMask = &waitStage;
-        submmit_info.commandBufferCount = 1;
-        submmit_info.pCommandBuffers = &command_buffer;
-        submmit_info.signalSemaphoreCount = 1;
-        submmit_info.pSignalSemaphores = &render_finished[frame_index];
+                VkSubmitInfo submmit_info{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
+                submmit_info.waitSemaphoreCount = 1;
+                submmit_info.pWaitSemaphores = &image_available[frame_index];
+                submmit_info.pWaitDstStageMask = &waitStage;
+                submmit_info.commandBufferCount = 1;
+                submmit_info.pCommandBuffers = &command_buffer;
+                submmit_info.signalSemaphoreCount = 1;
+                submmit_info.pSignalSemaphores = &render_finished[frame_index];
 
-        vkQueueSubmit(gfx_queue, 1, &submmit_info, in_flight[frame_index]);
-        frame_submitted[frame_index] = true;
+                vkQueueSubmit(gfx_queue, 1, &submmit_info, in_flight[frame_index]);
+                frame_submitted[frame_index] = true;
 
-        VkPresentInfoKHR present_info{ VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
-        present_info.waitSemaphoreCount = 1;
-        present_info.pWaitSemaphores = &render_finished[frame_index];
-        present_info.swapchainCount = 1;
-        present_info.pSwapchains = &swapchain;
-        present_info.pImageIndices = &imageIndex;
+                VkPresentInfoKHR present_info{ VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+                present_info.waitSemaphoreCount = 1;
+                present_info.pWaitSemaphores = &render_finished[frame_index];
+                present_info.swapchainCount = 1;
+                present_info.pSwapchains = &swapchain;
+                present_info.pImageIndices = &imageIndex;
 
-        vkQueuePresentKHR(present_queue, &present_info);
+                vkQueuePresentKHR(present_queue, &present_info);
+        } else {
+                VkSubmitInfo submmit_info{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
+                submmit_info.commandBufferCount = 1;
+                submmit_info.pCommandBuffers = &command_buffer;
+
+                vkQueueSubmit(gfx_queue, 1, &submmit_info, in_flight[frame_index]);
+                frame_submitted[frame_index] = true;
+        }
 
         frame_index = (frame_index + 1) % g_app_driver::k_frames_in_flight;
 
         return true;
+}
+
+void renderer:: tick_screenshot(glm::u32 imageIndex, VkCommandBuffer& command_buffer) {
+        if (!screenshot_capture_requested) {
+                return;
+        }
+
+        screenshot_capture_requested = false;
+        screenshot_data_ready = false;
+
+        VkDevice sc_device = g_app_driver::thread_safe().device;
+        VkPhysicalDevice sc_physical = g_app_driver::thread_safe().physical;
+
+        const VkDeviceSize needed_size = VkDeviceSize(swapchain_extent.width) * swapchain_extent.height * 4;
+
+        if (screenshot_staging_size < needed_size) {
+                if (screenshot_staging_buf != VK_NULL_HANDLE) {
+                        vkDestroyBuffer(sc_device, screenshot_staging_buf, nullptr);
+                        vkFreeMemory(sc_device, screenshot_staging_mem, nullptr);
+                        screenshot_staging_buf = VK_NULL_HANDLE;
+                        screenshot_staging_mem = VK_NULL_HANDLE;
+                        screenshot_staging_size = 0;
+                }
+
+                VkBufferCreateInfo buf_ci{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+                buf_ci.size = needed_size;
+                buf_ci.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+                buf_ci.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+                if (vkCreateBuffer(sc_device, &buf_ci, nullptr, &screenshot_staging_buf) == VK_SUCCESS) {
+                        VkMemoryRequirements mem_req{};
+                        vkGetBufferMemoryRequirements(sc_device, screenshot_staging_buf, &mem_req);
+
+                        VkPhysicalDeviceMemoryProperties mem_props{};
+                        vkGetPhysicalDeviceMemoryProperties(sc_physical, &mem_props);
+
+                        glm::u32 mem_type_idx = UINT32_MAX;
+                        const VkMemoryPropertyFlags desired_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+                        for (glm::u32 mi = 0; mi < mem_props.memoryTypeCount; ++mi) {
+                                if ((mem_req.memoryTypeBits & (1u << mi)) &&
+                                    (mem_props.memoryTypes[mi].propertyFlags & desired_flags) == desired_flags) {
+                                        mem_type_idx = mi;
+                                        break;
+                                    }
+                        }
+
+                        if (mem_type_idx != UINT32_MAX) {
+                                VkMemoryAllocateInfo alloc_info{ VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
+                                alloc_info.allocationSize = mem_req.size;
+                                alloc_info.memoryTypeIndex = mem_type_idx;
+
+                                if (vkAllocateMemory(sc_device, &alloc_info, nullptr, &screenshot_staging_mem) == VK_SUCCESS) {
+                                        vkBindBufferMemory(sc_device, screenshot_staging_buf, screenshot_staging_mem, 0);
+                                        screenshot_staging_size = needed_size;
+                                } else {
+                                        vkDestroyBuffer(sc_device, screenshot_staging_buf, nullptr);
+                                        screenshot_staging_buf = VK_NULL_HANDLE;
+                                }
+                        } else {
+                                vkDestroyBuffer(sc_device, screenshot_staging_buf, nullptr);
+                                screenshot_staging_buf = VK_NULL_HANDLE;
+                        }
+                }
+        }
+
+        if (screenshot_staging_buf != VK_NULL_HANDLE) {
+                // Transition: COLOR_ATTACHMENT_OPTIMAL -> TRANSFER_SRC_OPTIMAL
+                VkImageMemoryBarrier2 barrier_to_src{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2 };
+                barrier_to_src.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+                barrier_to_src.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+                barrier_to_src.dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+                barrier_to_src.dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
+                barrier_to_src.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                barrier_to_src.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                barrier_to_src.image = swapchain_images[imageIndex];
+                barrier_to_src.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+                VkDependencyInfo dep_to_src{ VK_STRUCTURE_TYPE_DEPENDENCY_INFO };
+                dep_to_src.imageMemoryBarrierCount = 1;
+                dep_to_src.pImageMemoryBarriers = &barrier_to_src;
+                vkCmdPipelineBarrier2(command_buffer, &dep_to_src);
+
+                VkBufferImageCopy copy_region{};
+                copy_region.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+                copy_region.imageExtent = { swapchain_extent.width, swapchain_extent.height, 1 };
+                vkCmdCopyImageToBuffer(command_buffer, swapchain_images[imageIndex],
+                                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                       screenshot_staging_buf, 1, &copy_region);
+
+                screenshot_captured_width = swapchain_extent.width;
+                screenshot_captured_height = swapchain_extent.height;
+                screenshot_data_ready = true;
+        }
+}
+
+
+void renderer::request_screenshot() {
+        screenshot_capture_requested = true;
+        screenshot_data_ready = false;
+}
+
+
+ray_error renderer::execute_screenshot_save_png(const std::string& filepath, bool disable_compress) {
+        if (!screenshot_data_ready) {
+                return "screenshot: no captured data (call request_screenshot() before draw_frame)";
+        }
+        if (screenshot_staging_buf == VK_NULL_HANDLE || screenshot_staging_mem == VK_NULL_HANDLE) {
+                return "screenshot: staging buffer not ready";
+        }
+
+        screenshot_data_ready = false;
+
+        std::filesystem::path p(filepath);
+        std::filesystem::create_directories(p.parent_path());
+
+        VkDevice device = g_app_driver::thread_safe().device;
+        VkQueue gfx_queue = g_app_driver::thread_safe().gfx_queue;
+
+        if (device == VK_NULL_HANDLE || gfx_queue == VK_NULL_HANDLE) {
+                return "screenshot: device not ready";
+        }
+
+        vkQueueWaitIdle(gfx_queue);
+
+        const glm::u32 width = screenshot_captured_width;
+        const glm::u32 height = screenshot_captured_height;
+        const VkDeviceSize buffer_size = VkDeviceSize(width) * height * 4;
+
+        void* mapped = nullptr;
+        vkMapMemory(device, screenshot_staging_mem, 0, buffer_size, 0, &mapped);
+
+        auto* pixels = static_cast<glm::u8*>(mapped);
+        if (swapchain_format == VK_FORMAT_B8G8R8A8_SRGB || swapchain_format == VK_FORMAT_B8G8R8A8_UNORM) {
+                const glm::u32 pixel_count = width * height;
+                for (glm::u32 i = 0; i < pixel_count; ++i) {
+                        glm::u8* p = pixels + i * 4;
+                        const glm::u8 tmp = p[0]; p[0] = p[2]; p[2] = tmp;
+                }
+        }
+
+        stbi_write_png_compression_level = disable_compress ? 0 : 8;
+        const int write_ok = stbi_write_png(filepath.c_str(),
+                static_cast<int>(width), static_cast<int>(height),
+                4, pixels, static_cast<int>(width * 4));
+
+        vkUnmapMemory(device, screenshot_staging_mem);
+
+        if (write_ok == 0) {
+                return "screenshot: stbi_write_png failed for path: " + filepath;
+        }
+
+        return std::nullopt;
 }
 
 
@@ -218,6 +408,14 @@ void renderer::destroy() {
                 vkDeviceWaitIdle(device);
         }
 
+        if (screenshot_staging_buf != VK_NULL_HANDLE) {
+                vkDestroyBuffer(device, screenshot_staging_buf, nullptr);
+                vkFreeMemory(device, screenshot_staging_mem, nullptr);
+                screenshot_staging_buf = VK_NULL_HANDLE;
+                screenshot_staging_mem = VK_NULL_HANDLE;
+                screenshot_staging_size = 0;
+        }
+
         destroy_sync();
         destroy_commands();
         pipe.renderer_shutdown();
@@ -229,6 +427,14 @@ bool renderer::create_surface() {
         if (surface != VK_NULL_HANDLE) {
                 ray_log(e_log_type::fatal, "renderer: create_surface surface already exist.");
                 return false;
+        }
+
+        if (gl_window.expired()) {
+                // Headless: no surface needed, init device without surface
+                if (driver_lifetime) {
+                        driver_lifetime->try_init_with_surface(VK_NULL_HANDLE);
+                }
+                return true;
         }
 
         VkInstance instance = g_app_driver::thread_safe().instance;
@@ -269,6 +475,10 @@ void renderer::destroy_surface(){
 
 
 bool renderer::create_swapchain() {
+        if (gl_window.expired()) {
+                return create_offscreen_images();
+        }
+
         VkPhysicalDevice physical = g_app_driver::thread_safe().physical;
         VkDevice device = g_app_driver::thread_safe().device;
         glm::u32 gfx_family = g_app_driver::thread_safe().gfx_family;
@@ -371,11 +581,7 @@ bool renderer::create_swapchain() {
         }
         swapchain_create_info.compositeAlpha = alpha;
 
-        VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        if (caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) {
-                usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        }
-        swapchain_create_info.imageUsage = usage;
+        swapchain_create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
         if (vkCreateSwapchainKHR(device, &swapchain_create_info, nullptr, &swapchain) != VK_SUCCESS) {
                 ray_log(e_log_type::fatal, "renderer: vkCreateSwapchainKHR failed");
@@ -427,24 +633,134 @@ void renderer::destroy_swapchain() {
         if (device == VK_NULL_HANDLE) {
                 swapchain_image_views.resize(0);
                 swapchain_images.resize(0);
+                offscreen_image_memories.clear();
                 return;
         }
 
-        for (auto& image_view : swapchain_image_views) {
-                if (image_view != VK_NULL_HANDLE) {
-                        vkDestroyImageView(device, image_view, nullptr);
+        if (!offscreen_image_memories.empty()) {
+                destroy_offscreen_images();
+        } else {
+                // Windowed: swapchain owns the images, just destroy views and swapchain
+                for (auto& image_view : swapchain_image_views) {
+                        if (image_view != VK_NULL_HANDLE) {
+                                vkDestroyImageView(device, image_view, nullptr);
+                        }
+                }
+                swapchain_image_views.resize(0);
+
+                // Swapchain images are owned by the swapchain and must not be destroyed manually.
+                swapchain_images.resize(0);
+                swapchain_image_count = 0;
+
+                if (swapchain != VK_NULL_HANDLE) {
+                        vkDestroySwapchainKHR(device, swapchain, nullptr);
+                        swapchain = VK_NULL_HANDLE;
                 }
         }
-        swapchain_image_views.resize(0);
 
-        // Swapchain images are owned by the swapchain and must not be destroyed manually.
-        swapchain_images.resize(0);
-
-        if (swapchain != VK_NULL_HANDLE) {
-                vkDestroySwapchainKHR(device, swapchain, nullptr);
-                swapchain = VK_NULL_HANDLE;
-        }
+        swapchain_extent = {};
+        swapchain_format = VK_FORMAT_UNDEFINED;
 }
+
+bool renderer::create_offscreen_images() {
+        VkDevice device = g_app_driver::thread_safe().device;
+        VkPhysicalDevice physical = g_app_driver::thread_safe().physical;
+        if (device == VK_NULL_HANDLE || physical == VK_NULL_HANDLE) return false;
+
+        swapchain_extent = { headless_size.x, headless_size.y };
+        swapchain_format = VK_FORMAT_B8G8R8A8_SRGB;
+        swapchain_image_count = g_app_driver::k_frames_in_flight;
+
+        swapchain_images.resize(swapchain_image_count, VK_NULL_HANDLE);
+        swapchain_image_views.resize(swapchain_image_count, VK_NULL_HANDLE);
+        offscreen_image_memories.resize(swapchain_image_count, VK_NULL_HANDLE);
+
+        VkPhysicalDeviceMemoryProperties mem_props{};
+        vkGetPhysicalDeviceMemoryProperties(physical, &mem_props);
+
+        for (glm::u32 i = 0; i < swapchain_image_count; ++i) {
+                VkImageCreateInfo img_ci{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+                img_ci.imageType = VK_IMAGE_TYPE_2D;
+                img_ci.format = swapchain_format;
+                img_ci.extent = { swapchain_extent.width, swapchain_extent.height, 1 };
+                img_ci.mipLevels = 1;
+                img_ci.arrayLayers = 1;
+                img_ci.samples = VK_SAMPLE_COUNT_1_BIT;
+                img_ci.tiling = VK_IMAGE_TILING_OPTIMAL;
+                img_ci.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+                img_ci.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+                if (vkCreateImage(device, &img_ci, nullptr, &swapchain_images[i]) != VK_SUCCESS) {
+                        ray_log(e_log_type::fatal, "renderer: headless vkCreateImage failed");
+                        return false;
+                }
+
+                VkMemoryRequirements mem_req{};
+                vkGetImageMemoryRequirements(device, swapchain_images[i], &mem_req);
+
+                // Find DEVICE_LOCAL memory
+                glm::u32 mem_idx = UINT32_MAX;
+                for (glm::u32 j = 0; j < mem_props.memoryTypeCount; ++j) {
+                        if ((mem_req.memoryTypeBits & (1u << j)) &&
+                            (mem_props.memoryTypes[j].propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
+                                mem_idx = j;
+                                break;
+                        }
+                }
+                if (mem_idx == UINT32_MAX) {
+                        ray_log(e_log_type::fatal, "renderer: headless no suitable device-local memory");
+                        return false;
+                }
+
+                VkMemoryAllocateInfo alloc_info{ VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
+                alloc_info.allocationSize = mem_req.size;
+                alloc_info.memoryTypeIndex = mem_idx;
+                if (vkAllocateMemory(device, &alloc_info, nullptr, &offscreen_image_memories[i]) != VK_SUCCESS) {
+                        ray_log(e_log_type::fatal, "renderer: headless vkAllocateMemory failed");
+                        return false;
+                }
+                vkBindImageMemory(device, swapchain_images[i], offscreen_image_memories[i], 0);
+
+                // Create image view
+                VkImageViewCreateInfo view_ci{ VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+                view_ci.image = swapchain_images[i];
+                view_ci.viewType = VK_IMAGE_VIEW_TYPE_2D;
+                view_ci.format = swapchain_format;
+                view_ci.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                view_ci.subresourceRange.levelCount = 1;
+                view_ci.subresourceRange.layerCount = 1;
+                if (vkCreateImageView(device, &view_ci, nullptr, &swapchain_image_views[i]) != VK_SUCCESS) {
+                        ray_log(e_log_type::fatal, "renderer: headless vkCreateImageView failed");
+                        return false;
+                }
+        }
+
+        pipe.renderer_set_swapchain_format(swapchain_format, { swapchain_extent.width, swapchain_extent.height });
+        return true;
+}
+
+
+void renderer::destroy_offscreen_images() {
+        VkDevice device = g_app_driver::thread_safe().device;
+        if (device == VK_NULL_HANDLE) return;
+
+        for (glm::u32 i = 0; i < static_cast<glm::u32>(swapchain_images.size()); ++i) {
+                if (swapchain_image_views[i] != VK_NULL_HANDLE) {
+                        vkDestroyImageView(device, swapchain_image_views[i], nullptr);
+                }
+                if (swapchain_images[i] != VK_NULL_HANDLE) {
+                        vkDestroyImage(device, swapchain_images[i], nullptr);
+                }
+                if (i < static_cast<glm::u32>(offscreen_image_memories.size()) && offscreen_image_memories[i] != VK_NULL_HANDLE) {
+                        vkFreeMemory(device, offscreen_image_memories[i], nullptr);
+                }
+        }
+        swapchain_image_views.clear();
+        swapchain_images.clear();
+        offscreen_image_memories.clear();
+        swapchain_image_count = 0;
+}
+
 
 bool renderer::create_commands() {
         VkDevice device = g_app_driver::thread_safe().device;
@@ -530,6 +846,8 @@ void renderer::destroy_sync() {
 }
 
 void renderer::recreate_swapchain() {
+        if (gl_window.expired()) return; // headless: fixed resolution, no recreation needed
+
         int w = 0, h = 0;
 
         if (auto window_lock = gl_window.lock()) {

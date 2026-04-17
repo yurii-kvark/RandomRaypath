@@ -39,7 +39,7 @@ struct glfw_runtime_init {
 };
 
 
-window::window(const config::window_config& in_config)
+window::window(const config::render_server_config& in_config)
         : used_config(in_config) {
 
         if (!used_config.graphics_window_enabled) {
@@ -49,11 +49,11 @@ window::window(const config::window_config& in_config)
         glfw_runtime_init {};
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_POSITION_X, used_config.window_position.x);
-        glfwWindowHint(GLFW_POSITION_Y, used_config.window_position.y);
+        glfwWindowHint(GLFW_POSITION_X, used_config.window.window_position.x);
+        glfwWindowHint(GLFW_POSITION_Y, used_config.window.window_position.y);
 
         GLFWmonitor* monitor_ptr = nullptr;
-        if (used_config.window_mode == config::e_window_mode::fullscreen) {
+        if (used_config.window.window_mode == config::e_window_mode::fullscreen) {
                 monitor_ptr = glfwGetPrimaryMonitor();
                 const GLFWvidmode* mode = glfwGetVideoMode(monitor_ptr);
 
@@ -62,13 +62,13 @@ window::window(const config::window_config& in_config)
                 glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
                 glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 
-                used_config.window_size.x = mode->width;
-                used_config.window_size.y = mode->height;
+                used_config.window.window_size.x = mode->width;
+                used_config.window.window_size.y = mode->height;
         }
 
         // BUG TODO: actually, it will work only in the same thread for multi-window.
         // to use it with multiple graphical loop, you need multi-window thread single-owner or single-thread loop multi-window implementation instead of async_graphical_loop
-        GLFWwindow* gl_win_ptr = glfwCreateWindow(used_config.window_size.x, used_config.window_size.y, "Random Raypath", monitor_ptr, nullptr);
+        GLFWwindow* gl_win_ptr = glfwCreateWindow(used_config.window.window_size.x, used_config.window.window_size.y, "Random Raypath", monitor_ptr, nullptr);
 
         if (!gl_win_ptr) {
                 ray_log(e_log_type::fatal, "glfwCreateWindow failed.\n");
@@ -91,8 +91,13 @@ window::window(const config::window_config& in_config)
 bool window::draw_window(bool& out_valid_view) {
         out_valid_view = false;
 
+        if (!used_config.graphics_window_enabled) {
+                out_valid_view = true;
+                return true;
+        }
+
         if (!gl_win) {
-                return false;
+                return false; // window creation must have failed
         }
 
         if (glfwWindowShouldClose(gl_win.get())) {
@@ -124,6 +129,9 @@ std::weak_ptr<GLFWwindow> window::get_gl_window() const {
 
 
 glm::vec2 window::get_mouse_position() const {
+        if (injected_mouse_position.has_value()) {
+                return *injected_mouse_position;
+        }
         double x_pos = 0, y_pos = 0;
         if (gl_win) {
                 glfwGetCursorPos(gl_win.get(), &x_pos, &y_pos);
@@ -133,6 +141,9 @@ glm::vec2 window::get_mouse_position() const {
 
 
 bool window::get_mouse_button_left() const {
+        if (injected_mouse_button_left.has_value()) {
+                return *injected_mouse_button_left;
+        }
         int state = GLFW_RELEASE;
         if (gl_win) {
                 state = glfwGetMouseButton(gl_win.get(), GLFW_MOUSE_BUTTON_LEFT);
@@ -142,6 +153,9 @@ bool window::get_mouse_button_left() const {
 
 
 bool window::get_mouse_button_right() const {
+        if (injected_mouse_button_right.has_value()) {
+                return *injected_mouse_button_right;
+        }
         int state = GLFW_RELEASE;
         if (gl_win) {
                 state = glfwGetMouseButton(gl_win.get(), GLFW_MOUSE_BUTTON_RIGHT);
@@ -151,7 +165,37 @@ bool window::get_mouse_button_right() const {
 
 
 glm::f64 window::get_mouse_wheel_delta() const {
-        return mouse_wheel_delta_frame * used_config.zoom_speed;
+        return (mouse_wheel_delta_frame + injected_mouse_scroll_add) * used_config.scene.zoom_speed;
+}
+
+
+void window::inject_mouse_position(glm::vec2 pos) const {
+        injected_mouse_position = pos;
+}
+
+
+void window::inject_mouse_button_left(bool pressed) const {
+        injected_mouse_button_left = pressed;
+}
+
+
+void window::inject_mouse_button_right(bool pressed) const {
+        injected_mouse_button_right = pressed;
+}
+
+
+void window::inject_mouse_scroll_add(glm::f64 delta) const {
+        injected_mouse_scroll_add += delta;
+}
+
+void window::stop_injected_input() const {
+        injected_mouse_position.reset();
+        injected_mouse_button_left.reset();
+        injected_mouse_button_right.reset();
+}
+
+void window::clear_injected_input() const {
+        injected_mouse_scroll_add = 0.0;
 }
 
 

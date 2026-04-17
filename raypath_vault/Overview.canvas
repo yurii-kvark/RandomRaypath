@@ -1,0 +1,28 @@
+{
+	"nodes":[
+		{"id":"39d13301101b2176","type":"text","text":"Client Renderer 2","x":440,"y":-520,"width":420,"height":200,"color":"4"},
+		{"id":"7d2ef6018d3d3b7e","type":"text","text":"Computational Server In-Proccess Mode","x":480,"y":-420,"width":215,"height":59,"color":"1"},
+		{"id":"333cf191ebbe88ff","type":"text","text":"Computational Server 1..N\nNetwork Mode","x":140,"y":-160,"width":430,"height":100,"color":"1"},
+		{"id":"45a978aa33e6b7c0","type":"text","text":"Client Renderer 1","x":-240,"y":-540,"width":560,"height":200,"color":"4"},
+		{"id":"463e1f1bb0a29a12","type":"text","text":"Computational Server In-Proccess Mode","x":-175,"y":-440,"width":215,"height":59,"color":"1"},
+		{"id":"91a578c1fecdabe9","type":"text","text":"client\nrenderer","x":960,"y":-590,"width":155,"height":350,"color":"4"},
+		{"id":"61925ef2e8bc0f6e","type":"text","text":"computational server","x":960,"y":-205,"width":155,"height":290,"color":"1"},
+		{"id":"1d9e52fc3cdc3f06","type":"text","text":"computational server\n(if enabled in-proccess server)","x":1115,"y":-329,"width":265,"height":89,"color":"1"},
+		{"id":"8733be04d1244429","type":"text","text":"Multimedia Layer","x":1115,"y":-590,"width":265,"height":110,"color":"6"},
+		{"id":"cf27ad2c40354bd1","type":"text","text":"target types:","x":913,"y":-760,"width":250,"height":60,"color":"5"},
+		{"id":"55ebbf904580b395","type":"text","text":"Vulkan 777 Lib","x":1380,"y":-530,"width":250,"height":50,"color":"1"},
+		{"id":"ae9475f310ef9fe0","type":"text","text":"Win+Linux lib for window and mouse","x":1380,"y":-590,"width":250,"height":60,"color":"4"},
+		{"id":"66cad24160dcafef","type":"text","text":"Client Scheduler\nSomething to connect to computational servers and manage data requesting.","x":1115,"y":-480,"width":265,"height":151,"color":"2"},
+		{"id":"ee0b8d431aaab82a","type":"text","text":"Network Endpoint (Server)","x":1115,"y":-205,"width":250,"height":65,"color":"5"},
+		{"id":"8a9f10db594ad4e6","type":"text","text":"Network Endpoint (Client)","x":1380,"y":-465,"width":250,"height":50,"color":"5"},
+		{"id":"b4d6dfd78e622a28","type":"text","text":"Data request scheduler","x":1380,"y":-415,"width":250,"height":60,"color":"#b1438b"},
+		{"id":"3b689a2be80c0c05","type":"text","text":"Parallel Raypath WorkPools","x":1115,"y":-110,"width":250,"height":155,"color":"#b1d897"}
+	],
+	"edges":[
+		{"id":"201390a8892566b2","fromNode":"333cf191ebbe88ff","fromSide":"top","toNode":"45a978aa33e6b7c0","toSide":"bottom"},
+		{"id":"8132ce22b1b2a284","fromNode":"333cf191ebbe88ff","fromSide":"top","toNode":"39d13301101b2176","toSide":"bottom"},
+		{"id":"30725a5e5504479d","fromNode":"cf27ad2c40354bd1","fromSide":"bottom","toNode":"91a578c1fecdabe9","toSide":"top"},
+		{"id":"85b322554d273c9c","fromNode":"91a578c1fecdabe9","fromSide":"bottom","toNode":"61925ef2e8bc0f6e","toSide":"top"},
+		{"id":"ee797c19021bb3e1","fromNode":"1d9e52fc3cdc3f06","fromSide":"right","toNode":"61925ef2e8bc0f6e","toSide":"left"}
+	]
+}

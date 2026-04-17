@@ -694,14 +694,13 @@ VkPipelineColorBlendAttachmentState object_2d_pipeline<PipelineDataModel>::gen_v
                 .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
                 .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
                 .colorBlendOp = VK_BLEND_OP_ADD,
+                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                .alphaBlendOp = VK_BLEND_OP_ADD,
                 .colorWriteMask =
                         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
                         | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
         };
-
-        // A   = src.a * 1 + dst.a * (1-src.a)  (fine for UI)
-        // add in .frag: outColor = vec4(vColor.rgb * vColor.a, vColor.a);
-        //color_blend_attch_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 }
 
 

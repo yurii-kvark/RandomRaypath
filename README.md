@@ -32,7 +32,9 @@ CMake options:
 * RAY_GPU_PROFILE_IMPL=("tracy") - GPU profiler implementation
 
 Debug build:
-* cmake --build cmake-build-debug -G Ninja -DRAY_DEBUG_NO_OPT=1 -DGLSLANG_VALIDATOR="{VulkanSDK_Path}/Bin/glslangValidator.exe"
+* cmake --build cmake-build-debug -G Ninja -DRAY_DEBUG_NO_OPT=1 -DGLSLANG_VALIDATOR="{VULKAN_SDK}/Bin/glslangValidator.exe"
+
+VULKAN_SDK env variables path needed or GLSLANG_VALIDATOR explicitly.
 
 Release Package build:
 * cmake --build cmake-build-package -G Ninja -DRAY_DEBUG_NO_OPT=0 -DRAY_ENABLE_PACKAGING=1 -DGLSLANG_VALIDATOR="{VulkanSDK_Path}/Bin/glslangValidator.exe"
@@ -48,4 +50,44 @@ Design:
 Known perf hits:
 * [renderer::draw_frame] Memory fence for graphical buffer waiting up to 1.4 ms sometimes. Could be fixed by a frame pass or a triple buffer. I am seeking max true response, so I am waiting for the hardware to arrive. Until 260 FPS drop, it's ok.
 * [logical_text_line::update_content] Trigger every glyph to update if text changed, up to 1 ms per frame for hud_info draw.
-* [object_2d_pipeline::update_object_memory] Pipeline iterates through every draw object to check if an update is needed. Not critical for engine purposes, but it will cause issues with a larger number of draw objects.
+* [object_2d_pipeline::update_object_memory] Pipeline iterates through every draw object to check if update need. Not critical for the engine purposes, but will make issues for a bigger quantity of draw objects.
+
+## Launch Flags:
+
+Use -config="default.toml" to define the launch mode.
+
+* **-headless** - server working without window launching
+* **-remote_control** - enable TCP client, that connecting to remote control server over custom JSON protocol. Server target: client_renderer.remote_control_addr in config. remote_control enables to control the client over JSON TCP, for executing remote input, screenshot, call tick etc.
+* **-tickless** - allowed to do tick only by external command.
+
+## MCP, remote_control and Autocoding:
+
+### MCP Python server:
+It allows ai-agents to build, launch and control remotely for autocoding purpose with automatic feedback loop.
+mcp_raypath folder is a python subproject that orchestrate the application and granting api for the agents.
+
+    # to run mcp inspector: (inside mcp_raycast)
+    # npx @modelcontextprotocol/inspector python main.py
+    # 
+    # to launch claude mcp:
+    # claude mcp add mcp_raycast --transport stdio -- python {project_root}\\mcp_raypath\\main.py
+
+env_variable: 
+to run application need to set COMPILER_BIN or MINGW_BIN to compiler bin folder: "some_full_path\mingw64_posix\bin".
+Or add this path to PATH.
+
+### Remote Control integration
+MCP server launches the application under confg/mcp_control.toml config that includes:
+* headless
+* remote_control
+* tickless_mode
+* fixed_tick (logical 16 ms)
+* visible_cursor
+* disabled hud_info
+
+With remote_control enabled the application launches standalone TCP client and trying to connect by server_control_addr.
+It communicates with the python server by JSON protocol, described in mcp_raypath/CONTROL_PROTOCOL.md.
+
+### Autocode Loop
+
+In this setup the agent after the code changes, able to build, control in runtime: add input, make screenshot, and ensure the task is practically done. 

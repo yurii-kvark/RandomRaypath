@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//mnt/c/dev/purecpp/RandomRaypath/**)",
+      "Write(//mnt/c/dev/purecpp/RandomRaypath/**)",
+      "mcp__mcp_raycast__*"
+    ]
+  }
+}

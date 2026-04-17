@@ -55,7 +55,7 @@ g_app_driver& g_app_driver::thread_safe() {
 }
 
 
-std::shared_ptr<g_app_driver::driver_handler> g_app_driver::init_driver_handler() {
+std::shared_ptr<g_app_driver::driver_handler> g_app_driver::init_driver_handler(bool headless) {
         std::scoped_lock lock(init_mtx);
         if (!init_done.load(std::memory_order_relaxed)) {
 
@@ -68,6 +68,7 @@ std::shared_ptr<g_app_driver::driver_handler> g_app_driver::init_driver_handler(
                         }
                 }
 
+                headless_mode = headless;
                 graphic_init();
                 init_done.store(true, std::memory_order_relaxed);
         }
@@ -191,9 +192,12 @@ bool find_queue_families(VkPhysicalDevice device, VkSurfaceKHR surface,
 
 
 void g_app_driver::graphic_init() {
-        uint32_t ext_count = 0;
-        const char** exts = glfwGetRequiredInstanceExtensions(&ext_count);
-        std::vector<const char*> extensions(exts, exts + ext_count);
+        std::vector<const char*> extensions;
+        if (!headless_mode) {
+                uint32_t ext_count = 0;
+                const char** exts = glfwGetRequiredInstanceExtensions(&ext_count);
+                extensions.assign(exts, exts + ext_count);
+        }
 
         VkApplicationInfo app_info{ VK_STRUCTURE_TYPE_APPLICATION_INFO };
         app_info.apiVersion = VK_API_VERSION_1_3;
@@ -235,18 +239,37 @@ void g_app_driver::graphic_init_surface(VkSurfaceKHR surface) {
                 std::string name = device_helpers::device_name(device_el);
                 ray_log(e_log_type::info, "renderer: detected GPU: {}", name);
 
-                if (!device_helpers::has_extension(device_el, VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
-                        continue;
-                }
-
                 glm::u32 gfx = UINT32_MAX;
                 glm::u32 present = UINT32_MAX;
-                if (!device_helpers::find_queue_families(device_el, surface, gfx, present)) {
-                        continue;
-                }
 
-                if (!device_helpers::swapchain_ok(device_el, surface)) {
-                        continue;
+                if (headless_mode) {
+                        // Headless: find graphics-capable queue only, no surface needed
+                        glm::u32 q_count = 0;
+                        vkGetPhysicalDeviceQueueFamilyProperties(device_el, &q_count, nullptr);
+                        std::vector<VkQueueFamilyProperties> q_props(q_count);
+                        vkGetPhysicalDeviceQueueFamilyProperties(device_el, &q_count, q_props.data());
+                        for (glm::u32 qi = 0; qi < q_count; ++qi) {
+                                if (q_props[qi].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+                                        gfx = qi;
+                                        present = qi;
+                                        break;
+                                }
+                        }
+                        if (gfx == UINT32_MAX) {
+                                continue;
+                        }
+                } else {
+                        if (!device_helpers::has_extension(device_el, VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
+                                continue;
+                        }
+
+                        if (!device_helpers::find_queue_families(device_el, surface, gfx, present)) {
+                                continue;
+                        }
+
+                        if (!device_helpers::swapchain_ok(device_el, surface)) {
+                                continue;
+                        }
                 }
 
                 bool is_discrete = false;
@@ -300,14 +323,17 @@ void g_app_driver::graphic_init_surface(VkSurfaceKHR surface) {
         VkPhysicalDeviceVulkan13Features f13{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
         f13.dynamicRendering = VK_TRUE;
 
-        const char* dev_exts[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+        std::vector<const char*> dev_exts;
+        if (!headless_mode) {
+                dev_exts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        }
 
         VkDeviceCreateInfo device_create_info{ VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
         device_create_info.pNext = &f13;
         device_create_info.queueCreateInfoCount = (glm::u32)queue_create_infos.size();
         device_create_info.pQueueCreateInfos = queue_create_infos.data();
-        device_create_info.enabledExtensionCount = 1;
-        device_create_info.ppEnabledExtensionNames = dev_exts;
+        device_create_info.enabledExtensionCount = (glm::u32)dev_exts.size();
+        device_create_info.ppEnabledExtensionNames = dev_exts.empty() ? nullptr : dev_exts.data();
 
         if (vkCreateDevice(physical, &device_create_info, nullptr, &device) != VK_SUCCESS) {
                 ray_log(e_log_type::fatal, "renderer: vkCreateDevice failed");

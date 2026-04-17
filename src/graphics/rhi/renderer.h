@@ -1,9 +1,11 @@
 ﻿#pragma once
 #include "g_app_driver.h"
-#include "config/client_renderer.h"
+#include "config/config.h"
 #include "graphics/graphic_libs.h"
 #include "glm/glm.hpp"
 #include "pipeline/pipeline_manager.h"
+#include "utils/ray_error.h"
+
 #include <memory>
 
 
@@ -15,7 +17,7 @@ namespace ray::graphics {
 // The goal is to achieve 2d editor crisp feeling.
 class renderer {
 public:
-        renderer(std::weak_ptr<GLFWwindow> basis_win, config::visual_style in_style);
+        renderer(std::weak_ptr<GLFWwindow> basis_win, const config::render_server_config& cfg);
         ~renderer();
 
         renderer(const renderer&) = delete;
@@ -27,6 +29,9 @@ public:
 
         pipeline_manager pipe;
 
+        ray_error execute_screenshot_save_png(const std::string& filepath, bool disable_compress);
+        void request_screenshot();
+
 private:
         bool create();
         void destroy();
@@ -37,6 +42,9 @@ private:
         bool create_swapchain();
         void destroy_swapchain();
 
+        bool create_offscreen_images();
+        void destroy_offscreen_images();
+
         bool create_commands();
         void destroy_commands();
 
@@ -45,9 +53,13 @@ private:
 
         void recreate_swapchain();
 
+        void tick_screenshot(glm::u32 imageIndex, VkCommandBuffer& command_buffer);
+
 private:
         std::weak_ptr<GLFWwindow> gl_window;
-        config::visual_style style;
+        config::visual_style_config style;
+        glm::uvec2 headless_size{900, 500};
+        std::vector<VkDeviceMemory> offscreen_image_memories;
 
         std::shared_ptr<g_app_driver::driver_handler> driver_lifetime;
         VkSurfaceKHR surface = VK_NULL_HANDLE;
@@ -69,6 +81,15 @@ private:
         VkFence in_flight[g_app_driver::k_frames_in_flight]{};
         glm::u8 frame_submitted[g_app_driver::k_frames_in_flight] = {0};
         glm::u32 frame_index = 0;
+
+        // Screenshot pre-present capture
+        bool screenshot_capture_requested = false;
+        bool screenshot_data_ready = false;
+        VkBuffer screenshot_staging_buf = VK_NULL_HANDLE;
+        VkDeviceMemory screenshot_staging_mem = VK_NULL_HANDLE;
+        VkDeviceSize screenshot_staging_size = 0;
+        glm::u32 screenshot_captured_width = 0;
+        glm::u32 screenshot_captured_height = 0;
 };
 
 #endif
