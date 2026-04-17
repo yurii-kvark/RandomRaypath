@@ -239,7 +239,7 @@ bool dev_test_scene::tick(const tick_time_info& tick_time, window& win, pipeline
 
 
         const glm::vec4 new_cam_transform = world_processor.get_camera_transform();
-        crate_sim.tick(new_cam_transform, win, pipe);
+        crate_sim.tick(tick_time.get_delta_sec(), new_cam_transform, win, pipe);
 
         if (auto rect_1_data = rect_1.access_draw_obj_data()) {
                 //rect_3_dyn_world_data->transform = transform_dyn_3 * std::sin((float)last_time_ns / 1'000'000'000 );
