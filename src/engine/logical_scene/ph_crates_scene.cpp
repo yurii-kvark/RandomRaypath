@@ -1,5 +1,5 @@
 ﻿
-#include "minecraft_scene.h"
+#include "ph_crates_scene.h"
 
 #include "engine/logical_system/logical_crate_sim.h"
 #include "utils/ray_log.h"
@@ -9,7 +9,7 @@ using namespace ray::graphics;
 using namespace ray::logical;
 
 
-ray_error minecraft_scene::init(window& win, pipeline_manager& pipe) {
+ray_error ph_crates_scene::init(window& win, pipeline_manager& pipe) {
         ray_error init_error = base_scene::init(win, pipe);
         if (init_error) {
                 return init_error;
@@ -35,7 +35,7 @@ ray_error minecraft_scene::init(window& win, pipeline_manager& pipe) {
         return {};
 }
 
-bool minecraft_scene::tick(const tick_time_info& tick_time, window& win, pipeline_manager& pipe) {
+bool ph_crates_scene::tick(const tick_time_info& tick_time, window& win, pipeline_manager& pipe) {
         const bool is_success = base_scene::tick(tick_time, win, pipe);
         if (!is_success) {
                 return is_success;
@@ -49,7 +49,7 @@ bool minecraft_scene::tick(const tick_time_info& tick_time, window& win, pipelin
 
 
 
-void minecraft_scene::cleanup(window& win, pipeline_manager& pipe) {
+void ph_crates_scene::cleanup(window& win, pipeline_manager& pipe) {
         base_scene::cleanup(win, pipe);
         crate_sim.destroy(pipe);
 }

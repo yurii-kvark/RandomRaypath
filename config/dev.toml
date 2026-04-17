@@ -20,10 +20,10 @@ fixed_delta_time_ms = -1.0 # -1 to use actual delta time, or force delta time in
 zoom_speed = 0.1
 show_hud_info = true
 size_text_hud_info = 10.0
-show_cursor = true # top left is zero pointer
+show_cursor = false # top left is zero pointer
 cursor_size_px = [16, 16]
 cursor_border_size_px = 3.0
-logical_scene = "minecraft" # main / dev_test / minecraft
+logical_scene = "ph_crates" # main / dev_test / ph_crates
 
 # color - RGBA 0..1 float32
 [render_server.visual_style]

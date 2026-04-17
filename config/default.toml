@@ -23,7 +23,7 @@ size_text_hud_info = 10.0
 show_cursor = false
 cursor_size_px = [16, 16]
 cursor_border_size_px = 3.0
-logical_scene = "minecraft" # main / dev_test / minecraft
+logical_scene = "ph_crates" # main / dev_test / ph_crates
 
 # color - RGBA 0..1 float32
 [render_server.visual_style]

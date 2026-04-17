@@ -1,20 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "mcp__mcp_raycast__magic_formula",
-      "Read(//mnt/c/dev/purecpp/**)",
-      "Bash(ls cmake-build-debug/*.exe)",
-      "mcp__mcp_raycast__blocking_build_and_launch_application",
-      "mcp__mcp_raycast__get_session_id",
-      "mcp__mcp_raycast__fcommand_screenshot",
-      "mcp__mcp_raycast__fcommand_commit_set",
-      "mcp__mcp_raycast__blocking_wait_next_fcommand_response",
-      "mcp__mcp_raycast__get_screenshot_png_path",
-      "mcp__mcp_raycast__fcommand_set_camera_position",
-      "mcp__mcp_raycast__fcommand_set_mouse_position",
-      "mcp__mcp_raycast__fcommand_set_mouse_left_button",
-      "mcp__mcp_raycast__fcommand_pass_ticks_after",
-      "mcp__mcp_raycast__blocking_shutdown_application"
+      "Read(//mnt/c/dev/purecpp/RandomRaypath/**)",
+      "Write(//mnt/c/dev/purecpp/RandomRaypath/**)",
+      "mcp__mcp_raycast__*"
     ]
   }
 }
