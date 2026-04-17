@@ -17,6 +17,10 @@ using namespace ray::graphics;
 struct tick_time_info {
         glm::u64 global_time_ns = 0;
         glm::u64 delta_time_ns = 0;
+
+        glm::f64 get_delta_sec() const {
+             return glm::f64(delta_time_ns) * 1e-9f;
+        }
 };
 
 class i_logical_scene {

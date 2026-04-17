@@ -18,12 +18,13 @@ using namespace graphics;
 class logical_crate_sim {
 public:
         ray_error init(window& win, pipeline_manager& pipe);
-        void tick(glm::vec4 new_cam_transform, window& win, pipeline_manager& pipe);
+        void tick(glm::f64 delta_second, glm::vec4 new_cam_transform, window& win, pipeline_manager& pipe);
         void destroy(pipeline_manager& pipe);
 
         std::vector<graphics::pipeline_handle<graphics::object_2d_pipeline<>>> get_pipelines();
 
         void add_crate(glm::vec2 init_pos, glm::f32 size_px, char name_glyph, glm::vec4 background_color, glm::vec4 glyph_color);
+        void add_crate(glm::vec2 init_pos, glm::vec2 size_px, char name_glyph, glm::vec4 background_color, glm::vec4 glyph_color);
 
 protected:
         struct crate_entry {
@@ -33,6 +34,11 @@ protected:
 
                 glm::vec4 phys_transform {}; // top_right, x (->), y (v), pos_xy_px, scale_xy_px
                 glm::vec4 original_back_color {};
+                glm::vec2 velocity {};
+
+                glm::vec2 get_center() const {
+                        return glm::vec2(phys_transform.x + phys_transform.z * 0.5f, phys_transform.y + phys_transform.w * 0.5f);
+                }
 
                 glm::vec4 get_background_transform() const {
                         const float outline_size_px = 2;
