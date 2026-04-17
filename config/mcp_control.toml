@@ -1,7 +1,7 @@
 ﻿
 [render_server]
 enable = true # TODO
-graphics_window_enabled = false # -headless flag will force it to false. sreenshot is of the applayed command frame.
+graphics_window_enabled = true # -headless flag will force it to false. sreenshot is of the applayed command frame.
 log_in_file = true
 
 [render_server.network]

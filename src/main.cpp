@@ -10,8 +10,6 @@
 
 int main(int argc, char** argv) {
 
-
-
         //auto config_res = ray::config::app_config::load_file(std::filesystem::path {"../config/config.toml"});
         auto config_res = ray::config::app_config::load_file_from_args(argc, argv);
 

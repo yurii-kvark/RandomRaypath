@@ -9,13 +9,17 @@ import sys
 from pathlib import Path
 from typing import Literal, TypedDict
 
-from ray_mcp import app_logging
 from ray_mcp.remote_control_server import RemoteControlServer
 from fastmcp import FastMCP
 from fastmcp.utilities.types import Image
 
-app_logging.setup()
+from ray_mcp.app_logging import setup_logging
 
+setup_logging()
+
+APP_CONFIG_NAME = "mcp_control.toml" # "dev.toml"
+RAY_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+DEFAULT_COMPILER_BINS = r"C:\common\cpp\mingw64_posix\bin"
 
 class BuildResult(TypedDict):
     message: str
@@ -83,10 +87,9 @@ class RaypathMCPServer:
         self.mcp = FastMCP(name)
         self._remote = RemoteControlServer()
         self._app_process: subprocess.Popen | None = None
-        self._project_root: Path = Path(__file__).resolve().parent.parent.parent
+        self._project_root: Path = RAY_PROJECT_ROOT
         self._register_tools()
         self._register_resources()
-        self.log.info(f"[mcp print] _project_root {self._project_root}")
         self.log.info("[mcp print] launched RaypathMCPServer")
 
     def _register_tools(self) -> None:
@@ -118,7 +121,7 @@ class RaypathMCPServer:
         self.mcp.tool(tags={"remote_control"},             annotations=_rw)(self.fcommand_session_log_rename)
 
     def _register_resources(self) -> None:
-
+        # TODO instead of resource create tool function for getting exact pathe for the resource on disk.
         @self.mcp.resource(
             uri="app://mcp_logs/screenshot/session_{session_id}/{net_id}_frame_any.png",
             tags={"app"},
@@ -207,15 +210,24 @@ class RaypathMCPServer:
             except OSError:
                 return ""
 
+        exe_name = "RayClientRenderer.exe" if sys.platform == "win32" else "RayClientRenderer"
+        exe_path = self._project_root / "cmake-build-debug" / exe_name
+
         def _impl() -> BuildResult:
             try:
+                exe_path.unlink(missing_ok=True) # rebuild bin each time on launch
+
                 with open(log_path, "w", encoding="utf-8") as lf:
                     r = subprocess.run(configure_cmd, cwd=cwd, stdout=lf, stderr=lf, timeout=timeout_sec)
                     if r.returncode != 0:
                         lf.flush()
                         return {"message": _read_log(), "success": False}
                     r = subprocess.run(build_cmd, cwd=cwd, stdout=lf, stderr=lf, timeout=timeout_sec)
-                return {"message": _read_log(), "success": r.returncode == 0}
+                if r.returncode != 0:
+                    return {"message": _read_log(), "success": False}
+                if not exe_path.exists():
+                    return {"message": f"build exited 0 but {exe_path} not found\n" + _read_log(), "success": False}
+                return {"message": _read_log(), "success": True}
             except subprocess.TimeoutExpired:
                 return {"message": "build timed out\n" + _read_log(), "success": False}
             except OSError as exc:
@@ -248,11 +260,29 @@ class RaypathMCPServer:
             return result
 
         exe_name = "RayClientRenderer.exe" if sys.platform == "win32" else "RayClientRenderer"
+
         exe = str(self._project_root / "cmake-build-debug" / exe_name)
-        cwd = str(self._project_root)
+        cwd = str(self._project_root / "cmake-build-debug")
+
+        # (RAY_PROJECT_ROOT / "mcp_logs").mkdir(parents=True, exist_ok=True)
+
         try:
+            env = os.environ.copy()
+            compiler_bin = os.environ.get("COMPILER_BIN", os.environ.get("MINGW_BIN", DEFAULT_COMPILER_BINS)) # NEED THIS FOR NOT PACKAGED
+            env["PATH"] = compiler_bin + os.pathsep + env.get("PATH", "")
+
+
+            app_log_dir = self._project_root / "mcp_logs" / "mcp_app_log"
+            app_log_dir.mkdir(parents=True, exist_ok=True)
             self._app_process = await asyncio.to_thread(
-                lambda: subprocess.Popen([exe, "-config=mcp_control.toml"], cwd=cwd)
+                lambda: subprocess.Popen(
+                    [exe, f"-config={APP_CONFIG_NAME}"],
+                    cwd=cwd,
+                    env=env,
+                    stdin=subprocess.DEVNULL,
+                    stdout=open(app_log_dir / "stdout.log", "w"), # redirected, no need in general, logging goes through internal app system
+                    stderr=open(app_log_dir / "stderr.log", "w"), # redirected
+                )
             )
         except Exception as exc:
             return {"message": f"launch failed: {exc}", "success": False}

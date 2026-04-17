@@ -72,6 +72,10 @@ mcp_raypath folder is a python subproject that orchestrate the application and g
     # to launch claude mcp:
     # claude mcp add mcp_raycast --transport stdio -- python {project_root}\\mcp_raypath\\main.py
 
+env_variable: 
+to run application need to set COMPILER_BIN or MINGW_BIN to compiler bin folder: "some_full_path\mingw64_posix\bin".
+Or add this path to PATH.
+
 ### Remote Control integration
 MCP server launches the application under confg/mcp_control.toml config that includes:
 * headless

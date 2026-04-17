@@ -6,9 +6,9 @@ import logging
 import random
 from dataclasses import dataclass
 
-from ray_mcp import app_logging
+from ray_mcp.app_logging import setup_logging
 
-app_logging.setup()
+setup_logging()
 
 HOST = "0.0.0.0"
 PORT = 5039
