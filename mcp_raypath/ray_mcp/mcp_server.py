@@ -38,6 +38,7 @@ class RaypathMCPServer:
         application launch and frame_command_set dealing.
 
         Interacting with the server should be done exclusively.
+        After launch and execute is has to be shutdown.
 
         frame_command/fcommand is entry of frame_command_set map. Each command has a single slot.
         session_id - unique id of the launched control application
